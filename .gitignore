@@ -4,9 +4,6 @@ data/score_summaries/NN/*
 !data/score_summaries/Classics/Run_publication
 !data/score_summaries/NN/Run_publication
 
-data/user_properties/trained_weights/*
-!data/user_properties/trained_weights
-
 *.npz
 
 # Pylint code analysis stuff
