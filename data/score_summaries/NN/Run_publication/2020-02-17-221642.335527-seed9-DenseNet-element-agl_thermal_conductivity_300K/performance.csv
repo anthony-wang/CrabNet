@@ -1,0 +1,2 @@
+id,model_type,num_network_params,elem_prop,mat_prop,epochs,fit_time,mae_train,mse_train,r2_train,mae_val,mse_val,r2_val,rng_seed
+2020-02-17-221642.335527-seed9-DenseNet-element-agl_thermal_conductivity_300K,DenseNet,71937,element,agl_thermal_conductivity_300K,1001,214.1634612083435,2.3629910381407067,46.88866906834388,0.5683897369094161,2.6394905220584146,49.19669768209542,0.5425028107713086,9

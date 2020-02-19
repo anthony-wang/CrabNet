@@ -1,0 +1,2 @@
+id,model_type,num_network_params,elem_prop,mat_prop,epochs,fit_time,mae_train,mse_train,r2_train,mae_val,mse_val,r2_val,rng_seed
+2020-02-17-212558.848456-seed9-CrabNet-element-Egap,CrabNet,62605,element,Egap,1001,717.3686580657959,0.37862917298146925,0.2737042399295934,0.8896917295924636,0.5093969125662892,0.5362873799799794,0.7782844600383582,9

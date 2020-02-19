@@ -1,0 +1,2 @@
+id,model_type,num_network_params,elem_prop,mat_prop,epochs,fit_time,mae_train,mse_train,r2_train,mae_val,mse_val,r2_val,rng_seed
+2020-02-17-211851.228475-seed9-CrabNet-element-agl_thermal_conductivity_300K,CrabNet,62605,element,agl_thermal_conductivity_300K,1001,424.88867115974426,1.503581655256842,39.2835566993068,0.6383948066982201,2.338024395518005,37.819648442552726,0.6483019455514767,9

@@ -1,0 +1,2 @@
+id,model_type,num_network_params,elem_prop,mat_prop,epochs,fit_time,mae_train,mse_train,r2_train,mae_val,mse_val,r2_val,rng_seed
+2020-02-17-211143.571435-seed9-CrabNet-element-agl_log10_thermal_expansion_300K,CrabNet,62605,element,agl_log10_thermal_expansion_300K,1001,426.1320331096649,0.01868320818984917,0.0007059944445308689,0.986263102153013,0.033618236439568655,0.003706788627069508,0.9264299686378558,9
