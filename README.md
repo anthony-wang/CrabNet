@@ -14,9 +14,8 @@ This software package implements the Compositionally-Restricted Attention-Based 
 
 ## How to cite
 Please cite the following work if you want to use `CrabNet`:
-```
-(insert BibTeX citation)
-```
+
+Wang, Anthony Yu-Tung; Kauwe, Steven K.; Murdock, Ryan J.; Sparks, Taylor D. (2020): [Compositionally-Restricted Attention-Based Network for Materials Property Prediction](https://doi.org/10.26434/chemrxiv.11869026.v1). ChemRxiv. Preprint. https://doi.org/10.26434/chemrxiv.11869026.v1
 
 
 ## Installation
