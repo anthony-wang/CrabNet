@@ -26,6 +26,7 @@ from utils.utils import plot_training_curves
 from utils.utils import plot_pred_act
 from utils.utils import count_parameters
 from utils.utils import xstrh
+from utils.get_compute_device import get_compute_device
 
 plt.rcParams.update({'font.size': 16})
 
@@ -62,13 +63,9 @@ class NeuralNetWrapper():
 
         self.save_network_info = save_network_info
 
-        self.compute_device = torch.device('cuda' if torch.cuda.is_available()
-                                           else 'cpu')
-
         # Default to using the last GPU available
         self.CUDA_count = torch.cuda.device_count()
-        if self.CUDA_count > 1:
-            self.compute_device = torch.device(f'cuda:{self.CUDA_count - 1}')
+        self.compute_device = get_compute_device()
 
         print(f'Creating Model of type {self.model_type}')
         if self.model_type == 'CrabNet':

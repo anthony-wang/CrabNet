@@ -4,7 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from matplotlib.ticker import AutoMinorLocator
-from utils.utils import CONSTANTS, publication_plot_pred_act
+from utils.utils import CONSTANTS
+from utils.utils import publication_plot_pred_act, publication_plot_residuals
 from use_crabnet import predict_crabnet
 from use_densenet import predict_densenet
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
@@ -240,6 +241,58 @@ def multi_plots_preds():
 
 
 # %%
+def plot_dense_crab_residuals(mp, ax):
+    test_file = f'test_files/{mp}_test.csv'
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+
+    y_act_dense, y_pred_dense = predict_densenet(mp, test_file)
+    fig_dense = publication_plot_residuals(y_act_dense,
+                                           y_pred_dense,
+                                           mat_prop=mp,
+                                           model='DenseNet',
+                                           ax=ax[0])
+
+    y_act_crab, y_pred_crab = predict_crabnet(mp, test_file)
+    fig_crab = publication_plot_residuals(y_act_crab,
+                                          y_pred_crab,
+                                          mat_prop=mp,
+                                          model='CrabNet',
+                                          ax=ax[1])
+
+    y0_min, y0_max = ax[0].get_ylim()
+    y1_min, y1_max = ax[1].get_ylim()
+
+    y_min_min = np.min([y0_min, y1_min])
+    y_max_max = np.max([y0_max, y1_max])
+
+    ax[0].set_ylim(y_min_min, y_max_max)
+    ax[1].set_ylim(y_min_min, y_max_max)
+
+    if fig is not None:
+        return fig
+
+
+def multi_plots_residuals():
+    mat_props = ['energy_atom', 'Egap']
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 12))
+    for i, mp in enumerate(mat_props):
+        ax = axes[i, :]
+        ax = plot_dense_crab_residuals(mp, ax)
+    plt.subplots_adjust(wspace=0.22)
+
+    out_dir = r'figures/residuals/'
+    os.makedirs(out_dir, exist_ok=True)
+    fig_file = os.path.join(out_dir, f'four_panel_residuals.png')
+
+    if fig is not None:
+        fig.savefig(fig_file,
+                    dpi=300,
+                    bbox_inches='tight')
+
+
+# %%
 def get_figures(nn_dir, classics_dir):
 
     files = os.listdir(classics_dir)
@@ -315,6 +368,17 @@ def get_figures(nn_dir, classics_dir):
                              dpi=300,
                              bbox_inches='tight')
 
+        out_dir = r'figures/residuals/'
+        os.makedirs(out_dir, exist_ok=True)
+
+        fig_pred_act = plot_dense_crab_residuals(mp, ax=None)
+        plt.subplots_adjust(wspace=0.22)
+
+        fig_crab_file = os.path.join(out_dir, f'{mp}-residuals.png')
+        fig_pred_act.savefig(fig_crab_file,
+                             dpi=300,
+                             bbox_inches='tight')
+
         plt.close('all')
 
 
@@ -349,4 +413,5 @@ if __name__ == '__main__':
     get_figures(nn_path, classics_path)
     multi_plots_lcs(nn_path, classics_path)
     multi_plots_preds()
+    multi_plots_residuals()
     get_test_results(nn_path)

@@ -14,6 +14,7 @@ from models.data import EDM_CsvLoader
 from models.neuralnetwrapper import NeuralNetWrapper
 
 from utils.utils import CONSTANTS
+from utils.get_compute_device import get_compute_device
 
 plt.rcParams.update({'font.size': 16})
 cons = CONSTANTS()
@@ -176,10 +177,9 @@ def predict_densenet(model_name, csv_pred):
                        f'DenseNet-CUSTOM_{model_name}.pth')
 
     model = load_densenet(info, batch_size)
-    if not torch.cuda.is_available():
-        checkpoint = torch.load(weights_pth, map_location=torch.device('cpu'))
-    else:
-        checkpoint = torch.load(weights_pth)
+    compute_device = get_compute_device()
+    checkpoint = torch.load(weights_pth, map_location=compute_device)
+
     model.load_checkpoint(checkpoint, model_name)
     input_values, predicted_values = model.predict(data_loader)
     return (input_values, predicted_values)

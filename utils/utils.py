@@ -16,9 +16,6 @@ plt.rcParams.update({'font.size': 16})
 
 
 # %%
-# score_summary_dir = r'data/score_summaries/Classics/Run_2020-02-15-120129.050473'
-# all_summaries = os.listdir(score_summary_dir)
-
 fig_dir = r'figures/Classics/'
 
 
@@ -81,7 +78,7 @@ class CONSTANTS():
                                     'GradientBoostingRegressor': 'GradBoost',
                                     'KNeighborsRegressor': 'kNN',
                                     'SVR': 'SVR',
-                                    'lSVR': 'lSVR',}
+                                    'lSVR': 'lSVR'}
 
 
 # %%
@@ -108,6 +105,7 @@ def xstr(s):
     else:
         return f'seed{str(s)}'
 
+
 def xstrh(s):
     if s is None:
         return ''
@@ -116,12 +114,10 @@ def xstrh(s):
 
 
 # %%
-# summaries_list = [file for file in all_summaries
-#                   if file.split('_')[0] == 'best']
-
 def get_path(score_summary_dir, filename):
     path = os.path.join(score_summary_dir, filename)
     return path
+
 
 def load_df(path):
     df = pd.read_csv(path)
@@ -147,9 +143,9 @@ def plot_training_curves(mae_train,
     # Plot training curve
     fig, ax1 = plt.subplots()
     ax1.plot(np.arange(0, len(mae_train), 1), mae_train,
-              'r--', marker='o', ms=4, alpha=0.5, label='train_mae')
+             'r--', marker='o', ms=4, alpha=0.5, label='train_mae')
     ax1.plot(np.arange(0, len(mae_val), 1), mae_val,
-              'b--', marker='s', ms=4, alpha=0.5, label='val_mae')
+             'b--', marker='s', ms=4, alpha=0.5, label='val_mae')
     ax1.axhline(mae_val_max, color='b', linestyle='--', alpha=0.3)
     ax1.set_xlabel('epochs')
     ax1.set_ylabel(f'Mean Absolute Error (MAE)')
@@ -162,9 +158,9 @@ def plot_training_curves(mae_train,
     ax2 = ax1.twinx()
     ax2.set_ylabel('r2')
     ax2.plot(np.arange(0, len(r2_train), 1), r2_train,
-              'r-', alpha=0.5, label='train_r2')
+             'r-', alpha=0.5, label='train_r2')
     ax2.plot(np.arange(0, len(r2_val), 1), r2_val,
-              'b-', alpha=0.5, label='val_r2')
+             'b-', alpha=0.5, label='val_r2')
     ax2.axhline(r2_val_max, color='b', alpha=0.3)
     ymin, ymax = (0.4, 1.0)
     ax2.set_ylim(ymin, ymax)
@@ -199,7 +195,7 @@ def plot_pred_act(y_act,
                   label=None,
                   outliers=False,
                   **kwargs):
-    fig = plt.figure(figsize=(6,6))
+    fig = plt.figure(figsize=(6, 6))
 
     y_act = np.array(y_act)
     y_pred = np.array(y_pred)
@@ -259,8 +255,8 @@ def plot_pred_act(y_act,
 
     return fig
 
-# %%
 
+# %%
 def publication_plot_pred_act(y_act,
                               y_pred,
                               mat_prop,
@@ -299,6 +295,65 @@ def publication_plot_pred_act(y_act,
     ax.set_xlabel(f'Actual {mp_sym_dict[mat_prop]} '
                   f'[{mp_units_dict[mat_prop]}]')
     ax.set_ylabel(f'Predicted {mp_sym_dict[mat_prop]} '
+                  f'[{mp_units_dict[mat_prop]}]')
+    ax.legend(loc='lower right')
+
+    minor_locator_x = AutoMinorLocator(2)
+    minor_locator_y = AutoMinorLocator(2)
+    ax.get_xaxis().set_minor_locator(minor_locator_x)
+    ax.get_yaxis().set_minor_locator(minor_locator_y)
+
+    ax.tick_params(right=True,
+                   top=True,
+                   direction='in',
+                   length=7)
+    ax.tick_params(which='minor',
+                   right=True,
+                   top=True,
+                   direction='in',
+                   length=4)
+
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+
+    return ax
+
+
+# %%
+
+def publication_plot_residuals(y_act,
+                               y_pred,
+                               mat_prop,
+                               model,
+                               ax):
+
+    cons = CONSTANTS()
+    mec = cons.crab_red
+    mfc = 'silver'
+    if model == 'DenseNet':
+        mec = cons.dense_blue
+        mfc = 'silver'
+
+    mp_sym_dict = cons.mp_sym_dict
+    mp_units_dict = cons.mp_units_dict
+
+    y_act = np.array(y_act)
+    y_pred = np.array(y_pred)
+
+    xmin = np.min([y_act]) * 0.9
+    xmax = np.max([y_act]) / 0.9
+
+    y_err = y_pred - y_act
+    ymin = np.min([y_err]) * 0.9
+    ymax = np.max([y_err]) / 0.9
+
+    ax.plot(y_act, y_err, 'o', ms=10, mec=mec, mfc=mfc,
+            alpha=0.35, label=model)
+    ax.plot([xmin, xmax], [0, 0], 'k--', alpha=0.7)
+
+    ax.set_xlabel(f'Actual {mp_sym_dict[mat_prop]} '
+                  f'[{mp_units_dict[mat_prop]}]')
+    ax.set_ylabel(f'Residual {mp_sym_dict[mat_prop]} '
                   f'[{mp_units_dict[mat_prop]}]')
     ax.legend(loc='lower right')
 
@@ -380,7 +435,7 @@ def plot_best_gs_models_ep(summaries_list,
             df_file['elem_prop'] = file.split('_')[1]
             df = pd.concat([df, df_file], axis=0)
 
-        fig, ax = plt.subplots(figsize=(6,6))
+        fig, ax = plt.subplots(figsize=(6, 6))
         for i, ep in enumerate(elem_props):
             df_temp = df.loc[df['elem_prop'] == ep]
             plt.plot(df_temp['estimator'],
