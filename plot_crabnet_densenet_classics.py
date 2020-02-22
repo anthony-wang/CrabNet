@@ -29,13 +29,9 @@ r2_min = data_values[:-1, r2_cols].astype(float).min()
 # %%
 def color_scale_r2(value, min_val, max_val):
     n_colors = 100
-    pal = sns.diverging_palette(20, 220, sep=1, l=50, n=n_colors)
-    pal = sns.light_palette("#0165fc", n_colors=n_colors * 1.5)
-    pal = sns.light_palette((260, 75, 60), input="husl", n_colors=n_colors * 1.0)
-    # pal = sns.color_palette("Greens", n_colors=n_colors)
-    # pal = sns.light_palette("bright blue", input='xkcd', n_colors=n_colors * 1.8)
-    pal = sns.light_palette((210, 80, 50), input="husl", n_colors=n_colors * 1.0)
-    # pal = sns.color_palette("RdBu", n_colors=n_colors, desat=0.6)
+    pal = sns.light_palette((210, 80, 50),
+                            input="husl",
+                            n_colors=n_colors * 1.0)
     diff = value - min_val
     idx = int((n_colors - 1) * (diff) / (max_val - min_val))
     color = pal[idx]
@@ -44,8 +40,9 @@ def color_scale_r2(value, min_val, max_val):
 
 def color_scale_mae(value, min_val, max_val):
     n_colors = 100
-    pal = sns.light_palette("blue", n_colors=n_colors * 1.5)
-    pal = sns.light_palette((210, 80, 50), input="husl", n_colors=n_colors * 1.0)
+    pal = sns.light_palette((210, 80, 50),
+                            input="husl",
+                            n_colors=n_colors * 1.0)
     diff = value - min_val
     idx = int((n_colors - 1) * (diff) / (max_val - min_val))
     color = pal[idx]
@@ -69,41 +66,74 @@ for i, array in enumerate(data_values):
     for j, value in enumerate(array):
         if i == len(data_values) - 1:
             # print(value)
-            plt.text(j + (0.5 * cell_w), i + (0.5 * cell_h), f'{value}',
-                    verticalalignment='center',
-                    horizontalalignment='center')
-            rect = Rectangle([j, i], 1 * cell_w, 1 * cell_h, facecolor='15', edgecolor='k')
+            plt.text(j + (0.5 * cell_w),
+                     i + (0.5 * cell_h),
+                     f'{value}',
+                     verticalalignment='center',
+                     horizontalalignment='center')
+            rect = Rectangle([j, i],
+                             1 * cell_w,
+                             1 * cell_h,
+                             facecolor='15',
+                             edgecolor='k')
             ax.add_patch(rect)
         else:
             if j > 0:
                 value = float(value)
             if j in [j * cell_w for j in r2_idx]:
-                rect = Rectangle([j, i], 1 * cell_w, 1 * cell_h, facecolor=color_scale_r2(value, r2_min, r2_max), edgecolor='k')
+                rect = Rectangle([j, i],
+                                 1 * cell_w,
+                                 1 * cell_h,
+                                 facecolor=color_scale_r2(value, r2_min, r2_max),
+                                 edgecolor='k')
             elif j in [j * cell_w for j in mae_idx]:
-                rect = Rectangle([j, i], 1 * cell_w, 1 * cell_h, facecolor=color_scale_mae(value, mae_min, mae_max), edgecolor='k')
+                rect = Rectangle([j, i],
+                                 1 * cell_w,
+                                 1 * cell_h,
+                                 facecolor=color_scale_mae(value, mae_min, mae_max),
+                                 edgecolor='k')
             else:
-                rect = Rectangle([j, i], 1 * cell_w, 1 * cell_h, facecolor='w', edgecolor='k')
+                rect = Rectangle([j, i],
+                                 1 * cell_w,
+                                 1 * cell_h,
+                                 facecolor='w', edgecolor='k')
             ax.add_patch(rect)
             if j == 0:
                 if value == 'property':
-                    plt.text(j + (0.5 * cell_w), i + (0.5 * cell_h), f'{value}',
-                    verticalalignment='center',
-                    horizontalalignment='center')
+                    plt.text(j + (0.5 * cell_w),
+                             i + (0.5 * cell_h),
+                             f'{value}',
+                             verticalalignment='center',
+                             horizontalalignment='center')
                 else:
-                    plt.text(j + (0.5 * cell_w), i + (0.5 * cell_h), f'{cons.mp_sym_dict[value]}',
+                    plt.text(j + (0.5 * cell_w),
+                             i + (0.5 * cell_h),
+                             f'{cons.mp_sym_dict[value]}',
                              verticalalignment='center',
                              horizontalalignment='center')
             else:
-                plt.text(j + (0.5 * cell_w), i + (0.5 * cell_h), f'{value:0.3f}',
+                plt.text(j + (0.5 * cell_w),
+                         i + (0.5 * cell_h),
+                         f'{value:0.3f}',
                          verticalalignment='center',
                          horizontalalignment='center')
 
 i = data_values.shape[0] + 1
-rect = Rectangle([0, data_values.shape[0]], data_values.shape[-1], 1, facecolor='15', edgecolor='k')
+rect = Rectangle([0, data_values.shape[0]],
+                 data_values.shape[-1],
+                 1,
+                 facecolor='15',
+                 edgecolor='k')
 ax.add_patch(rect)
-rect = Rectangle([0, data_values.shape[0]], 1, 1, facecolor='15', edgecolor='k')
+rect = Rectangle([0, data_values.shape[0]],
+                 1, 1,
+                 facecolor='15',
+                 edgecolor='k')
 ax.add_patch(rect)
-rect = Rectangle([1, data_values.shape[0]], 3, 1, facecolor='15', edgecolor='k')
+rect = Rectangle([1, data_values.shape[0]],
+                 3, 1,
+                 facecolor='15',
+                 edgecolor='k')
 ax.add_patch(rect)
 ax.add_patch(rect)
 
