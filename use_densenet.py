@@ -6,6 +6,8 @@ warnings.filterwarnings('ignore',
 
 import torch
 
+import pandas as pd
+
 import matplotlib.pyplot as plt
 
 from datetime import datetime
@@ -28,7 +30,15 @@ def list_saved_models():
     weight_names = os.listdir('data/user_properties/trained_weights')
     model_names = [name.split('CUSTOM_')[-1].split('-checkpoint')[0] for
                    name in weight_names]
-    print(f'current saved models: {model_names}')
+    model_names = [name.split('-')[-1] if name.split('-')[-1].split('.pth')[0]
+                   in cons.mps else name for name in model_names]
+    model_names = list(sorted(set(model_names)))
+    model_names = [mod.replace('.pth', '') for mod in model_names]
+    model_names = pd.Series(model_names)
+    header = '_________ saved models: _________'
+    model_names = model_names.to_frame(name=header).to_string()
+    print(f'{model_names}')
+
 
 def load_densenet(mat_prop, batch_size):
     """
@@ -87,6 +97,7 @@ def load_densenet(mat_prop, batch_size):
     #return a "skeleton" of the model. These weights are untrained
     return model
 
+
 def train_densenet(model_name, csv_train, csv_val=None, val_frac=0.25):
     """
     Function to train densenet. This function allows a user to easily train
@@ -137,6 +148,7 @@ def train_densenet(model_name, csv_train, csv_val=None, val_frac=0.25):
     df_mp, df_progress = model.fit(train_loader,
                                    val_loader,
                                    epochs=epochs)
+
 
 def predict_densenet(model_name, csv_pred):
     """
