@@ -1,2 +1,0 @@
-id,model_type,num_network_params,elem_prop,mat_prop,epochs,fit_time,mae_train,mse_train,r2_train,mae_val,mse_val,r2_val,rng_seed
-2020-02-17-213757.678890-seed9-CrabNet-element-ael_debye_temperature,CrabNet,62605,element,ael_debye_temperature,1001,408.7901201248169,19.564346541473633,1109.0707600578246,0.9700035868318873,43.23308559152532,5202.799605148387,0.8251463490215394,9

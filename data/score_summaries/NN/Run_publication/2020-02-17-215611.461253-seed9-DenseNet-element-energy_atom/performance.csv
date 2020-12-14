@@ -1,2 +1,0 @@
-id,model_type,num_network_params,elem_prop,mat_prop,epochs,fit_time,mae_train,mse_train,r2_train,mae_val,mse_val,r2_val,rng_seed
-2020-02-17-215611.461253-seed9-DenseNet-element-energy_atom,DenseNet,71937,element,energy_atom,1001,1028.0125999450684,0.22382788247094662,0.1167760765326946,0.960296583493586,0.24781704623691528,0.14096747775135593,0.9532930434693716,9

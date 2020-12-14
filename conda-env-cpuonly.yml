@@ -1,0 +1,14 @@
+name: crabnet
+channels:
+  - pytorch
+  - conda-forge
+dependencies:
+  - python=3.8.*
+  - numpy
+  - pandas
+  - scikit-learn
+  - matplotlib
+  - seaborn
+  - pytorch=1.7.*
+  - cpuonly
+  - tqdm

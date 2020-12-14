@@ -18,4 +18,4 @@ def get_compute_device(force_cpu=False, prefer_last=True):
 
     else:
         compute_device = torch.device('cuda')
-        return torch.device('cuda')
+        return torch.device('cuda:0')
