@@ -1,2 +1,0 @@
-id,model_type,num_network_params,elem_prop,mat_prop,epochs,fit_time,mae_train,mse_train,r2_train,mae_val,mse_val,r2_val,rng_seed
-2020-02-17-215224.579479-seed9-DenseNet-element-ael_shear_modulus_vrh,DenseNet,71937,element,ael_shear_modulus_vrh,1001,221.8600971698761,11.231959415924821,303.2458313482968,0.8310467526723966,13.995993256675156,517.8640559984183,0.6795457161793507,9

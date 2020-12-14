@@ -1,2 +1,0 @@
-id,model_type,num_network_params,elem_prop,mat_prop,epochs,fit_time,mae_train,mse_train,r2_train,mae_val,mse_val,r2_val,rng_seed
-2020-02-17-214447.852346-seed9-CrabNet-element-ael_bulk_modulus_vrh,CrabNet,62605,element,ael_bulk_modulus_vrh,1001,454.953311920166,5.723790127501543,62.45893629239989,0.9865601018945497,11.656110303074707,349.97072541098635,0.9214150707668849,9

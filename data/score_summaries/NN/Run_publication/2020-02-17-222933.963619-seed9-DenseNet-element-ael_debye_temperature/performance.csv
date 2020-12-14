@@ -1,2 +1,0 @@
-id,model_type,num_network_params,elem_prop,mat_prop,epochs,fit_time,mae_train,mse_train,r2_train,mae_val,mse_val,r2_val,rng_seed
-2020-02-17-222933.963619-seed9-DenseNet-element-ael_debye_temperature,DenseNet,71937,element,ael_debye_temperature,1001,223.8569905757904,39.77761083779291,5750.406814123587,0.8444719806045662,46.222656861983516,6476.6378090420085,0.7823356936800885,9

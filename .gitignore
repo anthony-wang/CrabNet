@@ -1,9 +1,9 @@
-# Additional data directories and saved numpy arrays
-data/score_summaries/Classics/*
-data/score_summaries/NN/*
-!data/score_summaries/Classics/Run_publication
-!data/score_summaries/NN/Run_publication
-
+# Data directories, PyTorch checkpoints and saved numpy arrays
+models/trained_models/*.pth
+models/trained_models*
+models/*.zip
+models/*.7z
+# figures/lc_data/*.png
 *.npz
 
 # Pylint code analysis stuff
@@ -124,6 +124,9 @@ venv.bak/
 # Spyder project settings
 .spyderproject
 .spyproject
+
+# VSCode project settings
+.vscode
 
 # Rope project settings
 .ropeproject

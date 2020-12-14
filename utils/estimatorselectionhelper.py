@@ -47,12 +47,13 @@ class EstimatorSelectionHelper:
         self.scoring_val2key = {scoring[k] : k for k in scoring}
 
 
-    def plot_gridsearch(self, model_name, elem_prop, mat_prop, gs):
-        fig_dir = r'figures/GridSearchCV/'
+    def plot_gridsearch(self, model_name, elem_prop, mat_prop, fig_dir, gs):
         test_metric = 'mean_test_neg_MAE'
 
         # Get CV parameters and results
         dims = pd.DataFrame(gs.cv_results_['params'])
+        # for RandomForest: convert max_depth = None to string 'None'
+        dims.loc[dims['max_depth'].isnull(), 'max_depth'] = 'None'
         dims['score'] = gs.cv_results_[test_metric]
         col_names = dims.columns.tolist()
         dims = dims.pivot(col_names[0], col_names[1], col_names[2])
@@ -71,7 +72,7 @@ class EstimatorSelectionHelper:
         print(f'saved figure {model_name}_{elem_prop}_{mat_prop}.png')
 
 
-    def score_summary(self, ep, mp, sort_by='mean_test_r2'):
+    def score_summary(self, ep, mp, fig_dir, sort_by='mean_test_r2'):
         print('***************** gridsearch done *****************')
         scoring_keys = self.scoring.keys()
 
@@ -92,7 +93,7 @@ class EstimatorSelectionHelper:
         # Plot gridsearch results for each model/param/elem_prop/mat_prop
         # combination, and save dataframe of best results
         for m in self.grid_searches:
-            self.plot_gridsearch(m, ep, mp, self.grid_searches[m])
+            self.plot_gridsearch(m, ep, mp, fig_dir, self.grid_searches[m])
 
             df_model = pd.DataFrame(columns=all_columns)
             print(f'Parsing results for {m}')

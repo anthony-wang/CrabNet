@@ -2,7 +2,7 @@ import os
 
 from time import time
 
-from models.data import get_cbfv
+from utils.utils import get_cbfv
 
 from utils.estimatorselectionhelper import EstimatorSelectionHelper
 
@@ -13,7 +13,8 @@ def modelselectionhelper(models,
                          elem_props,
                          mat_props_dir,
                          mat_props,
-                         out_dir,
+                         metrics_dir,
+                         fig_dir,
                          scoring=None,
                          n_jobs=1,
                          cv=3,
@@ -35,13 +36,22 @@ def modelselectionhelper(models,
             trainpath = os.path.join(mat_props_dir, mp, 'train.csv')
             valpath = os.path.join(mat_props_dir, mp, 'val.csv')
 
-            X, y, form = get_cbfv(trainpath, elem_prop=ep)
-            X_val, y_val, form_val = get_cbfv(valpath, elem_prop=ep)
+            if (not os.path.exists(trainpath) or
+                not os.path.exists(valpath)):
+                trainpath = os.path.join(mat_props_dir, mp, 'train0.csv')
+                valpath = os.path.join(mat_props_dir, mp, 'val0.csv')
+
+            X, y, form, skipped = get_cbfv(trainpath, elem_prop=ep)
+            X_val, y_val, form_val, skipped_val = get_cbfv(valpath, elem_prop=ep)
 
             # Sample the dataset for faster gridsearch
-            X = X.sample(n=1000)
-            y = y.loc[X.index]
-            form = form.loc[X.index]
+            n_samples = 2000
+            if X.shape[0] > n_samples:
+                print(f'Sampling training data to {n_samples} samples '
+                      f'to speed up initial gridsearch')
+                X = X.sample(n=n_samples)
+                y = y.loc[X.index]
+                form = form.loc[X.index]
 
             helper1 = EstimatorSelectionHelper(models, params)
             helper1.fit(X,
@@ -53,7 +63,8 @@ def modelselectionhelper(models,
                         verbose=verbose,
                         random_seed=random_seed)
 
-            output = helper1.score_summary(ep, mp, sort_by='mean_test_r2')
+            output = helper1.score_summary(ep, mp, fig_dir,
+                                           sort_by='mean_test_r2')
             score_summary, best_models = output
 
             print('\n************************************************')
@@ -61,10 +72,10 @@ def modelselectionhelper(models,
             print('saving score summary and best models files')
             print('************************************************')
 
-            outpath_all = os.path.join(out_dir, f'{ep}_{mp}.csv')
+            outpath_all = os.path.join(metrics_dir, f'{ep}_{mp}.csv')
             score_summary.to_csv(outpath_all, index=False)
 
-            outpath_best = os.path.join(out_dir, f'best_{ep}_{mp}.csv')
+            outpath_best = os.path.join(metrics_dir, f'best_{ep}_{mp}.csv')
             best_models.to_csv(outpath_best, index=False)
 
             dt_mp = time() - ti_mp

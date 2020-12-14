@@ -2,21 +2,32 @@ import os
 
 import pandas as pd
 import numpy as np
-
+from tqdm import tqdm
 import matplotlib.pyplot as plt
-from matplotlib.ticker import AutoMinorLocator
-
-from sklearn.metrics import r2_score
-
 import seaborn as sns
+from collections import OrderedDict, defaultdict
+
+import torch
+from torch.optim.optimizer import Optimizer
+from torch.utils.data import Dataset, DataLoader
+from torch import nn
+
+from utils.composition import generate_features, _element_composition
+
+from sklearn.preprocessing import StandardScaler, Normalizer
 
 import json
 
 plt.rcParams.update({'font.size': 16})
 
+RNG_SEED = 42
+torch.manual_seed(RNG_SEED)
+np.random.seed(RNG_SEED)
 
 # %%
 fig_dir = r'figures/Classics/'
+data_type_torch = torch.float32
+data_type_np = np.float32
 
 
 # %%
@@ -27,32 +38,130 @@ class CONSTANTS():
         self.colors = list(sns.color_palette("Set1", n_colors=7, desat=0.5))
 
         self.markers = ['o', 'x', 's', '^', 'D', 'P', '1', '2', '3',
-                        '4',  'p', '*', 'h', 'H', '+', 'd',
-                        '|', '_']
+                        '4',  'p', '*', 'h', 'H', '+', 'd', '|', '_']
 
         self.eps = ['oliynyk',
                     'jarvis',
                     'mat2vec',
                     'onehot',
-                    'magpie']
+                    'magpie',
+                    'random_200']
 
-        self.mps = ['ael_shear_modulus_vrh',
-                    'energy_atom',
-                    'agl_log10_thermal_expansion_300K',
-                    'agl_thermal_conductivity_300K',
-                    'Egap',
-                    'ael_debye_temperature',
-                    'ael_bulk_modulus_vrh']
+        self.benchmark_props = [
+            'aflow__ael_bulk_modulus_vrh',
+            'aflow__ael_debye_temperature',
+            'aflow__ael_shear_modulus_vrh',
+            'aflow__agl_thermal_conductivity_300K',
+            'aflow__agl_thermal_expansion_300K',
+            'aflow__Egap',
+            'aflow__energy_atom',
+            'CritExam__Ed',
+            'CritExam__Ef',
+            'mp_bulk_modulus',
+            'mp_elastic_anisotropy',
+            'mp_e_hull',
+            'mp_mu_b',
+            'mp_shear_modulus',
+            'OQMD_Bandgap',
+            'OQMD_Energy_per_atom',
+            'OQMD_Formation_Enthalpy',
+            'OQMD_Volume_per_atom',
+             ]
 
-        self.mp_names = ['Log shear modulus',
-                         'Ab initio energy per atom',
-                         'Log thermal expansion',
-                         'Log thermal conductivity',
-                         'Band gap',
-                         'Debye temperature',
-                         'Bulk modulus']
+        self.benchmark_names = [
+            'AFLOW Bulk modulus',
+            'AFLOW Debye temperature',
+            'AFLOW Shear modulus',
+            'AFLOW Thermal conductivity',
+            'AFLOW Thermal expansion',
+            'AFLOW Band gap',
+            'AFLOW Energy per atom',
+            'Bartel Decomposition (Ed)',
+            'Bartel Formation (Ef)',
+            'MP Bulk modulus',
+            'MP Elastic anisotropy',
+            'MP Energy above convex hull',
+            'MP Magnetic moment',
+            'MP Shear modulus',
+            'OQMD Band gap',
+            'OQMD Energy per atom',
+            'OQMD Formation enthalpy',
+            'OQMD Volume per atom'
+            ]
 
-        self.mp_names_dict = dict(zip(self.mps, self.mp_names))
+        self.matbench_props = [
+            'castelli',
+            'dielectric',
+            'elasticity_log10(G_VRH)',
+            'elasticity_log10(K_VRH)',
+            'expt_gap',
+            'expt_is_metal',
+            'glass',
+            'jdft2d',
+            'mp_e_form',
+            'mp_gap',
+            'mp_is_metal',
+            'phonons',
+            'steels_yield',
+            ]
+
+        self.matbench_names = [
+            'Castelli perovskites',
+            'Refractive index',
+            'Shear modulus (log10)',
+            'Bulk modulus (log10)',
+            'Experimental band gap',
+            'Experimental metallicity',
+            'Experimental glass formation',
+            'DFT Exfoliation energy',
+            'MP Formation energy',
+            'MP Band gap',
+            'MP Metallicity',
+            'Phonon peak',
+            'Steels yield'
+            ]
+
+        self.benchmark_names_dict = dict(zip(self.benchmark_props,
+                                             self.benchmark_names))
+        self.matbench_names_dict = dict(zip(self.matbench_props,
+                                            self.matbench_names))
+
+        self.mb_units_dict = {
+            'castelli': 'eV/unit cell',
+            'dielectric': 'unitless',
+            'elasticity_log10(G_VRH)': 'log(GPa)',
+            'elasticity_log10(K_VRH)': 'log(GPa)',
+            'expt_gap': 'eV',
+            'expt_is_metal': 'binary',
+            'glass': 'binary',
+            'jdft2d': 'meV/atom',
+            'mp_e_form': 'eV/atom',
+            'mp_gap': 'eV',
+            'mp_is_metal': 'binary',
+            'phonons': '$cm^{−1}$',
+            'steels_yield': 'MPa',
+            }
+
+        self.bm_units_dict = {
+            'aflow__ael_bulk_modulus_vrh': None,
+            'aflow__ael_debye_temperature': None,
+            'aflow__ael_shear_modulus_vrh': None,
+            'aflow__agl_thermal_conductivity_300K': None,
+            'aflow__agl_thermal_expansion_300K': None,
+            'aflow__Egap': None,
+            'aflow__energy_atom': None,
+            'CritExam__Ed': None,
+            'CritExam__Ef': None,
+            'mp_bulk_modulus': None,
+            'mp_elastic_anisotropy': None,
+            'mp_e_hull': None,
+            'mp_mu_b': None,
+            'mp_shear_modulus': None,
+            'OQMD_Bandgap': None,
+            'OQMD_Energy_per_atom': None,
+            'OQMD_Formation_Enthalpy': None,
+            'OQMD_Volume_per_atom': None,
+            }
 
         self.mp_units_dict = {'energy_atom': 'eV/atom',
                               'ael_shear_modulus_vrh': 'GPa',
@@ -70,6 +179,10 @@ class CONSTANTS():
                             'agl_thermal_conductivity_300K': '$\\kappa$',
                             'agl_log10_thermal_expansion_300K': '$\\alpha$'}
 
+        self.classification_list = ['mp_is_metal',
+                                    'expt_is_metal',
+                                    'glass']
+
         self.classic_models_dict = {'Ridge': 'Ridge',
                                     'SGDRegressor': 'SGD',
                                     'ExtraTreesRegressor': 'ExtraTrees',
@@ -80,8 +193,98 @@ class CONSTANTS():
                                     'SVR': 'SVR',
                                     'lSVR': 'lSVR'}
 
+        self.atomic_symbols = ['None', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N',
+                               'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si', 'P',
+                               'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V',
+                               'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga'
+                               'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr', 'Y',
+                               'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag',
+                               'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs',
+                               'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu',
+                               'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu',
+                               'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au',
+                               'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr',
+                               'Ra', 'Ac', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am',
+                               'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr',
+                               'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg',
+                               'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
+
+        self.idx_symbol_dict = {(i): sym for
+                                i, sym in enumerate(self.atomic_symbols)}
+
 
 # %%
+def get_cbfv(path, elem_prop='oliynyk', scale=False):
+    """
+    Loads the compound csv file and featurizes it, then scales the features
+    using StandardScaler.
+
+    Parameters
+    ----------
+    path : str
+        DESCRIPTION.
+    elem_prop : str, optional
+        DESCRIPTION. The default is 'oliynyk'.
+
+    Returns
+    -------
+    X_scaled : TYPE
+        DESCRIPTION.
+    y : TYPE
+        DESCRIPTION.
+    formula : TYPE
+        DESCRIPTION.
+
+    """
+    df = pd.read_csv(path)
+    if 'formula' not in df.columns.values.tolist():
+        df['formula'] = df['cif_id'].str.split('_ICSD').str[0]
+    # elem_prop = 'mat2vec'
+    # elem_prop = 'oliynyk'
+    mini = False
+    # mini = True
+    X, y, formula, skipped = generate_features(df, elem_prop, mini=mini)
+    if scale:
+        # scale each column of data to have a mean of 0 and a variance of 1
+        scaler = StandardScaler()
+        # normalize each row in the data
+        normalizer = Normalizer()
+
+        X_scaled = scaler.fit_transform(X)
+        X_scaled = pd.DataFrame(normalizer.fit_transform(X_scaled),
+                                columns=X.columns.values,
+                                index=X.index.values)
+
+        return X_scaled, y, formula, skipped
+    else:
+        return X, y, formula, skipped
+
+# %%
+def BCEWithLogitsLoss(output, log_std, target):
+    loss = nn.functional.binary_cross_entropy_with_logits(output, target)
+    return loss
+
+
+def RobustL1(output, log_std, target):
+    """
+    Robust L1 loss using a lorentzian prior. Allows for estimation
+    of an aleatoric uncertainty.
+    """
+    absolute = torch.abs(output - target)
+    loss = np.sqrt(2.0) * absolute * torch.exp(-log_std) + log_std
+    return torch.mean(loss)
+
+
+def RobustL2(output, log_std, target):
+    """
+    Robust L2 loss using a gaussian prior. Allows for estimation
+    of an aleatoric uncertainty.
+    """
+    squared = torch.pow(output - target, 2.0)
+    loss = 0.5 * squared * torch.exp(-2.0 * log_std) + log_std
+    return torch.mean(loss)
+
+
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters()if p.requires_grad)
 
@@ -97,388 +300,463 @@ class NumpyEncoder(json.JSONEncoder):
             return float(obj)
         return json.JSONEncoder.default(self, obj)
 
-
-# %%
-def xstr(s):
-    if s is None:
-        return ''
-    else:
-        return f'seed{str(s)}'
-
-
-def xstrh(s):
-    if s is None:
-        return ''
-    else:
-        return xstr(f'{s}-')
-
-
-# %%
-def get_path(score_summary_dir, filename):
-    path = os.path.join(score_summary_dir, filename)
-    return path
-
-
-def load_df(path):
-    df = pd.read_csv(path)
-    return df
-
-
-# %%
-def plot_training_curves(mae_train,
-                         mse_train,
-                         r2_train,
-                         mae_val,
-                         mse_val,
-                         r2_val,
-                         mae_val_max,
-                         r2_val_max,
-                         model_type,
-                         epoch,
-                         elem_prop,
-                         mat_prop,
-                         dataset,
-                         optim):
-
-    # Plot training curve
-    fig, ax1 = plt.subplots()
-    ax1.plot(np.arange(0, len(mae_train), 1), mae_train,
-             'r--', marker='o', ms=4, alpha=0.5, label='train_mae')
-    ax1.plot(np.arange(0, len(mae_val), 1), mae_val,
-             'b--', marker='s', ms=4, alpha=0.5, label='val_mae')
-    ax1.axhline(mae_val_max, color='b', linestyle='--', alpha=0.3)
-    ax1.set_xlabel('epochs')
-    ax1.set_ylabel(f'Mean Absolute Error (MAE)')
-    ax1.set_ylim(0, 2 * np.mean(mae_val))
-
-    ax1.tick_params(left=True, top=True, direction='in', length=7)
-    ax1.tick_params(which='minor', left=True, top=True,
-                    direction='in', length=4)
-
-    ax2 = ax1.twinx()
-    ax2.set_ylabel('r2')
-    ax2.plot(np.arange(0, len(r2_train), 1), r2_train,
-             'r-', alpha=0.5, label='train_r2')
-    ax2.plot(np.arange(0, len(r2_val), 1), r2_val,
-             'b-', alpha=0.5, label='val_r2')
-    ax2.axhline(r2_val_max, color='b', alpha=0.3)
-    ymin, ymax = (0.4, 1.0)
-    ax2.set_ylim(ymin, ymax)
-    yticks = np.arange(ymin, ymax + 1e-3, 0.1)
-    ax2.set_yticks(yticks)
-
-    ax2.tick_params(right=True, direction='in', length=7)
-    ax2.tick_params(which='minor', right=True, direction='in', length=4)
-
-    plt.title(f'net: {model_type}, epoch: {epoch}, '
-              f'{elem_prop} with {mat_prop}\n'
-              f'dataset: {dataset}\n'
-              f'optim: {optim}',
-              fontsize=16)
-
-    # Get all plot labels for legend and label legend
-    lines, labels = ax1.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax2.legend(lines + lines2,
-               labels + labels2,
-               loc='lower left',
-               prop={'size': 12})
-
-    return fig
+def count_gs_param_combinations(d):
+    cnt_dict = OrderedDict({})
+    # array = []
+    if (isinstance(d, (list))
+        and not isinstance(d, (bool))):
+        return len(d), cnt_dict
+    elif (isinstance(d, (int, float, complex))
+          and not isinstance(d, (bool))):
+        return 1, cnt_dict
+    elif (isinstance(d, (bool))
+          or isinstance(d, (str))):
+        return 1, cnt_dict
+    elif d is None:
+        return 1, cnt_dict
+    elif isinstance(d, (dict, OrderedDict)):
+        keys = d.keys()
+        for k in keys:
+            array = []
+            subd = d[k]
+            array.append(count_gs_param_combinations(subd)[0])
+            cnt = np.prod(array)
+            cnt_dict[k] = cnt
+        return np.prod(list(cnt_dict.values())), cnt_dict
+    return cnt, cnt_dict
 
 
 # %%
-def plot_pred_act(y_act,
-                  y_pred,
-                  epoch=None,
-                  addn_title_text=None,
-                  label=None,
-                  outliers=False,
-                  **kwargs):
-    fig = plt.figure(figsize=(6, 6))
+class Scaler():
+    def __init__(self, data):
+        self.data = torch.as_tensor(data)
+        self.mean = torch.mean(self.data)
+        self.std = torch.std(self.data)
 
-    y_act = np.array(y_act)
-    y_pred = np.array(y_pred)
+    def scale(self, data):
+        data = torch.as_tensor(data)
+        data_scaled = (data - self.mean) / self.std
+        return data_scaled
 
-    max_max = np.max([np.max(y_act), np.max(y_pred)])
-    min_min = np.min([np.min(y_act), np.min(y_pred)])
+    def unscale(self, data_scaled):
+        data_scaled = torch.as_tensor(data_scaled)
+        data = data_scaled * self.std + self.mean
+        return data
 
-    plt.plot(y_act, y_pred, 'o', alpha=0.3, mfc='grey', label=label)
-    plt.plot([max_max, min_min], [max_max, min_min], 'k-', alpha=0.7)
+    def state_dict(self):
+        return {'mean': self.mean,
+                'std': self.std}
 
-    # get and plot outliers
-    if outliers:
-        outlier_bools = get_outlier_bools(y_act, y_pred, **kwargs)
-        plt.plot(y_act[outlier_bools],
-                 y_pred[outlier_bools],
-                 'x',
-                 mfc='red',
-                 alpha=0.5,
-                 label='outliers')
+    def load_state_dict(self, state_dict):
+        self.mean = state_dict['mean']
+        self.std = state_dict['std']
 
-    plt.xlim(min_min, max_max)
-    plt.ylim(min_min, max_max)
 
-    ylocs, ylabels = plt.yticks()
+class DummyScaler():
+    def __init__(self, data):
+        self.data = torch.as_tensor(data)
+        self.mean = torch.mean(self.data)
+        self.std = torch.std(self.data)
 
-    title_str = f'Performance'
-    if epoch or epoch == 0:
-        title_str = title_str + f', epoch: {epoch}'
-    if addn_title_text:
-        title_str = title_str + f', {addn_title_text}'
-    plt.title(title_str)
-    plt.xlabel('actual')
-    plt.ylabel('predicted')
-    plt.legend(loc='lower right')
+    def scale(self, data):
+        return torch.as_tensor(data)
 
-    minor_locator_x = AutoMinorLocator(2)
-    minor_locator_y = AutoMinorLocator(2)
-    ax = plt.gca()
-    ax.get_xaxis().set_minor_locator(minor_locator_x)
-    ax.get_yaxis().set_minor_locator(minor_locator_y)
+    def unscale(self, data_scaled):
+        return torch.as_tensor(data_scaled)
 
-    plt.yticks(ylocs)
-    plt.xticks(ylocs)
+    def state_dict(self):
+        return {'mean': self.mean,
+                'std': self.std}
 
-    plt.tick_params(right=True,
-                    top=True,
-                    direction='in',
-                    length=7)
-    plt.tick_params(which='minor',
-                    right=True,
-                    top=True,
-                    direction='in',
-                    length=4)
-
-    plt.xlim(min_min, max_max)
-    plt.ylim(min_min, max_max)
-
-    return fig
+    def load_state_dict(self, state_dict):
+        self.mean = state_dict['mean']
+        self.std = state_dict['std']
 
 
 # %%
-def publication_plot_pred_act(y_act,
-                              y_pred,
-                              mat_prop,
-                              model,
-                              ax):
-
-    cons = CONSTANTS()
-    mec = cons.crab_red
-    mfc = 'silver'
-    if model == 'DenseNet':
-        mec = cons.dense_blue
-        mfc = 'silver'
-
-    mp_sym_dict = cons.mp_sym_dict
-    mp_units_dict = cons.mp_units_dict
-
-    y_act = np.array(y_act)
-    y_pred = np.array(y_pred)
-
-    ymin = np.min([y_act]) * 0.9
-    ymax = np.max([y_act]) / 0.9
-    xmin = ymin
-    xmax = ymax
-
-    ax.plot(y_act, y_pred, 'o', ms=10, mec=mec, mfc=mfc,
-            alpha=0.35, label=model)
-    ax.plot([xmin, xmax], [ymin, ymax], 'k--', alpha=0.7, label='Ideal')
-
-    r2 = r2_score(y_act, y_pred)
-    ax.text(xmin + np.abs(xmin-xmax)*0.04,
-            ymax - np.abs(ymin-ymax)*0.05,
-            f'$r^2$ = {r2:0.3f}',
-            horizontalalignment='left',
-            verticalalignment='top')
-
-    ax.set_xlabel(f'Actual {mp_sym_dict[mat_prop]} '
-                  f'[{mp_units_dict[mat_prop]}]')
-    ax.set_ylabel(f'Predicted {mp_sym_dict[mat_prop]} '
-                  f'[{mp_units_dict[mat_prop]}]')
-    ax.legend(loc='lower right')
-
-    minor_locator_x = AutoMinorLocator(2)
-    minor_locator_y = AutoMinorLocator(2)
-    ax.get_xaxis().set_minor_locator(minor_locator_x)
-    ax.get_yaxis().set_minor_locator(minor_locator_y)
-
-    ax.tick_params(right=True,
-                   top=True,
-                   direction='in',
-                   length=7)
-    ax.tick_params(which='minor',
-                   right=True,
-                   top=True,
-                   direction='in',
-                   length=4)
-
-    ax.set_xlim(xmin, xmax)
-    ax.set_ylim(ymin, ymax)
-
-    return ax
-
-
-# %%
-
-def publication_plot_residuals(y_act,
-                               y_pred,
-                               mat_prop,
-                               model,
-                               ax):
-
-    cons = CONSTANTS()
-    mec = cons.crab_red
-    mfc = 'silver'
-    if model == 'DenseNet':
-        mec = cons.dense_blue
-        mfc = 'silver'
-
-    mp_sym_dict = cons.mp_sym_dict
-    mp_units_dict = cons.mp_units_dict
-
-    y_act = np.array(y_act)
-    y_pred = np.array(y_pred)
-
-    xmin = np.min([y_act]) * 0.9
-    xmax = np.max([y_act]) / 0.9
-
-    y_err = y_pred - y_act
-    ymin = np.min([y_err]) * 0.9
-    ymax = np.max([y_err]) / 0.9
-
-    ax.plot(y_act, y_err, 'o', ms=10, mec=mec, mfc=mfc,
-            alpha=0.35, label=model)
-    ax.plot([xmin, xmax], [0, 0], 'k--', alpha=0.7)
-
-    ax.set_xlabel(f'Actual {mp_sym_dict[mat_prop]} '
-                  f'[{mp_units_dict[mat_prop]}]')
-    ax.set_ylabel(f'Residual {mp_sym_dict[mat_prop]} '
-                  f'[{mp_units_dict[mat_prop]}]')
-    ax.legend(loc='lower right')
-
-    minor_locator_x = AutoMinorLocator(2)
-    minor_locator_y = AutoMinorLocator(2)
-    ax.get_xaxis().set_minor_locator(minor_locator_x)
-    ax.get_yaxis().set_minor_locator(minor_locator_y)
-
-    ax.tick_params(right=True,
-                   top=True,
-                   direction='in',
-                   length=7)
-    ax.tick_params(which='minor',
-                   right=True,
-                   top=True,
-                   direction='in',
-                   length=4)
-
-    ax.set_xlim(xmin, xmax)
-    ax.set_ylim(ymin, ymax)
-
-    return ax
-
-
-# %%
-def get_outlier_bools(y_act, y_pred, threshold=0.4):
-    y_act = np.array(y_act)
-    y_pred = np.array(y_pred)
-    threshold = float(threshold)
-
-    bool_outliers1 = np.abs(np.abs(y_act - y_pred) / y_act) > threshold
-    bool_outliers2 = np.abs(np.abs(y_act - y_pred) / y_act) > threshold
-    bool_outliers = bool_outliers1 + bool_outliers2
-
-    bool_outliers = y_pred > y_act*(1+threshold) + y_pred < y_act*(1-threshold)
-
-    print(f'number of outliers: {np.sum(bool_outliers)}')
-
-    return bool_outliers
-
-
-# %%
-def plot_best_gs_models_ep(summaries_list,
-                           score_metric,
-                           mat_props,
-                           elem_props,
-                           score_summary_dir,
-                           fig_dir):
+class EDMDataset(Dataset):
     """
-    Plot the best gridsearch test scores for each property for each
-    featurization scheme, grouped by model.
+    Get X and y from EDM dataset.
+    """
+
+    def __init__(self, dataset, n_comp):
+        self.data = dataset
+        self.n_comp = n_comp
+
+        self.X = np.array(self.data[0])
+        self.y = np.array(self.data[1])
+        self.formula = np.array(self.data[2])
+
+        self.shape = [(self.X.shape), (self.y.shape), (self.formula.shape)]
+
+    def __str__(self):
+        string = f'EDMDataset with X.shape {self.X.shape}'
+        return string
+
+    def __len__(self):
+        return self.X.shape[0]
+
+    def __getitem__(self, idx):
+        X = self.X[idx, :, :]
+        y = self.y[idx]
+        formula = self.formula[idx]
+
+        X = torch.as_tensor(X, dtype=data_type_torch)
+        y = torch.as_tensor(y, dtype=data_type_torch)
+
+        return (X, y, formula)
+
+
+def get_edm(path, elem_prop='mat2vec', n_elements='infer', inference=False,
+            verbose=True):
+    """
+    Build a element descriptor matrix.
+
     Parameters
     ----------
-    summaries_list : TYPE
+    path : str
         DESCRIPTION.
-    score_metric : TYPE
-        DESCRIPTION.
-    mat_props : TYPE
-        DESCRIPTION.
-    elem_props : TYPE
-        DESCRIPTION.
+    elem_prop : str, optional
+        DESCRIPTION. The default is 'oliynyk'.
+
     Returns
     -------
-    Saves plots in the plot directory.
+    X_scaled : TYPE
+        DESCRIPTION.
+    y : TYPE
+        DESCRIPTION.
+    formula : TYPE
+        DESCRIPTION.
+
     """
-    cons = CONSTANTS()
-    colors = cons.colors
-    markers = cons.markers
-    classic_models_dict = cons.classic_models_dict
-    mp_names_dict = cons.mp_names_dict
+    all_symbols = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na',
+                   'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc',
+                   'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga',
+                   'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr', 'Y', 'Zr', 'Nb',
+                   'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb',
+                   'Te', 'I', 'Xe', 'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm',
+                   'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu',
+                   'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl',
+                   'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th', 'Pa',
+                   'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md',
+                   'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg',
+                   'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
 
-    for mp in mat_props:
-        files = [file for file in summaries_list if mp in file]
-        df = pd.DataFrame()
+    # mat_prop = 'phonons'
+    # i = 0
+    # path = rf'data\matbench_cv\{mat_prop}\test{i}.csv'
+    df = pd.read_csv(path)
+    if 'formula' not in df.columns.values.tolist():
+        df['formula'] = df['cif_id'].str.split('_ICSD').str[0]
 
-        for file in files:
-            path = get_path(score_summary_dir, file)
-            df_file = pd.read_csv(path)
-            df_file['elem_prop'] = file.split('_')[1]
-            df = pd.concat([df, df_file], axis=0)
+    df['count'] = [len(_element_composition(form)) for form in df['formula']]
+    df = df[df['count'] != 1]  # drop pure elements
+    if not inference:
+        df = df.groupby(by='formula').mean().reset_index()  # mean of duplicates
 
-        fig, ax = plt.subplots(figsize=(6, 6))
-        for i, ep in enumerate(elem_props):
-            df_temp = df.loc[df['elem_prop'] == ep]
-            plt.plot(df_temp['estimator'],
-                     df_temp['mean_test_r2'],
-                     color=colors[i],
-                     marker=markers[i],
-                     alpha=0.8,
-                     label=ep)
+    list_ohm = [OrderedDict(_element_composition(form))
+                for form in df['formula']]
+    list_ohm = [OrderedDict(sorted(mat.items(), key=lambda x:-x[1]))
+                for mat in list_ohm]
 
-        plt.xticks(np.arange(len(df_temp['estimator'])),
-                   [classic_models_dict.get(k) for k in df_temp['estimator']],
-                   rotation=45)
+    y = df['target'].values.astype(data_type_np)
+    formula = df['formula'].values
+    if n_elements == 'infer':
+        n_elements = 16
 
-        plt.tick_params(left=True, top=True, right=True,
-                        direction='in', length=7)
-        plt.tick_params(which='minor', left=True, top=True, right=True,
-                        direction='in', length=4)
+    edm_array = np.zeros(shape=(len(list_ohm),
+                                n_elements,
+                                len(all_symbols)+1),
+                         dtype=data_type_np)
+    elem_num = np.zeros(shape=(len(list_ohm), n_elements), dtype=data_type_np)
+    elem_frac = np.zeros(shape=(len(list_ohm), n_elements), dtype=data_type_np)
+    for i, comp in enumerate(tqdm(list_ohm,
+                                  desc="Generating EDM",
+                                  unit="formulae",
+                                  disable=not verbose)):
+        for j, (elem, count) in enumerate(list_ohm[i].items()):
+            if j == n_elements:
+                # Truncate EDM representation to n_elements
+                break
+            try:
+                edm_array[i, j, all_symbols.index(elem) + 1] = count
+                elem_num[i, j] = all_symbols.index(elem) + 1
+            except ValueError:
+                print(f'skipping composition {comp}')
 
-        minor_locator_y = AutoMinorLocator(2)
-        ax.yaxis.set_minor_locator(minor_locator_y)
+    # Scale features
+    for i in range(edm_array.shape[0]):
+        frac = (edm_array[i, :, :].sum(axis=-1)
+                / (edm_array[i, :, :].sum(axis=-1)).sum())
+        elem_frac[i, :] = frac
 
-        plt.legend(title='Featurization scheme', prop={'size': 14})
-        plt.ylabel(score_metric)
-        plt.xlabel('model')
-        plt.ylim(-0.4, 1)
-        plt.title(mp_names_dict[mp], fontsize=18)
+    if n_elements == 16:
+        n_elements = np.max(np.sum(elem_frac > 0, axis=1, keepdims=True))
+        elem_num = elem_num[:, :n_elements]
+        elem_frac = elem_frac[:, :n_elements]
 
-        outpath = os.path.join(fig_dir, f'{mp}.png')
-        plt.savefig(outpath, dpi=300, bbox_inches='tight')
-        print('done saving', outpath)
-        plt.close('all')
+    elem_num = elem_num.reshape(elem_num.shape[0], elem_num.shape[1], 1)
+    elem_frac = elem_frac.reshape(elem_frac.shape[0], elem_frac.shape[1], 1)
+    out = np.concatenate((elem_num, elem_frac), axis=1)
+
+    return out, y, formula
+
+
+# %%
+class EDM_CsvLoader():
+    """
+    Parameters
+    ----------
+    csv_data: str
+        name of csv file containing cif and properties
+    csv_val: str
+        name of csv file containing cif and properties
+    val_frac: float, optional (default=0.75)
+        train/val ratio if val_file not given
+    batch_size: float, optional (default=64)
+        Step size for the Gaussian filter
+    random_state: int, optional (default=123)
+        Random seed for sampling the dataset. Only used if validation data is
+        not given.
+    shuffle: bool (default=True)
+        Whether to shuffle the datasets or not
+    """
+
+    def __init__(self, csv_data, batch_size=64,
+                 num_workers=1, random_state=0, shuffle=True,
+                 pin_memory=True, n_elements=6, inference=False,
+                 verbose=True):
+        self.csv_data = csv_data
+        self.main_data = list(get_edm(self.csv_data, elem_prop='mat2vec',
+                                      n_elements=n_elements,
+                                      inference=inference,
+                                      verbose=verbose))
+        self.n_train = len(self.main_data[0])
+        self.n_elements = self.main_data[0].shape[1]//2
+
+        self.batch_size = batch_size
+        self.pin_memory = pin_memory
+        self.shuffle = shuffle
+        self.random_state = random_state
+
+    def get_data_loaders(self, inference=False):
+        '''
+        Input the dataset, get train test split
+        '''
+        shuffle = not inference  # don't shuffle data when inferencing
+        pred_dataset = EDMDataset(self.main_data, self.n_elements)
+        pred_loader = DataLoader(pred_dataset,
+                                 batch_size=self.batch_size,
+                                 pin_memory=self.pin_memory,
+                                 shuffle=shuffle)
+        return pred_loader
+
+
+# %%
+class Lamb(Optimizer):
+    r"""Implements Lamb algorithm.
+    It has been proposed in `Large Batch Optimization for Deep Learning:
+        Training BERT in 76 minutes`_.
+    Arguments:
+        params (iterable): iterable of parameters to optimize or dicts defining
+            parameter groups
+        lr (float, optional): learning rate (default: 1e-3)
+        betas (Tuple[float, float], optional): coefficients used for computing
+            running averages of gradient and its square (default: (0.9, 0.999))
+        eps (float, optional): term added to the denominator to improve
+            numerical stability (default: 1e-8)
+        weight_decay (float, optional): weight decay (L2 penalty) (default: 0)
+        adam (bool, optional): always use trust ratio = 1, which turns this
+            into Adam. Useful for comparison purposes.
+        _Large Batch Optimization for Deep Learning: Training BERT in 76
+            minutes:
+        https://arxiv.org/abs/1904.00962
+    """
+
+    def __init__(self,
+                 params,
+                 lr=1e-3,
+                 betas=(0.9, 0.999),
+                 eps=1e-6,
+                 weight_decay=0,
+                 adam=False,
+                 min_trust=None):
+        if not 0.0 <= lr:
+            raise ValueError(f"Invalid learning rate: {lr}")
+        if not 0.0 <= eps:
+            raise ValueError(f"Invalid epsilon value: {eps}")
+        if not 0.0 <= betas[0] < 1.0:
+            raise ValueError(f"Invalid beta parameter at index 0: {betas[0]}")
+        if not 0.0 <= betas[1] < 1.0:
+            raise ValueError(f"Invalid beta parameter at index 1: {betas[1]}")
+        if min_trust and not 0.0 <= min_trust < 1.0:
+            raise ValueError(f"Minimum trust range from 0 to 1: {min_trust}")
+        defaults = dict(lr=lr, betas=betas, eps=eps, weight_decay=weight_decay)
+        self.adam = adam
+        self.min_trust = min_trust
+        super(Lamb, self).__init__(params, defaults)
+
+    def step(self, closure=None):
+        """Performs a single optimization step.
+        Arguments:
+            closure (callable, optional): A closure that reevaluates the model
+                and returns the loss.
+        """
+        loss = None
+        if closure is not None:
+            loss = closure()
+
+        for group in self.param_groups:
+            for p in group["params"]:
+                if p.grad is None:
+                    continue
+                grad = p.grad.data
+                if grad.is_sparse:
+                    err_msg = "Lamb does not support sparse gradients, " + \
+                        "consider SparseAdam instad."
+                    raise RuntimeError(err_msg)
+
+                state = self.state[p]
+
+                # State initialization
+                if len(state) == 0:
+                    state["step"] = 0
+                    # Exponential moving average of gradient values
+                    state["exp_avg"] = torch.zeros_like(p.data)
+                    # Exponential moving average of squared gradient values
+                    state["exp_avg_sq"] = torch.zeros_like(p.data)
+
+                exp_avg, exp_avg_sq = state["exp_avg"], state["exp_avg_sq"]
+                beta1, beta2 = group["betas"]
+
+                state["step"] += 1
+
+                # Decay the first and second moment running average coefficient
+                # m_t
+                exp_avg.mul_(beta1).add_((1 - beta1) * grad)
+                # v_t
+                # exp_avg_sq.mul_(beta2).addcmul_((1 - beta2) * grad *
+                exp_avg_sq.mul_(beta2).addcmul_(grad, grad, value=(1 - beta2))
+
+                # Paper v3 does not use debiasing.
+                # bias_correction1 = 1 - beta1 ** state['step']
+                # bias_correction2 = 1 - beta2 ** state['step']
+                # Apply bias to lr to avoid broadcast.
+                step_size = group[
+                    "lr"
+                ]  # * math.sqrt(bias_correction2) / bias_correction1
+
+                weight_norm = p.data.pow(2).sum().sqrt().clamp(0, 10)
+
+                adam_step = exp_avg / exp_avg_sq.sqrt().add(group["eps"])
+                if group["weight_decay"] != 0:
+                    adam_step.add_(group["weight_decay"], p.data)
+
+                adam_norm = adam_step.pow(2).sum().sqrt()
+                if weight_norm == 0 or adam_norm == 0:
+                    trust_ratio = 1
+                else:
+                    trust_ratio = weight_norm / adam_norm
+                if self.min_trust:
+                    trust_ratio = max(trust_ratio, self.min_trust)
+                state["weight_norm"] = weight_norm
+                state["adam_norm"] = adam_norm
+                state["trust_ratio"] = trust_ratio
+                if self.adam:
+                    trust_ratio = 1
+
+                p.data.add_(-step_size * trust_ratio * adam_step)
+
+        return loss
+
+
+class Lookahead(Optimizer):
+    def __init__(self, base_optimizer, alpha=0.5, k=6):
+        if not 0.0 <= alpha <= 1.0:
+            raise ValueError(f"Invalid slow update rate: {alpha}")
+        if not 1 <= k:
+            raise ValueError(f"Invalid lookahead steps: {k}")
+        defaults = dict(lookahead_alpha=alpha, lookahead_k=k, lookahead_step=0)
+        self.base_optimizer = base_optimizer
+        self.param_groups = self.base_optimizer.param_groups
+        self.defaults = base_optimizer.defaults
+        self.defaults.update(defaults)
+        self.state = defaultdict(dict)
+        # manually add our defaults to the param groups
+        for name, default in defaults.items():
+            for group in self.param_groups:
+                group.setdefault(name, default)
+
+    def update_slow(self, group):
+        for fast_p in group["params"]:
+            if fast_p.grad is None:
+                continue
+            param_state = self.state[fast_p]
+            if "slow_buffer" not in param_state:
+                param_state["slow_buffer"] = torch.empty_like(fast_p.data)
+                param_state["slow_buffer"].copy_(fast_p.data)
+            slow = param_state["slow_buffer"]
+            slow.add_(group["lookahead_alpha"] * (fast_p.data - slow))
+            fast_p.data.copy_(slow)
+
+    def sync_lookahead(self):
+        for group in self.param_groups:
+            self.update_slow(group)
+
+    def step(self, closure=None):
+        # assert id(self.param_groups) == id(self.base_optimizer.param_groups)
+        loss = self.base_optimizer.step(closure)
+        for group in self.param_groups:
+            group["lookahead_step"] += 1
+            if group["lookahead_step"] % group["lookahead_k"] == 0:
+                self.update_slow(group)
+        return loss
+
+    def state_dict(self):
+        fast_state_dict = self.base_optimizer.state_dict()
+        slow_state = {
+            (id(k) if isinstance(k, torch.Tensor) else k): v
+            for k, v in self.state.items()
+        }
+        fast_state = fast_state_dict["state"]
+        param_groups = fast_state_dict["param_groups"]
+        return {
+            "state": fast_state,
+            "slow_state": slow_state,
+            "param_groups": param_groups,
+        }
+
+    def load_state_dict(self, state_dict):
+        fast_state_dict = {
+            "state": state_dict["state"],
+            "param_groups": state_dict["param_groups"],
+        }
+        self.base_optimizer.load_state_dict(fast_state_dict)
+
+        # We want to restore the slow state, but share param_groups reference
+        # with base_optimizer. This is a bit redundant but least code
+        slow_state_new = False
+        if "slow_state" not in state_dict:
+            print("Loading state_dict from optimizer without Lookahead applied.")
+            state_dict["slow_state"] = defaultdict(dict)
+            slow_state_new = True
+        slow_state_dict = {
+            "state": state_dict["slow_state"],
+            "param_groups": state_dict[
+                "param_groups"
+            ],  # this is pointless but saves code
+        }
+        super(Lookahead, self).load_state_dict(slow_state_dict)
+        self.param_groups = (
+            self.base_optimizer.param_groups
+        )  # make both ref same container
+        if slow_state_new:
+            # reapply defaults to catch missing lookahead specific ones
+            for name, default in self.defaults.items():
+                for group in self.param_groups:
+                    group.setdefault(name, default)
 
 
 # %%
 if __name__ == '__main__':
     os.makedirs(fig_dir, exist_ok=True)
-
-    # score_metric = 'mean_test_r2'
-    # cons = CONSTANTS()
-    # mat_props = cons.mps
-    # elem_props = cons.eps
-    # plot_best_gs_models_ep(summaries_list,
-    #                        score_metric,
-    #                        mat_props,
-    #                        elem_props,
-    #                        fig_dir)

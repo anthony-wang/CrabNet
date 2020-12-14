@@ -1,2 +1,0 @@
-id,model_type,num_network_params,elem_prop,mat_prop,epochs,fit_time,mae_train,mse_train,r2_train,mae_val,mse_val,r2_val,rng_seed
-2020-02-17-222019.911934-seed9-DenseNet-element-Egap,DenseNet,71937,element,Egap,1001,552.2205154895782,0.6605774365593853,0.7512166267078884,0.6972447090521978,0.7602132945525995,0.9729152534617178,0.5977708243549656,9

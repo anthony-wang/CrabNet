@@ -1,2 +1,0 @@
-id,model_type,num_network_params,elem_prop,mat_prop,epochs,fit_time,mae_train,mse_train,r2_train,mae_val,mse_val,r2_val,rng_seed
-2020-02-17-205040.305741-seed9-CrabNet-element-energy_atom,CrabNet,62605,element,energy_atom,1001,1261.8105370998383,0.11540167880331886,0.034738311141695496,0.9881891079325483,0.13701664922052295,0.058175991403293645,0.9807244653522666,9
