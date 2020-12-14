@@ -63,7 +63,7 @@ We recommend that you create a separate Python environment for this project.
 To reproduce the publication results, please follow the below steps.
 Results will slightly vary.
 It is a known phenomena that PyTorch model training may slightly vary on different computers and hardware.
-Trained weights are provided at """""""""HYPERLINK TO THIS LOCATION""""""""".
+Trained weights are provided at http://doi.org/10.5281/zenodo.4321168.
 
 As a reference, with a desktop computer with an Intel<sup>TM</sup> i9-9900K processor, 32GB of RAM, and two NVIDIA RTX 2080 Ti's, training our largest network (OQMD) takes roughly two hours.
 
