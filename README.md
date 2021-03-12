@@ -14,8 +14,16 @@ This software package implements the Compositionally-Restricted Attention-Based 
 
 ## How to cite
 Please cite the following work if you want to use `CrabNet`:
-```
-(insert BibTeX citation)
+```bibtex
+@misc{Wang2020crabnet,
+ author = {Wang, Anthony Yu-Tung and Kauwe, Steven K. and Murdock, Ryan J. and Sparks, Taylor D.},
+ date = {2020},
+ title = {Compositionally-Restricted Attention-Based Network for Materials Property Prediction: CrabNet},
+ urldate = {2020-12-17},
+ doi = {10.26434/chemrxiv.11869026},
+ howpublished = {ChemRxiv},
+ year = {2020}
+}
 ```
 
 
