@@ -124,7 +124,7 @@ if __name__ == '__main__':
         maes = []
         for i in range(n_splits):
             print(f'property: {mat_prop}, cv {i}')
-            # model = get_model(mat_prop, i, classification, verbose=True)
+            model = get_model(mat_prop, i, classification, verbose=True)
             print('=====================================================')
             print('calculating test mae')
             model_test, t_mae = save_results(mat_prop, i, classification,

@@ -120,7 +120,7 @@ if __name__ == '__main__':
         if mat_prop in classification_list:
             classification = True
         print(f'property: {mat_prop}')
-        # model = get_model(mat_prop, classification, verbose=True)
+        model = get_model(mat_prop, classification, verbose=True)
         print('=====================================================')
         print('calculating test mae')
         model_test, t_mae = save_results(mat_prop, classification,
@@ -129,5 +129,3 @@ if __name__ == '__main__':
         model_val, v_mae = save_results(mat_prop, classification,
                                         'val.csv', verbose=False)
         print('=====================================================')
-
-
