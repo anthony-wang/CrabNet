@@ -60,7 +60,7 @@ def to_csv(output, save_name):
     # parse output and save to csv
     act, pred, formulae, uncertainty = output
     df = pd.DataFrame([formulae, act, pred, uncertainty]).T
-    df.columns = ['composition', 'target', 'pred-0', 'uncertainty']
+    df.columns = ['formula', 'actual', 'predicted', 'uncertainty']
     save_path = 'publication_predictions/mat2vec_benchmark__predictions'
     # save_path = 'publication_predictions/onehot_benchmark__predictions'
     # save_path = 'publication_predictions/random_200_benchmark__predictions'
@@ -120,7 +120,7 @@ if __name__ == '__main__':
         if mat_prop in classification_list:
             classification = True
         print(f'property: {mat_prop}')
-        # model = get_model(mat_prop, classification, verbose=True)
+        model = get_model(mat_prop, classification, verbose=True)
         print('=====================================================')
         print('calculating test mae')
         model_test, t_mae = save_results(mat_prop, classification,
@@ -129,5 +129,3 @@ if __name__ == '__main__':
         model_val, v_mae = save_results(mat_prop, classification,
                                         'val.csv', verbose=False)
         print('=====================================================')
-
-

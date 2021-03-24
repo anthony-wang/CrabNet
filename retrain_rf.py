@@ -10,6 +10,8 @@ from ast import literal_eval
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 
+from joblib import dump, load
+
 from utils.utils import get_cbfv
 from utils.utils import CONSTANTS
 
@@ -74,12 +76,13 @@ def get_best_model(df, mat_prop, sortby='mean_test_neg_MAE'):
 
 # %%
 if __name__ == '__main__':
-    metrics_dir = f'metrics/rf_gridsearch/'
     metrics_path = r'metrics/rf_gridsearch/'
 
     bm_predictions_path = r'metrics/rf_benchmark__predictions/'
     mb_predictions_path = r'metrics/rf_matbench__predictions/'
-    os.makedirs(metrics_dir, exist_ok=True)
+    clf_save_path = f'models/trained_rf/'
+    os.makedirs(clf_save_path, exist_ok=True)
+    os.makedirs(metrics_path, exist_ok=True)
     os.makedirs(bm_predictions_path, exist_ok=True)
     os.makedirs(mb_predictions_path, exist_ok=True)
 
@@ -152,6 +155,10 @@ if __name__ == '__main__':
             dt_model = time() - ti_model
             print(f'finished fitting {mat_prop} with {elem_prop} using {est_name}')
             print(f'fitting time: {dt_model:0.4f} s')
+
+            savepath = f'models/trained_rf/{mat_prop}.joblib'
+            print(f'Saving rf model {savepath}')
+            dump(estimator, savepath, compress=3, protocol=5)
 
             print(f'evaluating fitted model on whole trainset and testset')
             ti_eval = time()
@@ -232,6 +239,10 @@ if __name__ == '__main__':
                 print(f'finished fitting {mat_prop} with {elem_prop} using {est_name}')
                 print(f'fitting time: {dt_model:0.4f} s')
 
+                savepath = f'models/trained_rf/{mat_prop}_cv{cv}.joblib'
+                print(f'Saving rf model {savepath}')
+                dump(estimator, savepath, compress=3, protocol=5)
+
                 print(f'evaluating fitted model on whole trainset and testset')
                 ti_eval = time()
                 target_test = y_test
@@ -285,27 +296,6 @@ if __name__ == '__main__':
           f'{dt_retrain_classics:0.4g} s')
     print('*********** retrain_classics finished ***********')
 
-    outfile = os.path.join(metrics_dir, 'retrained_test_scores.csv')
+    outfile = os.path.join(metrics_path, 'retrained_test_scores.csv')
     df_retrain_results.to_csv(outfile, index=False)
 
-    # print('plotting test performance of the best model combinations')
-
-    # plot best model combination performance
-    # all_summaries = os.listdir(run_path)
-    # summaries_list = [file for file in all_summaries
-    #               if file.split('_')[0] == 'best']
-
-    # classics_fig_dir = r'figures/Classics/'
-    # os.makedirs(classics_fig_dir, exist_ok=True)
-    # score_metric = 'mean_test_r2'
-
-    # cons = CONSTANTS()
-    # mat_props = cons.mps
-    # elem_props = cons.eps
-
-    # plot_best_gs_models_ep(summaries_list,
-    #                        score_metric,
-    #                        mat_props,
-    #                        elem_props,
-    #                        run_path,
-    #                        classics_fig_dir)

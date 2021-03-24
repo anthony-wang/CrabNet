@@ -1,14 +1,6 @@
-import os
 import numpy as np
-import pandas as pd
-import seaborn as sns
-from tqdm import tqdm
 
 import torch
-from torch import nn
-
-from sklearn.model_selection import KFold
-from sklearn.metrics import roc_auc_score
 
 from crabnet.kingcrab import CrabNet
 from crabnet.model import Model
@@ -16,10 +8,6 @@ from utils.get_compute_device import get_compute_device
 from utils.composition import _element_composition
 
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-import matplotlib.cm as cm
-from matplotlib.ticker import AutoMinorLocator
-from matplotlib.colors import Normalize
 
 from collections import defaultdict
 
@@ -45,20 +33,21 @@ color = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','
 
 classification_list = []
 
-mat_prop = 'OQMD_Bandgap'
-simple=False
+num = ''
+mat_prop = 'aflow__Egap'
 
 # Get the TorchedCrabNet architecture loaded
 model = Model(CrabNet().to(compute_device), model_name=f'{mat_prop}')
 if True:
-    model.load_network(f'{mat_prop}.pth')
-    model.model_name = f'{mat_prop}'
+    model.load_network(f'{mat_prop}{num}.pth')
+    model.model_name = f'{mat_prop}{num}'
 
 if mat_prop in classification_list:
     model.classification = True
 
-mat_prop = 'OQMD_Bandgap'
-test_data = rf'data\benchmark_data\{mat_prop}\val.csv'
+mat_prop = 'aflow__Egap'
+test_data = rf'data\benchmark_data\{mat_prop}\train.csv'
+# test_data = rf'data\matbench_cv\{mat_prop}\train{num}.csv'
 
 model.load_data(test_data, batch_size=2**0)  # data is reloaded to model.data_loader
 
@@ -77,8 +66,6 @@ simple_tracker = {i:[] for i in range(119)}
 variance_tracker = {i:[] for i in range(119)}
 element_tracker = {i:[] for i in range(119)}
 composition_tracker = {}
-
-os.makedirs('figures/fudge_factors', exist_ok=True)
 
 alls_dict = defaultdict(list)
 binaries_dict = defaultdict(list)
@@ -181,7 +168,8 @@ for key, systems in binaries_dict.items():
             prediction = model.scaler.unscale(prediction)
             prediction = prediction * ~mask
             uncertainty = uncertainty * ~mask
-            uncertainty = torch.exp(uncertainty.mean(dim=1)) * model.scaler.std
+            uncertainty_mean = (uncertainty * ~mask).sum() / (~mask).sum()
+            uncertainty = torch.exp(uncertainty_mean) * model.scaler.std
 
             min_val = prediction[:, :, :][prediction != 0].min().cpu().detach().numpy()
             max_val = prediction[:, :, :][prediction != 0].max().cpu().detach().numpy()
@@ -189,7 +177,7 @@ for key, systems in binaries_dict.items():
             pred_elem1 = prediction[:, 0, :].cpu().detach().numpy().ravel()
             pred_elem2 = prediction[:, 1, :].cpu().detach().numpy().ravel()
             act_val = y.detach().cpu().numpy().ravel()
-            uncertainty_tracker.append(uncertainty[0][0].cpu().detach().numpy())
+            uncertainty_tracker.append(uncertainty.cpu().detach().numpy())
             frac_tracker.append(frac[0, :1].cpu().detach().numpy())
             elem1_tracker.append(pred_elem1)
             elem2_tracker.append(pred_elem2)
@@ -205,12 +193,7 @@ for key, systems in binaries_dict.items():
         plt.plot(frac_tracker, elem1_tracker, '-.', label=f'{elem1_name} contribution', color=color[0], linewidth=2)
         plt.plot(frac_tracker, elem2_tracker, '--', label=f'{elem2_name} contribution', color=color[1], linewidth=2)
         plt.plot(frac_tracker, pred_tracker, '-', color='gray', label='Prediction', linewidth=2)
-        for og_values in og_points:
-            plt.plot(og_values[0], og_values[1], 'X', color='none', mec='k', ms=13)
-        plt.plot(og_values[0], og_values[1], 'kX', color='red', mec='k', ms=13, label='SiO$_2$')
-        plt.plot(og_values[0], og_values[1], 'kX', color='none', mec='k', ms=13, label='Validation data')
         plt.xlim(0, 1)
-        plt.ylim(-0.5, 6.3)
         plt.ylabel('$Si_xO_{1-x}$ Band Gap (eV)')
         plt.xlabel('$x$')
 

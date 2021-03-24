@@ -6,12 +6,10 @@ from torch import nn
 import matplotlib.pyplot as plt
 from time import time
 from utils.get_compute_device import get_compute_device
-from utils.utils import (Lamb, Lookahead, RobustL1, BCEWithLogitsLoss,
-                         EDM_CsvLoader, Scaler, DummyScaler, count_parameters)
+from utils.utils import (EDM_CsvLoader)
 
 from crabnet.kingcrab import CrabNet
 from crabnet.model import Model
-from utils.get_compute_device import get_compute_device
 
 compute_device = get_compute_device(prefer_last=True)
 print(f'Running on compute device: {compute_device}')
@@ -55,7 +53,7 @@ edm_loader = EDM_CsvLoader(csv_data=file_name,
 data_loader = edm_loader.get_data_loaders(inference=True)
 
 
-
+# %%
 class Embedder(nn.Module):
     def __init__(self, vocab_size, d_model):
         super().__init__()
@@ -113,6 +111,7 @@ class FractionalEncoder(nn.Module):
         pe[:, 1::2] = torch.cos(x / torch.pow(50, 2 * fraction[:, 1::2] / self.d_model))
         pe = self.register_buffer('pe', pe)
 
+
     def forward(self, x):
         x = x.clone()
         if self.log10:
@@ -125,6 +124,8 @@ class FractionalEncoder(nn.Module):
 
         return out
 
+
+# %%
 ti = time()
 for i, data in enumerate(data_loader):
     X, y, formula = data
@@ -132,7 +133,6 @@ for i, data in enumerate(data_loader):
     src = src.to(compute_device, dtype=torch.long, non_blocking=True)
     frac = frac.to(compute_device, dtype=data_type, non_blocking=True)
     y = y.to(compute_device, dtype=data_type, non_blocking=True)
-    # print(i, formula)
 
 X, y, formula = data_loader.dataset[23]
 src, frac = X.chunk(2, dim=0)
@@ -152,24 +152,8 @@ frac[:, :] = 0
 frac[0, :] = 0.6
 frac[1, :] = 0.4
 
-# for i in range(6):
-#     frac[i] = 1/(10**i)
-# frac[:, 0] = 1.0
-# frac[:, 1] = 0.1
-# frac[:, 2] = 0.01
-# frac[:, 3] = 0.001
-# frac[:, 4] = 0.0001
-# frac[:, 5] = 0.00001
-
-# src = src[src != 0]
-# frac = frac[frac != 0]
-
 vocab_size = 118
 d_model = 512
-
-# embedder = Embedder(vocab_size, d_model)
-# pe = FractionalEncoder(d_model, max_seq_len=500, log10=False)
-# ple = FractionalEncoder(d_model, max_seq_len=500, log10=True)
 
 embedder = model.model.encoder.embed
 pe = model.model.encoder.pe
@@ -186,8 +170,6 @@ pe_tensor[:, :, :d_model//2] = pe(frac)
 ple_tensor[:, :, d_model//2:] = ple(frac)
 
 x_cpu = x.cpu().detach().numpy()
-# pe_tensor_cpu = pe_tensor.cpu().detach().numpy()[0]
-# ple_tensor_cpu = ple_tensor.cpu().detach().numpy()[0]
 pe_tensor_cpu = pe(frac).cpu().detach().numpy()
 ple_tensor_cpu = ple(frac).cpu().detach().numpy()
 
@@ -206,12 +188,7 @@ frac = frac.squeeze(1)
 src = src.squeeze(1)
 
 
-# x_cpu = pd.DataFrame(x_cpu).sort_values(0, axis=1).values
-# x_cpu = pd.DataFrame(x_cpu).sort_values(1, axis=1).values
-# x_cpu = pd.DataFrame(x_cpu).sort_values(2, axis=1).values
-
 # %%
-
 # colors = ['#7fc97f', '#beaed4', '#fdc086', 'r', 'g', 'steelblue']
 colors = ['#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5','#ffed6f']
 nrows = len(src)
@@ -228,7 +205,6 @@ plt.tick_params(which='major', right=True, top=True, direction='in', length=6)
 plt.tick_params(which='minor', right=True, top=True, direction='in', length=4)
 plt.show()
 
-#
 
 fig, axes = plt.subplots(nrows, 1, sharex=True, sharey=True, figsize=(8, 8))
 for i, f in enumerate(frac):
@@ -240,7 +216,6 @@ plt.tick_params(which='major', right=True, top=True, direction='in', length=6)
 plt.tick_params(which='minor', right=True, top=True, direction='in', length=4)
 plt.show()
 
-#
 
 fig, axes = plt.subplots(nrows, 1, sharex=True, sharey=True, figsize=(8, 8))
 for i, f in enumerate(frac):
@@ -269,4 +244,3 @@ for i, f in enumerate(frac):
 plt.tick_params(which='major', right=True, top=True, direction='in', length=6)
 plt.tick_params(which='minor', right=True, top=True, direction='in', length=4)
 plt.show()
-

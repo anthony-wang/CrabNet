@@ -1,6 +1,6 @@
 # Data directories, PyTorch checkpoints and saved numpy arrays
+models/trained_rf/*.joblib
 models/trained_models/*.pth
-models/trained_models*
 models/*.zip
 models/*.7z
 # figures/lc_data/*.png
