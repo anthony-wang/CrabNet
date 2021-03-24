@@ -4,7 +4,6 @@ import os
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-import matplotlib.cm as cm
 from matplotlib.colors import Normalize
 import matplotlib.patheffects as path_effects
 import seaborn as sns
@@ -14,11 +13,8 @@ from crabnet.model import Model
 from utils.get_compute_device import get_compute_device
 
 import torch
-from torch import nn
 
 from utils.utils import CONSTANTS
-
-import gc
 
 compute_device = get_compute_device()
 cons = CONSTANTS()

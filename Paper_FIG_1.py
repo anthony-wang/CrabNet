@@ -5,10 +5,9 @@ import numpy as np
 from crabnet.kingcrab import CrabNet
 from crabnet.model import Model
 from utils.get_compute_device import get_compute_device
-from benchmark_crabnet import load_model, get_results
+from benchmark_crabnet import get_results
 
 import torch
-from torch import nn
 
 from utils.utils import CONSTANTS
 
@@ -23,7 +22,7 @@ model = Model(CrabNet(**crabnet_params, compute_device=compute_device).to(comput
 model.load_network(f'{mat_prop}.pth')
 
 # Load the data you want to predict with
-test_data = rf'data\benchmark_data\{mat_prop}\train.csv'
+test_data = rf'data\benchmark_data\{mat_prop}\val.csv'
 model.load_data(test_data)  # data is reloaded to model.data_loader
 output = model.predict(model.data_loader)  # predict the data saved here
 
@@ -77,6 +76,7 @@ for layer in range(N):
 
 attn_data = attn_data.detach().cpu().numpy()
 data_loader = model.data_loader
+train_loader = model.train_loader
 
 
 # %%
@@ -290,9 +290,6 @@ def plot_all_heads(data_loader, attn_mat, idx=0, layer=0, mask=True):
                     bbox_inches='tight', dpi=300)
         plt.show()
     return fig, fig_axes
-
-
-# %%
 
 
 # %%

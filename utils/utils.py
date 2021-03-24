@@ -236,7 +236,7 @@ def get_cbfv(path, elem_prop='oliynyk', scale=False):
         DESCRIPTION.
 
     """
-    df = pd.read_csv(path)
+    df = pd.read_csv(path, keep_default_na=False, na_values=[''])
     if 'formula' not in df.columns.values.tolist():
         df['formula'] = df['cif_id'].str.split('_ICSD').str[0]
     # elem_prop = 'mat2vec'
@@ -445,7 +445,7 @@ def get_edm(path, elem_prop='mat2vec', n_elements='infer', inference=False,
     # mat_prop = 'phonons'
     # i = 0
     # path = rf'data\matbench_cv\{mat_prop}\test{i}.csv'
-    df = pd.read_csv(path)
+    df = pd.read_csv(path, keep_default_na=False, na_values=[''])
     if 'formula' not in df.columns.values.tolist():
         df['formula'] = df['cif_id'].str.split('_ICSD').str[0]
 

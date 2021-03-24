@@ -5,9 +5,7 @@ import seaborn as sns
 from tqdm import tqdm
 
 import torch
-from torch import nn
 
-from sklearn.model_selection import KFold
 from sklearn.metrics import roc_auc_score
 
 from crabnet.kingcrab import CrabNet
@@ -17,7 +15,6 @@ from utils.get_compute_device import get_compute_device
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.cm as cm
-from matplotlib.ticker import AutoMinorLocator
 from matplotlib.colors import Normalize
 
 compute_device = get_compute_device()

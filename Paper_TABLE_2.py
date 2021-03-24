@@ -14,6 +14,9 @@ cons = CONSTANTS()
 
 for benchmark in [True, False]:
     df = pd.read_csv('metrics/all_metrics.csv')
+    drop = ['n_total', 'n_val',
+            'prop_train', 'prop_val', 'prop_test']
+    df = df.drop(columns=drop, axis=0)
     df.index = df['property'].values
 
     if benchmark:
@@ -28,6 +31,7 @@ for benchmark in [True, False]:
         properties = [p[:-4] for p in os.listdir(data_dir) if p[:-4] not in drop]
 
     data_values = df.loc[properties].values
+
 
     # %%
     def color_scale_r2(value, min_val, max_val):
