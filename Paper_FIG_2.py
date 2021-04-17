@@ -170,7 +170,12 @@ for data, in_frac  in zip(datas, in_fracs):
     other_dict = {i: [] for i in range(1, 119)}
 
     option = [0, 1, 2, 3, 'average']
-    head_option = option[0]
+    option_texts = ['a)', 'b)', 'c)', 'd)', 'average']
+
+    idx_plot = 0
+    head_option = option[idx_plot]
+    option_text = option_texts[idx_plot]
+
     for idx in range(len(data_loader.dataset)):
         map_data = get_attention(attn_mat, idx=idx, layer=layer, head=head_option)
         atom_fracs = get_atomic_fracs(data_loader, idx=idx)
@@ -244,16 +249,17 @@ for data, in_frac  in zip(datas, in_fracs):
                 color = 'silver'
             if row < 3:
                 row += 0.5
+            # element box
             rect = patches.Rectangle((column, row), rw, rh,
                                      linewidth=1.5,
                                      edgecolor='gray',
                                      facecolor=color,
                                      alpha=1)
-
+            # plot element text
             text = plt.text(column+rw/2, row+rw/2, symbol,
                      horizontalalignment='center',
                      verticalalignment='center',
-                     fontsize=16,
+                     fontsize=22,
                      fontweight='semibold', color='white')
 
             text.set_path_effects([path_effects.Stroke(linewidth=3,
@@ -300,6 +306,9 @@ for data, in_frac  in zip(datas, in_fracs):
                  verticalalignment='center',
                  fontweight='semibold',
                  fontsize=20, color='k')
+        # add annotation for subfigure numbering
+        plt.text(0.55, n_row+.1, option_text,
+                 fontweight='semibold', fontsize=38, color='k')
         ax.set_ylim(-0.15, n_row+.1)
         ax.set_xlim(0.85, n_column+1.1)
 
