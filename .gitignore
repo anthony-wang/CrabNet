@@ -3,7 +3,10 @@ models/trained_rf/*.joblib
 models/trained_models/*.pth
 models/*.zip
 models/*.7z
+
+
 # figures/lc_data/*.png
+figures/*.eps
 *.npz
 
 # Pylint code analysis stuff

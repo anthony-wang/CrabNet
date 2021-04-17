@@ -194,16 +194,17 @@ def plot(mat_prop, property_tracker):
             color = 'silver'
         if row < 3:
             row += 0.5
+        # element box
         rect = patches.Rectangle((column, row), rw, rh,
                                  linewidth=1.5,
                                  edgecolor='gray',
                                  facecolor=color,
                                  alpha=1)
-
+        # plot element text
         plt.text(column+rw/2, row+rw/2, symbol,
                  horizontalalignment='center',
                  verticalalignment='center',
-                 fontsize=20,
+                 fontsize=22,
                  fontweight='semibold', color='k')
 
         ax.add_patch(rect)
