@@ -15,14 +15,17 @@ This software package implements the Compositionally-Restricted Attention-Based 
 ## How to cite
 Please cite the following work if you want to use `CrabNet`:
 ```bibtex
-@misc{Wang2020crabnet,
+@article{Wang2021crabnet,
  author = {Wang, Anthony Yu-Tung and Kauwe, Steven K. and Murdock, Ryan J. and Sparks, Taylor D.},
- date = {2020},
- title = {Compositionally-Restricted Attention-Based Network for Materials Property Prediction: CrabNet},
- urldate = {2020-12-17},
- doi = {10.26434/chemrxiv.11869026},
- howpublished = {ChemRxiv},
- year = {2020}
+ year = {2021},
+ title = {Compositionally restricted attention-based network for materials property predictions},
+ pages = {77},
+ volume = {7},
+ number = {1},
+ doi = {10.1038/s41524-021-00545-1},
+ publisher = {{Nature Publishing Group}},
+ shortjournal = {npj Comput. Mater.},
+ journal = {npj Computational Materials}
 }
 ```
 
@@ -71,7 +74,8 @@ We recommend that you create a separate Python environment for this project.
 To reproduce the publication results, please follow the below steps.
 Results will slightly vary.
 It is a known phenomena that PyTorch model training may slightly vary on different computers and hardware.
-Trained weights are provided at http://doi.org/10.5281/zenodo.4633866.
+
+**Trained weights are provided at:** http://doi.org/10.5281/zenodo.4633866.
 
 As a reference, with a desktop computer with an Intel<sup>TM</sup> i9-9900K processor, 32GB of RAM, and two NVIDIA RTX 2080 Ti's, training our largest network (OQMD) takes roughly two hours.
 
