@@ -32,8 +32,8 @@ def get_model(mat_prop, i, classification=False, batch_size=None,
         model.classification = True
 
     # Get the datafiles you will learn from
-    train_data = rf'data\matbench_cv\{mat_prop}\train{i}.csv'
-    val_data = rf'data\matbench_cv\{mat_prop}\val{i}.csv'
+    train_data = f'data/matbench_cv/{mat_prop}/train{i}.csv'
+    val_data = f'data/matbench_cv/{mat_prop}/val{i}.csv'
 
     # Load the train and validation data before fitting the network
     data_size = pd.read_csv(train_data).shape[0]
@@ -79,7 +79,7 @@ def load_model(mat_prop, i, classification, file_name, verbose=True):
         model.classification = True
 
     # Load the data you want to predict with
-    data = rf'data\matbench_cv\{mat_prop}\{file_name}'
+    data = f'data/matbench_cv/{mat_prop}/{file_name}'
     # data is reloaded to model.data_loader
     model.load_data(data, batch_size=2**9)
     return model
