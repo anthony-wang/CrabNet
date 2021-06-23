@@ -212,6 +212,9 @@ class CONSTANTS():
         self.idx_symbol_dict = {(i): sym for
                                 i, sym in enumerate(self.atomic_symbols)}
 
+        self.symbol_idx_dict = {sym: (i) for
+                                i, sym in enumerate(self.atomic_symbols)}
+
 
 # %%
 def get_cbfv(path, elem_prop='oliynyk', scale=False):
@@ -407,8 +410,9 @@ class EDMDataset(Dataset):
         return (X, y, formula)
 
 
-def get_edm(path, elem_prop='mat2vec', n_elements='infer', inference=False,
-            verbose=True):
+def get_edm(path, elem_prop='mat2vec', n_elements='infer',
+            inference=False, verbose=True, drop_unary=True,
+            scale=True):
     """
     Build a element descriptor matrix.
 
@@ -442,15 +446,18 @@ def get_edm(path, elem_prop='mat2vec', n_elements='infer', inference=False,
                    'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg',
                    'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
 
-    # mat_prop = 'phonons'
-    # i = 0
-    # path = rf'data\matbench_cv\{mat_prop}\test{i}.csv'
-    df = pd.read_csv(path, keep_default_na=False, na_values=[''])
+    # path can either be string to csv or a dataframe with data already
+    if isinstance(path, str):
+        df = pd.read_csv(path, keep_default_na=False, na_values=[''])
+    else:
+        df = path
+
     if 'formula' not in df.columns.values.tolist():
         df['formula'] = df['cif_id'].str.split('_ICSD').str[0]
 
     df['count'] = [len(_element_composition(form)) for form in df['formula']]
-    df = df[df['count'] != 1]  # drop pure elements
+    if drop_unary:
+        df = df[df['count'] != 1]  # drop pure elements
     if not inference:
         df = df.groupby(by='formula').mean().reset_index()  # mean of duplicates
 
@@ -462,6 +469,7 @@ def get_edm(path, elem_prop='mat2vec', n_elements='infer', inference=False,
     y = df['target'].values.astype(data_type_np)
     formula = df['formula'].values
     if n_elements == 'infer':
+        # cap maximum elements at 16, and then infer n_elements
         n_elements = 16
 
     edm_array = np.zeros(shape=(len(list_ohm),
@@ -484,11 +492,17 @@ def get_edm(path, elem_prop='mat2vec', n_elements='infer', inference=False,
             except ValueError:
                 print(f'skipping composition {comp}')
 
-    # Scale features
-    for i in range(edm_array.shape[0]):
-        frac = (edm_array[i, :, :].sum(axis=-1)
-                / (edm_array[i, :, :].sum(axis=-1)).sum())
-        elem_frac[i, :] = frac
+    if scale:
+        # Normalize element fractions within the compound
+        for i in range(edm_array.shape[0]):
+            frac = (edm_array[i, :, :].sum(axis=-1)
+                    / (edm_array[i, :, :].sum(axis=-1)).sum())
+            elem_frac[i, :] = frac
+    else:
+        # Do not normalize element fractions, even for single-element compounds
+        for i in range(edm_array.shape[0]):
+            frac = edm_array[i, :, :].sum(axis=-1)
+            elem_frac[i, :] = frac
 
     if n_elements == 16:
         n_elements = np.max(np.sum(elem_frac > 0, axis=1, keepdims=True))
@@ -525,12 +539,16 @@ class EDM_CsvLoader():
     def __init__(self, csv_data, batch_size=64,
                  num_workers=1, random_state=0, shuffle=True,
                  pin_memory=True, n_elements=6, inference=False,
-                 verbose=True):
+                 verbose=True,
+                 drop_unary=True,
+                 scale=True):
         self.csv_data = csv_data
         self.main_data = list(get_edm(self.csv_data, elem_prop='mat2vec',
                                       n_elements=n_elements,
                                       inference=inference,
-                                      verbose=verbose))
+                                      verbose=verbose,
+                                      drop_unary=drop_unary,
+                                      scale=scale))
         self.n_train = len(self.main_data[0])
         self.n_elements = self.main_data[0].shape[1]//2
 
