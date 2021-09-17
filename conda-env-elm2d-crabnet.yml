@@ -3,6 +3,7 @@ channels:
   - pytorch
   - conda-forge
 dependencies:
+  - pymatgen
   - cython #ElM2D
   - numba #ElM2D
   - python=3.8.*
@@ -13,6 +14,7 @@ dependencies:
   - plotly #ElM2D
   - setuptools #ElMD
   - umap-learn #ElM2D
+  - hdbscan
   - matplotlib
   - seaborn
   - pytorch=1.7.*
