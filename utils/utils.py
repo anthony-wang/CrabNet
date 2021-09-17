@@ -18,203 +18,324 @@ from sklearn.preprocessing import StandardScaler, Normalizer
 
 import json
 
-plt.rcParams.update({'font.size': 16})
+plt.rcParams.update({"font.size": 16})
 
 RNG_SEED = 42
 torch.manual_seed(RNG_SEED)
 np.random.seed(RNG_SEED)
 
 # %%
-fig_dir = r'figures/Classics/'
+fig_dir = r"figures/Classics/"
 data_type_torch = torch.float32
 data_type_np = np.float32
 
 
 # %%
-class CONSTANTS():
+class CONSTANTS:
     def __init__(self):
-        self.crab_red = '#f2636e'
-        self.dense_blue = '#2c2cd5'
+        self.crab_red = "#f2636e"
+        self.dense_blue = "#2c2cd5"
         self.colors = list(sns.color_palette("Set1", n_colors=7, desat=0.5))
 
-        self.markers = ['o', 'x', 's', '^', 'D', 'P', '1', '2', '3',
-                        '4',  'p', '*', 'h', 'H', '+', 'd', '|', '_']
+        self.markers = [
+            "o",
+            "x",
+            "s",
+            "^",
+            "D",
+            "P",
+            "1",
+            "2",
+            "3",
+            "4",
+            "p",
+            "*",
+            "h",
+            "H",
+            "+",
+            "d",
+            "|",
+            "_",
+        ]
 
-        self.eps = ['oliynyk',
-                    'jarvis',
-                    'mat2vec',
-                    'onehot',
-                    'magpie',
-                    'random_200']
+        self.eps = ["oliynyk", "jarvis", "mat2vec", "onehot", "magpie", "random_200"]
 
         self.benchmark_props = [
-            'aflow__ael_bulk_modulus_vrh',
-            'aflow__ael_debye_temperature',
-            'aflow__ael_shear_modulus_vrh',
-            'aflow__agl_thermal_conductivity_300K',
-            'aflow__agl_thermal_expansion_300K',
-            'aflow__Egap',
-            'aflow__energy_atom',
-            'CritExam__Ed',
-            'CritExam__Ef',
-            'mp_bulk_modulus',
-            'mp_elastic_anisotropy',
-            'mp_e_hull',
-            'mp_mu_b',
-            'mp_shear_modulus',
-            'OQMD_Bandgap',
-            'OQMD_Energy_per_atom',
-            'OQMD_Formation_Enthalpy',
-            'OQMD_Volume_per_atom',
-             ]
+            "aflow__ael_bulk_modulus_vrh",
+            "aflow__ael_debye_temperature",
+            "aflow__ael_shear_modulus_vrh",
+            "aflow__agl_thermal_conductivity_300K",
+            "aflow__agl_thermal_expansion_300K",
+            "aflow__Egap",
+            "aflow__energy_atom",
+            "CritExam__Ed",
+            "CritExam__Ef",
+            "mp_bulk_modulus",
+            "mp_elastic_anisotropy",
+            "mp_e_hull",
+            "mp_mu_b",
+            "mp_shear_modulus",
+            "OQMD_Bandgap",
+            "OQMD_Energy_per_atom",
+            "OQMD_Formation_Enthalpy",
+            "OQMD_Volume_per_atom",
+        ]
 
         self.benchmark_names = [
-            'AFLOW Bulk modulus',
-            'AFLOW Debye temperature',
-            'AFLOW Shear modulus',
-            'AFLOW Thermal conductivity',
-            'AFLOW Thermal expansion',
-            'AFLOW Band gap',
-            'AFLOW Energy per atom',
-            'Bartel Decomposition (Ed)',
-            'Bartel Formation (Ef)',
-            'MP Bulk modulus',
-            'MP Elastic anisotropy',
-            'MP Energy above convex hull',
-            'MP Magnetic moment',
-            'MP Shear modulus',
-            'OQMD Band gap',
-            'OQMD Energy per atom',
-            'OQMD Formation enthalpy',
-            'OQMD Volume per atom'
-            ]
+            "AFLOW Bulk modulus",
+            "AFLOW Debye temperature",
+            "AFLOW Shear modulus",
+            "AFLOW Thermal conductivity",
+            "AFLOW Thermal expansion",
+            "AFLOW Band gap",
+            "AFLOW Energy per atom",
+            "Bartel Decomposition (Ed)",
+            "Bartel Formation (Ef)",
+            "MP Bulk modulus",
+            "MP Elastic anisotropy",
+            "MP Energy above convex hull",
+            "MP Magnetic moment",
+            "MP Shear modulus",
+            "OQMD Band gap",
+            "OQMD Energy per atom",
+            "OQMD Formation enthalpy",
+            "OQMD Volume per atom",
+        ]
 
         self.matbench_props = [
-            'castelli',
-            'dielectric',
-            'elasticity_log10(G_VRH)',
-            'elasticity_log10(K_VRH)',
-            'expt_gap',
-            'expt_is_metal',
-            'glass',
-            'jdft2d',
-            'mp_e_form',
-            'mp_gap',
-            'mp_is_metal',
-            'phonons',
-            'steels_yield',
-            ]
+            "castelli",
+            "dielectric",
+            "elasticity_log10(G_VRH)",
+            "elasticity_log10(K_VRH)",
+            "expt_gap",
+            "expt_is_metal",
+            "glass",
+            "jdft2d",
+            "mp_e_form",
+            "mp_gap",
+            "mp_is_metal",
+            "phonons",
+            "steels_yield",
+        ]
 
         self.matbench_names = [
-            'Castelli perovskites',
-            'Refractive index',
-            'Shear modulus (log10)',
-            'Bulk modulus (log10)',
-            'Experimental band gap',
-            'Experimental metallicity',
-            'Experimental glass formation',
-            'DFT Exfoliation energy',
-            'MP Formation energy',
-            'MP Band gap',
-            'MP Metallicity',
-            'Phonon peak',
-            'Steels yield'
-            ]
+            "Castelli perovskites",
+            "Refractive index",
+            "Shear modulus (log10)",
+            "Bulk modulus (log10)",
+            "Experimental band gap",
+            "Experimental metallicity",
+            "Experimental glass formation",
+            "DFT Exfoliation energy",
+            "MP Formation energy",
+            "MP Band gap",
+            "MP Metallicity",
+            "Phonon peak",
+            "Steels yield",
+        ]
 
-        self.benchmark_names_dict = dict(zip(self.benchmark_props,
-                                             self.benchmark_names))
-        self.matbench_names_dict = dict(zip(self.matbench_props,
-                                            self.matbench_names))
+        self.benchmark_names_dict = dict(
+            zip(self.benchmark_props, self.benchmark_names)
+        )
+        self.matbench_names_dict = dict(zip(self.matbench_props, self.matbench_names))
 
         self.mb_units_dict = {
-            'castelli': 'eV/unit cell',
-            'dielectric': 'unitless',
-            'elasticity_log10(G_VRH)': 'log(GPa)',
-            'elasticity_log10(K_VRH)': 'log(GPa)',
-            'expt_gap': 'eV',
-            'expt_is_metal': 'binary',
-            'glass': 'binary',
-            'jdft2d': 'meV/atom',
-            'mp_e_form': 'eV/atom',
-            'mp_gap': 'eV',
-            'mp_is_metal': 'binary',
-            'phonons': '$cm^{−1}$',
-            'steels_yield': 'MPa',
-            }
+            "castelli": "eV/unit cell",
+            "dielectric": "unitless",
+            "elasticity_log10(G_VRH)": "log(GPa)",
+            "elasticity_log10(K_VRH)": "log(GPa)",
+            "expt_gap": "eV",
+            "expt_is_metal": "binary",
+            "glass": "binary",
+            "jdft2d": "meV/atom",
+            "mp_e_form": "eV/atom",
+            "mp_gap": "eV",
+            "mp_is_metal": "binary",
+            "phonons": "$cm^{−1}$",
+            "steels_yield": "MPa",
+        }
 
         self.bm_units_dict = {
-            'aflow__ael_bulk_modulus_vrh': None,
-            'aflow__ael_debye_temperature': None,
-            'aflow__ael_shear_modulus_vrh': None,
-            'aflow__agl_thermal_conductivity_300K': None,
-            'aflow__agl_thermal_expansion_300K': None,
-            'aflow__Egap': None,
-            'aflow__energy_atom': None,
-            'CritExam__Ed': None,
-            'CritExam__Ef': None,
-            'mp_bulk_modulus': None,
-            'mp_elastic_anisotropy': None,
-            'mp_e_hull': None,
-            'mp_mu_b': None,
-            'mp_shear_modulus': None,
-            'OQMD_Bandgap': None,
-            'OQMD_Energy_per_atom': None,
-            'OQMD_Formation_Enthalpy': None,
-            'OQMD_Volume_per_atom': None,
-            }
+            "aflow__ael_bulk_modulus_vrh": None,
+            "aflow__ael_debye_temperature": None,
+            "aflow__ael_shear_modulus_vrh": None,
+            "aflow__agl_thermal_conductivity_300K": None,
+            "aflow__agl_thermal_expansion_300K": None,
+            "aflow__Egap": None,
+            "aflow__energy_atom": None,
+            "CritExam__Ed": None,
+            "CritExam__Ef": None,
+            "mp_bulk_modulus": None,
+            "mp_elastic_anisotropy": None,
+            "mp_e_hull": None,
+            "mp_mu_b": None,
+            "mp_shear_modulus": None,
+            "OQMD_Bandgap": None,
+            "OQMD_Energy_per_atom": None,
+            "OQMD_Formation_Enthalpy": None,
+            "OQMD_Volume_per_atom": None,
+        }
 
-        self.mp_units_dict = {'energy_atom': 'eV/atom',
-                              'ael_shear_modulus_vrh': 'GPa',
-                              'ael_bulk_modulus_vrh': 'GPa',
-                              'ael_debye_temperature': 'K',
-                              'Egap': 'eV',
-                              'agl_thermal_conductivity_300K': 'W/m*K',
-                              'agl_log10_thermal_expansion_300K': '1/K'}
+        self.mp_units_dict = {
+            "energy_atom": "eV/atom",
+            "ael_shear_modulus_vrh": "GPa",
+            "ael_bulk_modulus_vrh": "GPa",
+            "ael_debye_temperature": "K",
+            "Egap": "eV",
+            "agl_thermal_conductivity_300K": "W/m*K",
+            "agl_log10_thermal_expansion_300K": "1/K",
+        }
 
-        self.mp_sym_dict = {'energy_atom': '$E_{atom}$',
-                            'ael_shear_modulus_vrh': '$G$',
-                            'ael_bulk_modulus_vrh': '$B$',
-                            'ael_debye_temperature': '$\\theta_D$',
-                            'Egap': '$E_g$',
-                            'agl_thermal_conductivity_300K': '$\\kappa$',
-                            'agl_log10_thermal_expansion_300K': '$\\alpha$'}
+        self.mp_sym_dict = {
+            "energy_atom": "$E_{atom}$",
+            "ael_shear_modulus_vrh": "$G$",
+            "ael_bulk_modulus_vrh": "$B$",
+            "ael_debye_temperature": "$\\theta_D$",
+            "Egap": "$E_g$",
+            "agl_thermal_conductivity_300K": "$\\kappa$",
+            "agl_log10_thermal_expansion_300K": "$\\alpha$",
+        }
 
-        self.classification_list = ['mp_is_metal',
-                                    'expt_is_metal',
-                                    'glass']
+        self.classification_list = ["mp_is_metal", "expt_is_metal", "glass"]
 
-        self.classic_models_dict = {'Ridge': 'Ridge',
-                                    'SGDRegressor': 'SGD',
-                                    'ExtraTreesRegressor': 'ExtraTrees',
-                                    'RandomForestRegressor': 'RF',
-                                    'AdaBoostRegressor': 'AdaBoost',
-                                    'GradientBoostingRegressor': 'GradBoost',
-                                    'KNeighborsRegressor': 'kNN',
-                                    'SVR': 'SVR',
-                                    'lSVR': 'lSVR'}
+        self.classic_models_dict = {
+            "Ridge": "Ridge",
+            "SGDRegressor": "SGD",
+            "ExtraTreesRegressor": "ExtraTrees",
+            "RandomForestRegressor": "RF",
+            "AdaBoostRegressor": "AdaBoost",
+            "GradientBoostingRegressor": "GradBoost",
+            "KNeighborsRegressor": "kNN",
+            "SVR": "SVR",
+            "lSVR": "lSVR",
+        }
 
-        self.atomic_symbols = ['None', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N',
-                               'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si', 'P',
-                               'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V',
-                               'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga'
-                               'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr', 'Y',
-                               'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag',
-                               'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs',
-                               'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu',
-                               'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu',
-                               'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au',
-                               'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr',
-                               'Ra', 'Ac', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am',
-                               'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr',
-                               'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg',
-                               'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
+        self.atomic_symbols = [
+            "None",
+            "H",
+            "He",
+            "Li",
+            "Be",
+            "B",
+            "C",
+            "N",
+            "O",
+            "F",
+            "Ne",
+            "Na",
+            "Mg",
+            "Al",
+            "Si",
+            "P",
+            "S",
+            "Cl",
+            "Ar",
+            "K",
+            "Ca",
+            "Sc",
+            "Ti",
+            "V",
+            "Cr",
+            "Mn",
+            "Fe",
+            "Co",
+            "Ni",
+            "Cu",
+            "Zn",
+            "Ga" "Ge",
+            "As",
+            "Se",
+            "Br",
+            "Kr",
+            "Rb",
+            "Sr",
+            "Y",
+            "Zr",
+            "Nb",
+            "Mo",
+            "Tc",
+            "Ru",
+            "Rh",
+            "Pd",
+            "Ag",
+            "Cd",
+            "In",
+            "Sn",
+            "Sb",
+            "Te",
+            "I",
+            "Xe",
+            "Cs",
+            "Ba",
+            "La",
+            "Ce",
+            "Pr",
+            "Nd",
+            "Pm",
+            "Sm",
+            "Eu",
+            "Gd",
+            "Tb",
+            "Dy",
+            "Ho",
+            "Er",
+            "Tm",
+            "Yb",
+            "Lu",
+            "Hf",
+            "Ta",
+            "W",
+            "Re",
+            "Os",
+            "Ir",
+            "Pt",
+            "Au",
+            "Hg",
+            "Tl",
+            "Pb",
+            "Bi",
+            "Po",
+            "At",
+            "Rn",
+            "Fr",
+            "Ra",
+            "Ac",
+            "Th",
+            "Pa",
+            "U",
+            "Np",
+            "Pu",
+            "Am",
+            "Cm",
+            "Bk",
+            "Cf",
+            "Es",
+            "Fm",
+            "Md",
+            "No",
+            "Lr",
+            "Rf",
+            "Db",
+            "Sg",
+            "Bh",
+            "Hs",
+            "Mt",
+            "Ds",
+            "Rg",
+            "Cn",
+            "Nh",
+            "Fl",
+            "Mc",
+            "Lv",
+            "Ts",
+            "Og",
+        ]
 
-        self.idx_symbol_dict = {(i): sym for
-                                i, sym in enumerate(self.atomic_symbols)}
+        self.idx_symbol_dict = {(i): sym for i, sym in enumerate(self.atomic_symbols)}
 
 
 # %%
-def get_cbfv(path, elem_prop='oliynyk', scale=False):
+def get_cbfv(data, elem_prop="oliynyk", scale=False):
     """
     Loads the compound csv file and featurizes it, then scales the features
     using StandardScaler.
@@ -236,9 +357,12 @@ def get_cbfv(path, elem_prop='oliynyk', scale=False):
         DESCRIPTION.
 
     """
-    df = pd.read_csv(path, keep_default_na=False, na_values=[''])
-    if 'formula' not in df.columns.values.tolist():
-        df['formula'] = df['cif_id'].str.split('_ICSD').str[0]
+    if type(data) is str:
+        df = pd.read_csv(data, keep_default_na=False, na_values=[""])
+    else:
+        df = data
+    if "formula" not in df.columns.values.tolist():
+        df["formula"] = df["cif_id"].str.split("_ICSD").str[0]
     # elem_prop = 'mat2vec'
     # elem_prop = 'oliynyk'
     mini = False
@@ -251,13 +375,16 @@ def get_cbfv(path, elem_prop='oliynyk', scale=False):
         normalizer = Normalizer()
 
         X_scaled = scaler.fit_transform(X)
-        X_scaled = pd.DataFrame(normalizer.fit_transform(X_scaled),
-                                columns=X.columns.values,
-                                index=X.index.values)
+        X_scaled = pd.DataFrame(
+            normalizer.fit_transform(X_scaled),
+            columns=X.columns.values,
+            index=X.index.values,
+        )
 
         return X_scaled, y, formula, skipped
     else:
         return X, y, formula, skipped
+
 
 # %%
 def BCEWithLogitsLoss(output, log_std, target):
@@ -286,7 +413,7 @@ def RobustL2(output, log_std, target):
 
 
 def count_parameters(model):
-    return sum(p.numel() for p in model.parameters()if p.requires_grad)
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
 # %%
@@ -300,17 +427,15 @@ class NumpyEncoder(json.JSONEncoder):
             return float(obj)
         return json.JSONEncoder.default(self, obj)
 
+
 def count_gs_param_combinations(d):
     cnt_dict = OrderedDict({})
     # array = []
-    if (isinstance(d, (list))
-        and not isinstance(d, (bool))):
+    if isinstance(d, (list)) and not isinstance(d, (bool)):
         return len(d), cnt_dict
-    elif (isinstance(d, (int, float, complex))
-          and not isinstance(d, (bool))):
+    elif isinstance(d, (int, float, complex)) and not isinstance(d, (bool)):
         return 1, cnt_dict
-    elif (isinstance(d, (bool))
-          or isinstance(d, (str))):
+    elif isinstance(d, (bool)) or isinstance(d, (str)):
         return 1, cnt_dict
     elif d is None:
         return 1, cnt_dict
@@ -327,7 +452,7 @@ def count_gs_param_combinations(d):
 
 
 # %%
-class Scaler():
+class Scaler:
     def __init__(self, data):
         self.data = torch.as_tensor(data)
         self.mean = torch.mean(self.data)
@@ -344,15 +469,14 @@ class Scaler():
         return data
 
     def state_dict(self):
-        return {'mean': self.mean,
-                'std': self.std}
+        return {"mean": self.mean, "std": self.std}
 
     def load_state_dict(self, state_dict):
-        self.mean = state_dict['mean']
-        self.std = state_dict['std']
+        self.mean = state_dict["mean"]
+        self.std = state_dict["std"]
 
 
-class DummyScaler():
+class DummyScaler:
     def __init__(self, data):
         self.data = torch.as_tensor(data)
         self.mean = torch.mean(self.data)
@@ -365,12 +489,11 @@ class DummyScaler():
         return torch.as_tensor(data_scaled)
 
     def state_dict(self):
-        return {'mean': self.mean,
-                'std': self.std}
+        return {"mean": self.mean, "std": self.std}
 
     def load_state_dict(self, state_dict):
-        self.mean = state_dict['mean']
-        self.std = state_dict['std']
+        self.mean = state_dict["mean"]
+        self.std = state_dict["std"]
 
 
 # %%
@@ -390,7 +513,7 @@ class EDMDataset(Dataset):
         self.shape = [(self.X.shape), (self.y.shape), (self.formula.shape)]
 
     def __str__(self):
-        string = f'EDMDataset with X.shape {self.X.shape}'
+        string = f"EDMDataset with X.shape {self.X.shape}"
         return string
 
     def __len__(self):
@@ -407,15 +530,16 @@ class EDMDataset(Dataset):
         return (X, y, formula)
 
 
-def get_edm(path, elem_prop='mat2vec', n_elements='infer', inference=False,
-            verbose=True):
+def get_edm(
+    data, elem_prop="mat2vec", n_elements="infer", inference=False, verbose=True
+):
     """
     Build a element descriptor matrix.
 
     Parameters
     ----------
-    path : str
-        DESCRIPTION.
+    data: str or DataFrame
+        Filepath to data or DataFrame.
     elem_prop : str, optional
         DESCRIPTION. The default is 'oliynyk'.
 
@@ -429,6 +553,7 @@ def get_edm(path, elem_prop='mat2vec', n_elements='infer', inference=False,
         DESCRIPTION.
 
     """
+    # fmt: off
     all_symbols = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na',
                    'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc',
                    'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga',
@@ -441,39 +566,41 @@ def get_edm(path, elem_prop='mat2vec', n_elements='infer', inference=False,
                    'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md',
                    'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg',
                    'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
+    # fmt: on
 
     # mat_prop = 'phonons'
     # i = 0
     # path = rf'data\matbench_cv\{mat_prop}\test{i}.csv'
-    df = pd.read_csv(path, keep_default_na=False, na_values=[''])
-    if 'formula' not in df.columns.values.tolist():
-        df['formula'] = df['cif_id'].str.split('_ICSD').str[0]
+    if type(data) is str:
+        df = pd.read_csv(data, keep_default_na=False, na_values=[""])
+    else:
+        df = data
+    if "formula" not in df.columns.values.tolist():
+        df["formula"] = df["cif_id"].str.split("_ICSD").str[0]
 
-    df['count'] = [len(_element_composition(form)) for form in df['formula']]
-    df = df[df['count'] != 1]  # drop pure elements
+    df["count"] = [len(_element_composition(form)) for form in df["formula"]]
+    df = df[df["count"] != 1]  # drop pure elements
     if not inference:
-        df = df.groupby(by='formula').mean().reset_index()  # mean of duplicates
+        df = df.groupby(by="formula").mean().reset_index()  # mean of duplicates
 
-    list_ohm = [OrderedDict(_element_composition(form))
-                for form in df['formula']]
-    list_ohm = [OrderedDict(sorted(mat.items(), key=lambda x:-x[1]))
-                for mat in list_ohm]
+    list_ohm = [OrderedDict(_element_composition(form)) for form in df["formula"]]
+    list_ohm = [
+        OrderedDict(sorted(mat.items(), key=lambda x: -x[1])) for mat in list_ohm
+    ]
 
-    y = df['target'].values.astype(data_type_np)
-    formula = df['formula'].values
-    if n_elements == 'infer':
+    y = df["target"].values.astype(data_type_np)
+    formula = df["formula"].values
+    if n_elements == "infer":
         n_elements = 16
 
-    edm_array = np.zeros(shape=(len(list_ohm),
-                                n_elements,
-                                len(all_symbols)+1),
-                         dtype=data_type_np)
+    edm_array = np.zeros(
+        shape=(len(list_ohm), n_elements, len(all_symbols) + 1), dtype=data_type_np
+    )
     elem_num = np.zeros(shape=(len(list_ohm), n_elements), dtype=data_type_np)
     elem_frac = np.zeros(shape=(len(list_ohm), n_elements), dtype=data_type_np)
-    for i, comp in enumerate(tqdm(list_ohm,
-                                  desc="Generating EDM",
-                                  unit="formulae",
-                                  disable=not verbose)):
+    for i, comp in enumerate(
+        tqdm(list_ohm, desc="Generating EDM", unit="formulae", disable=not verbose)
+    ):
         for j, (elem, count) in enumerate(list_ohm[i].items()):
             if j == n_elements:
                 # Truncate EDM representation to n_elements
@@ -482,12 +609,11 @@ def get_edm(path, elem_prop='mat2vec', n_elements='infer', inference=False,
                 edm_array[i, j, all_symbols.index(elem) + 1] = count
                 elem_num[i, j] = all_symbols.index(elem) + 1
             except ValueError:
-                print(f'skipping composition {comp}')
+                print(f"skipping composition {comp}")
 
     # Scale features
     for i in range(edm_array.shape[0]):
-        frac = (edm_array[i, :, :].sum(axis=-1)
-                / (edm_array[i, :, :].sum(axis=-1)).sum())
+        frac = edm_array[i, :, :].sum(axis=-1) / (edm_array[i, :, :].sum(axis=-1)).sum()
         elem_frac[i, :] = frac
 
     if n_elements == 16:
@@ -503,12 +629,12 @@ def get_edm(path, elem_prop='mat2vec', n_elements='infer', inference=False,
 
 
 # %%
-class EDM_CsvLoader():
+class EDM_CsvLoader:
     """
     Parameters
     ----------
-    csv_data: str
-        name of csv file containing cif and properties
+    data: str or DataFrame
+        name of csv file containing cif and properties or DataFrame
     csv_val: str
         name of csv file containing cif and properties
     val_frac: float, optional (default=0.75)
@@ -522,17 +648,30 @@ class EDM_CsvLoader():
         Whether to shuffle the datasets or not
     """
 
-    def __init__(self, csv_data, batch_size=64,
-                 num_workers=1, random_state=0, shuffle=True,
-                 pin_memory=True, n_elements=6, inference=False,
-                 verbose=True):
-        self.csv_data = csv_data
-        self.main_data = list(get_edm(self.csv_data, elem_prop='mat2vec',
-                                      n_elements=n_elements,
-                                      inference=inference,
-                                      verbose=verbose))
+    def __init__(
+        self,
+        data,
+        batch_size=64,
+        num_workers=1,
+        random_state=0,
+        shuffle=True,
+        pin_memory=True,
+        n_elements=6,
+        inference=False,
+        verbose=True,
+    ):
+        self.data = data
+        self.main_data = list(
+            get_edm(
+                self.data,
+                elem_prop="mat2vec",
+                n_elements=n_elements,
+                inference=inference,
+                verbose=verbose,
+            )
+        )
         self.n_train = len(self.main_data[0])
-        self.n_elements = self.main_data[0].shape[1]//2
+        self.n_elements = self.main_data[0].shape[1] // 2
 
         self.batch_size = batch_size
         self.pin_memory = pin_memory
@@ -540,15 +679,17 @@ class EDM_CsvLoader():
         self.random_state = random_state
 
     def get_data_loaders(self, inference=False):
-        '''
+        """
         Input the dataset, get train test split
-        '''
+        """
         shuffle = not inference  # don't shuffle data when inferencing
         pred_dataset = EDMDataset(self.main_data, self.n_elements)
-        pred_loader = DataLoader(pred_dataset,
-                                 batch_size=self.batch_size,
-                                 pin_memory=self.pin_memory,
-                                 shuffle=shuffle)
+        pred_loader = DataLoader(
+            pred_dataset,
+            batch_size=self.batch_size,
+            pin_memory=self.pin_memory,
+            shuffle=shuffle,
+        )
         return pred_loader
 
 
@@ -573,14 +714,16 @@ class Lamb(Optimizer):
         https://arxiv.org/abs/1904.00962
     """
 
-    def __init__(self,
-                 params,
-                 lr=1e-3,
-                 betas=(0.9, 0.999),
-                 eps=1e-6,
-                 weight_decay=0,
-                 adam=False,
-                 min_trust=None):
+    def __init__(
+        self,
+        params,
+        lr=1e-3,
+        betas=(0.9, 0.999),
+        eps=1e-6,
+        weight_decay=0,
+        adam=False,
+        min_trust=None,
+    ):
         if not 0.0 <= lr:
             raise ValueError(f"Invalid learning rate: {lr}")
         if not 0.0 <= eps:
@@ -612,8 +755,10 @@ class Lamb(Optimizer):
                     continue
                 grad = p.grad.data
                 if grad.is_sparse:
-                    err_msg = "Lamb does not support sparse gradients, " + \
-                        "consider SparseAdam instad."
+                    err_msg = (
+                        "Lamb does not support sparse gradients, "
+                        + "consider SparseAdam instad."
+                    )
                     raise RuntimeError(err_msg)
 
                 state = self.state[p]
@@ -758,5 +903,5 @@ class Lookahead(Optimizer):
 
 
 # %%
-if __name__ == '__main__':
+if __name__ == "__main__":
     os.makedirs(fig_dir, exist_ok=True)

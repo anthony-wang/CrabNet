@@ -23,12 +23,24 @@ np.random.seed(RNG_SEED)
 # %%
 def get_model(
     data_dir="data/materials_data",
-    mat_prop="example_materials_property",
+    mat_prop=None,
+    train_df=None,
+    val_df=None,
+    test_df=None,
     classification=False,
     batch_size=None,
     transfer=None,
     verbose=True,
 ):
+    if train_df is None and val_df is None and test_df is None:
+        if mat_prop is None:
+            mat_prop = "example_materials_property"
+        use_path = True
+    else:
+        if mat_prop is None:
+            mat_prop = "DataFrame_property"
+        use_path = False
+
     # Get the TorchedCrabNet architecture loaded
     model = Model(
         CrabNet(compute_device=compute_device).to(compute_device),
@@ -45,18 +57,23 @@ def get_model(
     if classification:
         model.classification = True
 
-    # Get the datafiles you will learn from
-    train_data = f"{data_dir}/{mat_prop}/train.csv"
-    try:
-        val_data = f"{data_dir}/{mat_prop}/val.csv"
-    except:
-        print(
-            "Please ensure you have train (train.csv) and validation data",
-            f'(val.csv) in folder "data/materials_data/{mat_prop}"',
-        )
+    if use_path:
+        # Get the datafiles you will learn from
+        train_data = f"{data_dir}/{mat_prop}/train.csv"
+        try:
+            val_data = f"{data_dir}/{mat_prop}/val.csv"
+        except IOError:
+            print(
+                "Please ensure you have train (train.csv) and validation data",
+                f'(val.csv) in folder "data/materials_data/{mat_prop}"',
+            )
+        data_size = pd.read_csv(train_data).shape[0]
+    else:
+        train_data = train_df
+        val_data = val_df
+        data_size = train_data.shape[0]
 
     # Load the train and validation data before fitting the network
-    data_size = pd.read_csv(train_data).shape[0]
     batch_size = 2 ** round(np.log2(data_size) - 4)
     if batch_size < 2 ** 7:
         batch_size = 2 ** 7
@@ -85,23 +102,31 @@ def to_csv(output, save_name):
     save_path = "model_predictions"
     os.makedirs(save_path, exist_ok=True)
     df.to_csv(f"{save_path}/{save_name}", index_label="Index")
+    return df
 
 
-def load_model(data_dir, mat_prop, classification, file_name, verbose=True):
+def load_model(data, mat_prop, classification, file_name, verbose=True):
     # Load up a saved network.
     model = Model(
         CrabNet(compute_device=compute_device).to(compute_device),
         model_name=f"{mat_prop}",
         verbose=verbose,
     )
-    model.load_network(f"{mat_prop}.pth")
+    if type(data) is str:
+        usepath = True
+        load_data = f"{mat_prop}.pth"
+    else:
+        load_data = data
+    model.load_network(load_data)
 
     # Check if classifcation task
     if classification:
         model.classification = True
 
     # Load the data you want to predict with
-    data = f"{data_dir}/{mat_prop}/{file_name}"
+
+    if usepath:
+        data = f"{data}/{mat_prop}/{file_name}"
     # data is reloaded to model.data_loader
     model.load_data(data, batch_size=2 ** 9, train=False)
     return model
@@ -112,8 +137,8 @@ def get_results(model):
     return model, output
 
 
-def save_results(data_dir, mat_prop, classification, file_name, verbose=True):
-    model = load_model(data_dir, mat_prop, classification, file_name, verbose=verbose)
+def save_results(data, mat_prop, classification, file_name, verbose=True):
+    model = load_model(data, mat_prop, classification, file_name, verbose=verbose)
     model, output = get_results(model)
 
     # Get appropriate metrics for saving to csv
@@ -126,13 +151,16 @@ def save_results(data_dir, mat_prop, classification, file_name, verbose=True):
 
     # save predictions to a csv
     fname = f'{mat_prop}_{file_name.replace(".csv", "")}_output.csv'
-    to_csv(output, fname)
-    return model, mae
+    df = to_csv(output, fname)
+    return model, mae, df
 
 
 def main(
+    train_df=None,
+    val_df=None,
+    test_df=None,
     data_dir="data/materials_data",
-    mat_prop="example_materials_property",
+    mat_prop=None,
     classification=False,
     train=True,
 ):
@@ -158,10 +186,30 @@ def main(
     None.
 
     """
+    if train_df is None and val_df is None and test_df is None:
+        if mat_prop is None:
+            mat_prop = "example_materials_property"
+        train_data = data_dir
+        val_data = data_dir
+        test_data = data_dir
+    else:
+        mat_prop = "DataFrame_property"
+        train_data = train_df
+        val_data = val_df
+        test_data = test_df
+
     # Train your model using the "get_model" function
     if train:
         print(f'Property "{mat_prop}" selected for training')
-        get_model(data_dir, mat_prop, classification, verbose=True)
+        get_model(
+            data_dir,
+            mat_prop=mat_prop,
+            classification=classification,
+            verbose=True,
+            train_df=train_df,
+            val_df=val_df,
+            test_df=test_df,
+        )
 
     cutter = "====================================================="
     first = " " * ((len(cutter) - len(mat_prop)) // 2) + " " * int(
@@ -172,21 +220,24 @@ def main(
     print(f"{first}{mat_prop}{last}")
     print("=====================================================")
     print("calculating train mae")
-    model_train, mae_train = save_results(
-        data_dir, mat_prop, classification, "train.csv", verbose=False
+    model_train, mae_train, train_pred_df = save_results(
+        train_data, mat_prop, classification, "train.csv", verbose=False
     )
     print("-----------------------------------------------------")
     print("calculating val mae")
-    model_val, mae_valn = save_results(
-        data_dir, mat_prop, classification, "val.csv", verbose=False
+    model_val, mae_valn, val_pred_df = save_results(
+        val_data, mat_prop, classification, "val.csv", verbose=False
     )
-    if exists(join(data_dir, mat_prop, "test.csv")):
+    if exists(join(data_dir, mat_prop, "test.csv")) or test_df is not None:
         print("-----------------------------------------------------")
         print("calculating test mae")
-        model_test, mae_test = save_results(
-            data_dir, mat_prop, classification, "test.csv", verbose=False
+        model_test, mae_test, test_pred_df = save_results(
+            test_data, mat_prop, classification, "test.csv", verbose=False
         )
+    else:
+        test_pred_df = None
     print("=====================================================")
+    return train_pred_df, val_pred_df, test_pred_df
 
 
 # %%
