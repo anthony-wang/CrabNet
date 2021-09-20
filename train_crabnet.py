@@ -31,6 +31,8 @@ def get_model(
     batch_size=None,
     transfer=None,
     verbose=True,
+    losscurve=False,
+    learningcurve=True,
 ):
     if train_df is None and val_df is None and test_df is None:
         if mat_prop is None:
@@ -84,10 +86,11 @@ def get_model(
         f"training with batchsize {model.batch_size} "
         f"(2**{np.log2(model.batch_size):0.3f})"
     )
-    model.load_data(val_data, batch_size=batch_size)
+    if val_data is not None:
+        model.load_data(val_data, batch_size=batch_size)
 
     # Set the number of epochs, decide if you want a loss curve to be plotted
-    model.fit(epochs=40, losscurve=False)
+    model.fit(epochs=40, losscurve=losscurve, learningcurve=learningcurve)
 
     # Save the network (saved as f"{model_name}.pth")
     model.save_network()
@@ -99,25 +102,26 @@ def to_csv(output, save_name):
     act, pred, formulae, uncertainty = output
     df = pd.DataFrame([formulae, act, pred, uncertainty]).T
     df.columns = ["composition", "target", "pred-0", "uncertainty"]
-    save_path = "model_predictions"
-    os.makedirs(save_path, exist_ok=True)
-    df.to_csv(f"{save_path}/{save_name}", index_label="Index")
+    if save_name is not None:
+        save_path = "model_predictions"
+        os.makedirs(save_path, exist_ok=True)
+        df.to_csv(f"{save_path}/{save_name}", index_label="Index")
     return df
 
 
-def load_model(data, mat_prop, classification, file_name, verbose=True):
+def load_model(model, mat_prop, classification, data, verbose=True):
     # Load up a saved network.
-    model = Model(
-        CrabNet(compute_device=compute_device).to(compute_device),
-        model_name=f"{mat_prop}",
-        verbose=verbose,
-    )
-    if type(data) is str:
+    if type(model) is str:
         usepath = True
-        load_data = f"{mat_prop}.pth"
+        model = Model(
+            CrabNet(compute_device=compute_device).to(compute_device),
+            model_name=f"{mat_prop}",
+            verbose=verbose,
+        )
+        model_path = f"{mat_prop}.pth"
+        model.load_network(model_path)
     else:
-        load_data = data
-    model.load_network(load_data)
+        usepath = False
 
     # Check if classifcation task
     if classification:
@@ -125,8 +129,8 @@ def load_model(data, mat_prop, classification, file_name, verbose=True):
 
     # Load the data you want to predict with
 
-    if usepath:
-        data = f"{data}/{mat_prop}/{file_name}"
+    if usepath and type(data) is str:
+        data = f"{mat_prop}/{mat_prop}/{data}"
     # data is reloaded to model.data_loader
     model.load_data(data, batch_size=2 ** 9, train=False)
     return model
@@ -137,8 +141,13 @@ def get_results(model):
     return model, output
 
 
-def save_results(data, mat_prop, classification, file_name, verbose=True):
-    model = load_model(data, mat_prop, classification, file_name, verbose=verbose)
+def save_results(model, mat_prop, classification, data, verbose=True):
+    if type(model) is str:
+        usepath = True
+        model = load_model(model, mat_prop, classification, data, verbose=verbose)
+    else:
+        usepath = False
+        model.load_data(data, batch_size=2 ** 9, train=False)
     model, output = get_results(model)
 
     # Get appropriate metrics for saving to csv
@@ -150,7 +159,10 @@ def save_results(data, mat_prop, classification, file_name, verbose=True):
         print(f"{mat_prop} mae: {mae:0.3g}")
 
     # save predictions to a csv
-    fname = f'{mat_prop}_{file_name.replace(".csv", "")}_output.csv'
+    if usepath:
+        fname = f'{mat_prop}_{data.replace(".csv", "")}_output.csv'
+    else:
+        fname = None
     df = to_csv(output, fname)
     return model, mae, df
 
@@ -163,6 +175,9 @@ def main(
     mat_prop=None,
     classification=False,
     train=True,
+    losscurve=False,
+    learningcurve=True,
+    verbose=True,
 ):
     """
     Train CrabNet model, save predictions, and output mean absolute error.
@@ -192,51 +207,60 @@ def main(
         train_data = data_dir
         val_data = data_dir
         test_data = data_dir
+        use_test = exists(join(data_dir, mat_prop, test_df))
     else:
         mat_prop = "DataFrame_property"
         train_data = train_df
         val_data = val_df
         test_data = test_df
+        use_test = test_df is not None
 
     # Train your model using the "get_model" function
     if train:
-        print(f'Property "{mat_prop}" selected for training')
-        get_model(
+        if verbose:
+            print(f'Property "{mat_prop}" selected for training')
+        model = get_model(
             data_dir,
             mat_prop=mat_prop,
             classification=classification,
-            verbose=True,
+            verbose=verbose,
             train_df=train_df,
             val_df=val_df,
             test_df=test_df,
+            losscurve=losscurve,
+            learningcurve=learningcurve,
         )
 
-    cutter = "====================================================="
-    first = " " * ((len(cutter) - len(mat_prop)) // 2) + " " * int(
-        (len(mat_prop) + 1) % 2
-    )
-    last = " " * ((len(cutter) - len(mat_prop)) // 2)
-    print("=====================================================")
-    print(f"{first}{mat_prop}{last}")
-    print("=====================================================")
-    print("calculating train mae")
+    if verbose:
+        cutter = "====================================================="
+        first = " " * ((len(cutter) - len(mat_prop)) // 2) + " " * int(
+            (len(mat_prop) + 1) % 2
+        )
+        last = " " * ((len(cutter) - len(mat_prop)) // 2)
+        print("=====================================================")
+        print(f"{first}{mat_prop}{last}")
+        print("=====================================================")
+        print("calculating train mae")
     model_train, mae_train, train_pred_df = save_results(
-        train_data, mat_prop, classification, "train.csv", verbose=False
+        model, mat_prop, classification, train_data, verbose=False
     )
-    print("-----------------------------------------------------")
-    print("calculating val mae")
-    model_val, mae_valn, val_pred_df = save_results(
-        val_data, mat_prop, classification, "val.csv", verbose=False
-    )
-    if exists(join(data_dir, mat_prop, "test.csv")) or test_df is not None:
+    if verbose:
         print("-----------------------------------------------------")
-        print("calculating test mae")
+        print("calculating val mae")
+    model_val, mae_val, val_pred_df = save_results(
+        model, mat_prop, classification, val_data, verbose=False
+    )
+    if use_test:
+        if verbose:
+            print("-----------------------------------------------------")
+            print("calculating test mae")
         model_test, mae_test, test_pred_df = save_results(
-            test_data, mat_prop, classification, "test.csv", verbose=False
+            model, mat_prop, classification, test_data, verbose=False
         )
     else:
         test_pred_df = None
-    print("=====================================================")
+    if verbose:
+        print("=====================================================")
     return train_pred_df, val_pred_df, test_pred_df
 
 
