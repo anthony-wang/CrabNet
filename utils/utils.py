@@ -210,6 +210,7 @@ class CONSTANTS:
             "lSVR": "lSVR",
         }
 
+        # fmt: off
         self.atomic_symbols = [
             "None",
             "H",
@@ -330,6 +331,7 @@ class CONSTANTS:
             "Ts",
             "Og",
         ]
+        # fmt: on
 
         self.idx_symbol_dict = {(i): sym for i, sym in enumerate(self.atomic_symbols)}
 
@@ -578,8 +580,10 @@ def get_edm(
     if "formula" not in df.columns.values.tolist():
         df["formula"] = df["cif_id"].str.split("_ICSD").str[0]
 
-    df["count"] = [len(_element_composition(form)) for form in df["formula"]]
-    df = df[df["count"] != 1]  # drop pure elements
+    df.loc[:, "count"] = [
+        len(_element_composition(form)) for form in df.loc[:, "formula"]
+    ]
+    # df = df[df["count"] != 1]  # drop pure elements
     if not inference:
         df = df.groupby(by="formula").mean().reset_index()  # mean of duplicates
 
