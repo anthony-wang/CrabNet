@@ -134,7 +134,7 @@ class Model:
         datalen = len(self.train_loader.dataset)
         # print(f'training speed: {datalen/dt:0.3f}')
 
-    def fit(self, epochs=None, checkin=None, losscurve=False):
+    def fit(self, epochs=None, checkin=None, losscurve=False, learningcurve=True):
         assert_train_str = "Please Load Training Data (self.train_loader)"
         assert_val_str = "Please Load Validation Data (self.data_loader)"
         assert self.train_loader is not None, assert_train_str
@@ -253,21 +253,38 @@ class Model:
                 df_loss.to_csv(f"figures/lc_data/{self.model_name}_lc.csv", index=False)
 
                 # save output learning curve plot
-                plt.figure(figsize=(8, 5))
-                xval = np.arange(len(self.loss_curve["val"])) * checkin - 1
-                xval[0] = 0
-                plt.plot(xval, self.loss_curve["train"], "o-", label="train_mae")
-                plt.plot(xval, self.loss_curve["val"], "s--", label="val_mae")
-                if self.epoch >= (self.epochs_step * self.swa_start - 1):
+                if learningcurve:
+                    plt.figure(figsize=(8, 5))
+                    xval = np.arange(len(self.loss_curve["val"])) * checkin - 1
+                    xval[0] = 0
                     plt.plot(
-                        self.xswa, self.yswa, "o", ms=12, mfc="none", label="SWA point"
+                        xval,
+                        self.loss_curve["train"],
+                        "o-",
+                        label="$\mathrm{MAE}_\mathrm{train}$",
                     )
-                plt.ylim(0, 2 * np.mean(self.loss_curve["val"]))
-                plt.title(f"{self.model_name}")
-                plt.xlabel("epochs")
-                plt.ylabel("MAE")
-                plt.legend()
-                plt.savefig(f"figures/lc_data/{self.model_name}_lc.png")
+                    plt.plot(
+                        xval,
+                        self.loss_curve["val"],
+                        "s--",
+                        label="$\mathrm{MAE}_\mathrm{val}$",
+                    )
+                    if self.epoch >= (self.epochs_step * self.swa_start - 1):
+                        plt.plot(
+                            self.xswa,
+                            self.yswa,
+                            "o",
+                            ms=12,
+                            mfc="none",
+                            label="SWA point",
+                        )
+                    plt.ylim(0, 2 * np.mean(self.loss_curve["val"]))
+                    plt.title(f"{self.model_name}")
+                    plt.xlabel("epochs")
+                    plt.ylabel("MAE")
+                    plt.legend()
+                    plt.savefig(f"figures/lc_data/{self.model_name}_lc.png")
+                    plt.show()
 
             if self.optimizer.discard_count >= self.discard_n:
                 print(
