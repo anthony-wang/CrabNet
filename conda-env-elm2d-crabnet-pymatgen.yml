@@ -1,0 +1,21 @@
+name: elm2d-crabnet
+channels:
+  - pytorch
+  - conda-forge
+dependencies:
+  - pymatgen
+  - cython #ElM2D
+  - numba #ElM2D
+  - python=3.8.*
+  - scipy #ElM2D
+  - pandas
+  - scikit-learn
+  - plotly #ElM2D
+  - setuptools #ElMD
+  - umap-learn #ElM2D
+  - hdbscan
+  - matplotlib
+  - seaborn
+  - pytorch=1.7.*
+  - cudatoolkit=11.*
+  - tqdm
