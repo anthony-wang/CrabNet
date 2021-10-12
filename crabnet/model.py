@@ -1,3 +1,4 @@
+from logging import warn
 import os
 from time import time
 import numpy as np
@@ -117,7 +118,7 @@ class Model:
             epoch_check = (self.epoch + 1) % (2 * self.epochs_step) == 0
             learning_time = epoch_check and self.epoch >= swa_check
             if learning_time:
-                act_v, pred_v, _, _ = self.predict(self.data_loader)
+                act_v, pred_v, _, _ = self.predict(loader=self.data_loader)
                 mae_v = mean_absolute_error(act_v, pred_v)
                 self.optimizer.update_swa(mae_v)
                 minima.append(self.optimizer.minimum_found)
@@ -127,7 +128,7 @@ class Model:
             print(f"Epoch {self.epoch} failed to improve.")
             print(
                 f"Discarded: {self.optimizer.discard_count}/"
-                f"{self.discard_n} weight updates ♻🗑️"
+                f"{self.discard_n} weight updates"
             )
 
         dt = time() - ti
@@ -199,13 +200,13 @@ class Model:
 
             if (epoch + 1) % checkin == 0 or epoch == epochs - 1 or epoch == 0:
                 ti = time()
-                act_t, pred_t, _, _ = self.predict(self.train_loader)
+                act_t, pred_t, _, _ = self.predict(loader=self.train_loader)
                 dt = time() - ti
                 datasize = len(act_t)
                 # print(f'inference speed: {datasize/dt:0.3f}')
                 mae_t = mean_absolute_error(act_t, pred_t)
                 self.loss_curve["train"].append(mae_t)
-                act_v, pred_v, _, _ = self.predict(self.data_loader)
+                act_v, pred_v, _, _ = self.predict(loader=self.data_loader)
                 mae_v = mean_absolute_error(act_v, pred_v)
                 self.loss_curve["val"].append(mae_v)
                 epoch_str = f"Epoch: {epoch}/{epochs} ---"
@@ -290,7 +291,7 @@ class Model:
                 print(
                     f"Discarded: {self.optimizer.discard_count}/"
                     f"{self.discard_n} weight updates, "
-                    f"early-stopping now 🙅🛑"
+                    f"early-stopping now"
                 )
                 self.optimizer.swap_swa_sgd()
                 break
@@ -298,7 +299,14 @@ class Model:
         if not (self.optimizer.discard_count >= self.discard_n):
             self.optimizer.swap_swa_sgd()
 
-    def predict(self, loader):
+    def predict(self, data=None, loader=None):
+        if data is None and loader is None:
+            raise SyntaxError("Specify either data *or* loader, not neither.")
+        elif data is not None and loader is None:
+            self.load_data(data)
+            loader = self.data_loader
+        elif data is not None and loader is not None:
+            raise SyntaxError("Specify either data *or* loader, not both.")
         len_dataset = len(loader.dataset)
         n_atoms = int(len(loader.dataset[0][0]) / 2)
         act = np.zeros(len_dataset)
