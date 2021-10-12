@@ -244,12 +244,13 @@ def main(
     model_train, mae_train, train_pred_df = save_results(
         model, mat_prop, classification, train_data, verbose=False
     )
-    if verbose:
-        print("-----------------------------------------------------")
-        print("calculating val mae")
-    model_val, mae_val, val_pred_df = save_results(
-        model, mat_prop, classification, val_data, verbose=False
-    )
+    if val_data is not None:
+        if verbose:
+            print("-----------------------------------------------------")
+            print("calculating val mae")
+        model_val, mae_val, val_pred_df = save_results(
+            model, mat_prop, classification, val_data, verbose=False
+        )
     if use_test:
         if verbose:
             print("-----------------------------------------------------")
