@@ -12,6 +12,7 @@ dependencies:
   - pandas
   - scikit-learn
   - plotly #ElM2D
+  - python-kaleido # plotly
   - setuptools #ElMD
   - umap-learn #ElM2D
   - hdbscan
@@ -20,3 +21,8 @@ dependencies:
   - pytorch=1.7.*
   - cudatoolkit=11.*
   - tqdm
+  - black #optional
+  - mypy #optional
+  - flake8 #optional
+  - ipykernel #optional
+  - nbformat #optional
