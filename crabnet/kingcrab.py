@@ -1,3 +1,5 @@
+from os.path import join
+
 import numpy as np
 import pandas as pd
 
@@ -58,7 +60,7 @@ class Embedder(nn.Module):
         self.d_model = d_model
         self.compute_device = compute_device
 
-        elem_dir = "data/element_properties"
+        elem_dir = join("CrabNet", "data", "element_properties")
         # # Choose what element information the model receives
         mat2vec = f"{elem_dir}/mat2vec.csv"  # element embedding
         # mat2vec = f'{elem_dir}/onehot.csv'  # onehot encoding (atomic number)
