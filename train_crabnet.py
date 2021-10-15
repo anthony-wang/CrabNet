@@ -3,16 +3,19 @@
 Use the crabnet environment.
 """
 import os
-from os.path import exists, join
+from os.path import exists, join, dirname
+
+# from warnings import warn
 import numpy as np
 import pandas as pd
 import torch
 
 from sklearn.metrics import roc_auc_score
 
-from .crabnet.kingcrab import CrabNet
-from .crabnet.model import Model
-from .utils.get_compute_device import get_compute_device
+from crabnet.kingcrab import CrabNet  # type: ignore
+from crabnet.model import Model  # type: ignore
+
+from utils.get_compute_device import get_compute_device
 
 compute_device = get_compute_device(prefer_last=True)
 RNG_SEED = 42
@@ -22,7 +25,7 @@ np.random.seed(RNG_SEED)
 
 # %%
 def get_model(
-    data_dir="data/materials_data",
+    data_dir=join(dirname(__file__), "data", "materials_data"),
     mat_prop=None,
     train_df=None,
     val_df=None,
@@ -137,7 +140,7 @@ def load_model(model, mat_prop, classification, data, verbose=True):
 
 
 def get_results(model):
-    output = model.predict(model.data_loader)  # predict the data saved here
+    output = model.predict(loader=model.data_loader)  # predict the data saved here
     return model, output
 
 
@@ -171,7 +174,7 @@ def main(
     train_df=None,
     val_df=None,
     test_df=None,
-    data_dir="data/materials_data",
+    data_dir=join(dirname(__file__), "data", "materials_data"),
     mat_prop=None,
     classification=False,
     train=True,
@@ -204,10 +207,10 @@ def main(
     if train_df is None and val_df is None and test_df is None:
         if mat_prop is None:
             mat_prop = "example_materials_property"
-        train_data = data_dir
-        val_data = data_dir
-        test_data = data_dir
-        use_test = exists(join(data_dir, mat_prop, test_df))
+        train_data = join(data_dir, mat_prop, "train.csv")
+        val_data = join(data_dir, mat_prop, "val.csv")
+        test_data = join(data_dir, mat_prop, "test.csv")
+        use_test = exists(test_data)
     else:
         mat_prop = "DataFrame_property"
         train_data = train_df
@@ -268,3 +271,14 @@ def main(
 # %%
 if __name__ == "__main__":
     main()
+
+# %% Code Graveyard
+# HACK:
+# try:
+#     from .crabnet.kingcrab import CrabNet
+#     from .crabnet.model import Model
+# except ImportWarning:
+#     warn(
+#         "relative import didn't work, probably because code is being executed as script instead of package",
+#         ImportWarning,
+#     )
