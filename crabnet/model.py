@@ -10,7 +10,7 @@ from sklearn.metrics import mean_absolute_error, roc_auc_score
 import torch
 from torch.optim.lr_scheduler import CyclicLR
 
-from CrabNet.utils.utils import (
+from mat_discover.CrabNet.utils.utils import (
     Lamb,
     Lookahead,
     RobustL1,
@@ -20,7 +20,7 @@ from CrabNet.utils.utils import (
     DummyScaler,
     count_parameters,
 )
-from CrabNet.utils.optim import SWA
+from mat_discover.CrabNet.utils.optim import SWA
 
 
 # %%
