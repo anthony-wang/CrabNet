@@ -144,8 +144,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-data/materials_data/elasticity/train.csv
-data/materials_data/elasticity/val.csv
 figures/lc_data/DataFrame_property_lc.csv
 figures/lc_data/elasticity_lc.csv
 figures/lc_data/elasticity_lc.png
