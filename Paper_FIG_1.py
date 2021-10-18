@@ -15,14 +15,16 @@ compute_device = get_compute_device()
 
 
 # %%
-mat_prop = 'mp_bulk_modulus'
-crabnet_params = {'d_model': 512, 'N': 3, 'heads': 4}
+mat_prop = "mp_bulk_modulus"
+crabnet_params = {"d_model": 512, "N": 3, "heads": 4}
 
-model = Model(CrabNet(**crabnet_params, compute_device=compute_device).to(compute_device))
-model.load_network(f'{mat_prop}.pth')
+model = Model(
+    CrabNet(**crabnet_params, compute_device=compute_device).to(compute_device)
+)
+model.load_network(f"{mat_prop}.pth")
 
 # Load the data you want to predict with
-test_data = rf'data\benchmark_data\{mat_prop}\val.csv'
+test_data = rf"data\benchmark_data\{mat_prop}\val.csv"
 model.load_data(test_data)  # data is reloaded to model.data_loader
 output = model.predict(model.data_loader)  # predict the data saved here
 
@@ -37,6 +39,7 @@ class SaveOutput:
 
     def clear(self):
         self.outputs = []
+
 
 save_output = SaveOutput()
 hook_handles = []
@@ -66,13 +69,13 @@ N = model.model.N  # number of layers
 n_data = len(model.data_loader.dataset)
 n_elements = model.n_elements
 
-assert n_mats == N * B, 'something is wrong with the matrices'
+assert n_mats == N * B, "something is wrong with the matrices"
 
 attn_data = torch.zeros(size=(n_data, N, H, n_elements, n_elements))
 for layer in range(N):
     sliceN = [mod_out[i][1].unsqueeze(1) for i in range(layer, n_mats, N)]
     sliceN = torch.cat(sliceN, dim=0)
-    attn_data[:, layer:layer+1, :, :, :] = sliceN
+    attn_data[:, layer : layer + 1, :, :, :] = sliceN
 
 attn_data = attn_data.detach().cpu().numpy()
 data_loader = model.data_loader
@@ -84,22 +87,27 @@ def get_datum(data_loader, idx=0):
     datum = data_loader.dataset[idx]
     return datum
 
+
 def get_x(data_loader, idx=0):
     x = get_datum(data_loader, idx=idx)[0]
     return x
+
 
 def get_atomic_numbers(data_loader, idx=0):
     nums = get_x(data_loader, idx=idx).chunk(2)[0].detach().cpu().numpy()
     nums = nums.astype(int)
     return nums
 
+
 def get_atomic_fracs(data_loader, idx=0):
     nums = get_x(data_loader, idx=idx).chunk(2)[1].detach().cpu().numpy()
     return nums
 
+
 def get_target(data_loader, idx=0):
     target = get_datum(data_loader, idx=idx)[1].detach().cpu().numpy()
     return target
+
 
 def get_form(data_loader, idx=0):
     form = get_datum(data_loader, idx=idx)[2]
@@ -132,19 +140,21 @@ def get_attention(attn_mat, idx=0, layer=0, head=0):
 
     """
     attn_mat = attn_mat
-    assert len(attn_mat.shape) == 5, 'input attn_map is of the wrong shape'
+    assert len(attn_mat.shape) == 5, "input attn_map is of the wrong shape"
     attn = attn_mat[idx, layer, head, :, :]
     return attn
 
 
-def plot_attention(map_data,
-                   cbar_ax=None,
-                   xlabel=None,
-                   ylabel=None,
-                   xticklabels=None,
-                   yticklabels=None,
-                   mask=True,
-                   ax=None):
+def plot_attention(
+    map_data,
+    cbar_ax=None,
+    xlabel=None,
+    ylabel=None,
+    xticklabels=None,
+    yticklabels=None,
+    mask=True,
+    ax=None,
+):
     "plots ONE attention map slice = map_data on given axis"
     if mask is not None:
         map_data = map_data * mask
@@ -152,60 +162,66 @@ def plot_attention(map_data,
         xticklabels = list(range(map_data.shape[0]))
     if yticklabels is None:
         yticklabels = list(range(map_data.shape[0]))
-    xticklabels = [f'{i:0.3g}' for i in xticklabels]
+    xticklabels = [f"{i:0.3g}" for i in xticklabels]
 
     import matplotlib as mpl
-    cmap1 = mpl.colors.ListedColormap(['lightgray'])
 
-    ax = sns.heatmap(map_data,
-                     cmap=cmap1,
-                     mask=map_data!=0,
-                        linewidths=1,
-                        linecolor='w',
-                        cbar_ax=cbar_ax,
-                        xticklabels=xticklabels,
-                        yticklabels=yticklabels,
-                        annot=True,
-                        fmt='.0f',
-                        annot_kws={"size": 15},
-                        vmin=0,
-                        vmax=0,
-                        ax=ax)
+    cmap1 = mpl.colors.ListedColormap(["lightgray"])
 
-    ax = sns.heatmap(map_data,
-                     cmap='rocket_r',
-                     mask=map_data==0,
-                        linewidths=1,
-                        linecolor='gray',
-                        cbar_ax=cbar_ax,
-                        xticklabels=xticklabels,
-                        yticklabels=yticklabels,
-                        annot=True,
-                        fmt='.2f',
-                        annot_kws={"size": 15},
-                        vmin=0,
-                        vmax=1,
-                        ax=ax)
+    ax = sns.heatmap(
+        map_data,
+        cmap=cmap1,
+        mask=map_data != 0,
+        linewidths=1,
+        linecolor="w",
+        cbar_ax=cbar_ax,
+        xticklabels=xticklabels,
+        yticklabels=yticklabels,
+        annot=True,
+        fmt=".0f",
+        annot_kws={"size": 15},
+        vmin=0,
+        vmax=0,
+        ax=ax,
+    )
+
+    ax = sns.heatmap(
+        map_data,
+        cmap="rocket_r",
+        mask=map_data == 0,
+        linewidths=1,
+        linecolor="gray",
+        cbar_ax=cbar_ax,
+        xticklabels=xticklabels,
+        yticklabels=yticklabels,
+        annot=True,
+        fmt=".2f",
+        annot_kws={"size": 15},
+        vmin=0,
+        vmax=1,
+        ax=ax,
+    )
 
     for tick in ax.yaxis.get_major_ticks():
-        tick.label1.set_verticalalignment('center')
+        tick.label1.set_verticalalignment("center")
 
     ax2 = ax.twiny()
     ax2.set_xlim(ax.get_xlim())
     ax2.set_xticks(ax.get_xticks())
     ax2.set_xticklabels(yticklabels)
-    ax2.spines['left'].set_visible(False)
-    ax2.spines['bottom'].set_visible(False)
-    ax2.spines['right'].set_visible(False)
-    ax2.spines['top'].set_visible(False)
+    ax2.spines["left"].set_visible(False)
+    ax2.spines["bottom"].set_visible(False)
+    ax2.spines["right"].set_visible(False)
+    ax2.spines["top"].set_visible(False)
 
-    ax.xaxis.set_tick_params(bottom=False, top=False, right=False,
-                             left=False, labelbottom=True)
+    ax.xaxis.set_tick_params(
+        bottom=False, top=False, right=False, left=False, labelbottom=True
+    )
     ax2.xaxis.set_tick_params(bottom=False, top=False, right=False, left=False)
-    ax.yaxis.set_tick_params(bottom=False, top=False, right=False,
-                             left=False, labelleft=True)
+    ax.yaxis.set_tick_params(
+        bottom=False, top=False, right=False, left=False, labelleft=True
+    )
     ax2.yaxis.set_tick_params(bottom=False, top=False, right=False, left=False)
-
 
     ax.set_xticks([0.5, 1.5, 2.5, 3.5])
     ax.set_xticklabels(xticklabels)
@@ -234,10 +250,14 @@ def plot_all_heads(data_loader, attn_mat, idx=0, layer=0, mask=True):
         ncols = 2
     else:
         ncols = 1
-    nrows = H//ncols
-    fig, fig_axes = plt.subplots(figsize=(4.5*ncols, 4.5*nrows),
-                                 ncols=ncols, nrows=nrows,
-                                 sharex=True, sharey=True)
+    nrows = H // ncols
+    fig, fig_axes = plt.subplots(
+        figsize=(4.5 * ncols, 4.5 * nrows),
+        ncols=ncols,
+        nrows=nrows,
+        sharex=True,
+        sharey=True,
+    )
     fig.subplots_adjust(hspace=0.33, wspace=0.25)
     cbar_ax = fig.add_axes([0.92, 0.3, 0.03, 0.4])
     atom_fracs = get_atomic_fracs(data_loader, idx=idx)
@@ -252,58 +272,63 @@ def plot_all_heads(data_loader, attn_mat, idx=0, layer=0, mask=True):
         mask = atom_presence * atom_presence.T
 
     plot_four = True
-    label_abcd = ['a', 'b', 'c', 'd']
+    label_abcd = ["a", "b", "c", "d"]
     if plot_four:
         for h in range(4):
             map_data = get_attention(attn_mat, idx=idx, layer=layer, head=h)
             n_el = 4
-            plot_attention(map_data[:n_el, :n_el],
-                           # xlabel='fractional amount',
-                           # ylabel='atoms',
-                           xticklabels=atom_fracs.ravel()[:n_el],
-                           yticklabels=atoms[:n_el],
-                           mask=mask[:n_el, :n_el],
-                           ax=fig_axes.ravel()[h],
-                           cbar_ax=cbar_ax,)
-            fig_axes.ravel()[h].set_title(label=f'layer {layer}, head {h}')
-            fig_axes.ravel()[h].set_title(label=f'{label_abcd[h]}){40*" "}',
-                                          fontdict={'fontweight': 'bold'},
-                                          y=1.05)
-        plt.savefig('figures/Figure1_attention_plot_Al2O3.png',
-                    bbox_inches='tight', dpi=300)
+            plot_attention(
+                map_data[:n_el, :n_el],
+                # xlabel='fractional amount',
+                # ylabel='atoms',
+                xticklabels=atom_fracs.ravel()[:n_el],
+                yticklabels=atoms[:n_el],
+                mask=mask[:n_el, :n_el],
+                ax=fig_axes.ravel()[h],
+                cbar_ax=cbar_ax,
+            )
+            fig_axes.ravel()[h].set_title(label=f"layer {layer}, head {h}")
+            fig_axes.ravel()[h].set_title(
+                label=f'{label_abcd[h]}){40*" "}',
+                fontdict={"fontweight": "bold"},
+                y=1.05,
+            )
+        plt.savefig(
+            "figures/Figure1_attention_plot_Al2O3.png", bbox_inches="tight", dpi=300
+        )
         plt.show()
         # exit
     else:
         for h in range(H):
             map_data = get_attention(attn_mat, idx=idx, layer=layer, head=h)
-            plot_attention(map_data,
-                           xlabel='fractional amount',
-                           ylabel='atoms',
-                           xticklabels=atom_fracs.ravel(),
-                           yticklabels=atoms,
-                           mask=mask,
-                           ax=fig_axes.ravel()[h],
-                           cbar_ax=cbar_ax,)
-            fig_axes.ravel()[h].set_title(label=f'layer {layer}, head {h}')
-        fig.suptitle(f'index: {idx}, formula: {form}')
-        plt.savefig('figures/Figure1_attention_plot_Al2O3.png',
-                    bbox_inches='tight', dpi=300)
+            plot_attention(
+                map_data,
+                xlabel="fractional amount",
+                ylabel="atoms",
+                xticklabels=atom_fracs.ravel(),
+                yticklabels=atoms,
+                mask=mask,
+                ax=fig_axes.ravel()[h],
+                cbar_ax=cbar_ax,
+            )
+            fig_axes.ravel()[h].set_title(label=f"layer {layer}, head {h}")
+        fig.suptitle(f"index: {idx}, formula: {form}")
+        plt.savefig(
+            "figures/Figure1_attention_plot_Al2O3.png", bbox_inches="tight", dpi=300
+        )
         plt.show()
     return fig, fig_axes
 
 
 # %%
 formula_idx = [(i, out[2]) for i, out in enumerate(data_loader.dataset)]
-find_formula = 'Al2O3'
-idx = [i for i, out in enumerate(data_loader.dataset)
-       if out[2] == find_formula]
+find_formula = "Al2O3"
+idx = [i for i, out in enumerate(data_loader.dataset) if out[2] == find_formula]
 if len(idx) > 0:
-    print(f'Found {find_formula} at index {idx}')
+    print(f"Found {find_formula} at index {idx}")
 
 for i in range(len(idx)):
     for n in range(N):
         plot_all_heads(data_loader, attn_data, idx=idx[i], layer=n)
         break
     break
-
-

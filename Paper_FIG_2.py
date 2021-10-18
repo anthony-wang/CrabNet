@@ -21,11 +21,11 @@ cons = CONSTANTS()
 
 
 # %%
-mat_prop = 'aflow__Egap'
-torchnet_params = {'d_model': 512, 'N': 3, 'heads': 4}
+mat_prop = "aflow__Egap"
+torchnet_params = {"d_model": 512, "N": 3, "heads": 4}
 symbol_idx_dict = {val: key for key, val in cons.idx_symbol_dict.items()}
 
-elem = 'Si'
+elem = "Si"
 # elem = 23
 if type(elem) == int:
     elem_sym = cons.idx_symbol_dict[elem]
@@ -34,9 +34,9 @@ elif type(elem) == str:
     elem_Z = symbol_idx_dict[elem]
     elem_sym = elem
 
-train_data1 = rf'data\benchmark_data\{mat_prop}\train.csv'
+train_data1 = rf"data\benchmark_data\{mat_prop}\train.csv"
 datas = [train_data1]
-in_fracs = ['Average Attention (AFLOW Egap)']
+in_fracs = ["Average Attention (AFLOW Egap)"]
 
 
 class SaveOutput:
@@ -50,30 +50,34 @@ class SaveOutput:
     def clear(self):
         self.outputs = []
 
+
 save_output = SaveOutput()
 
-for data, in_frac  in zip(datas, in_fracs):
+for data, in_frac in zip(datas, in_fracs):
 
     # Create a model
-    model = Model(CrabNet(**torchnet_params, compute_device=compute_device).to(compute_device))
-    model.load_network(f'{mat_prop}.pth')
+    model = Model(
+        CrabNet(**torchnet_params, compute_device=compute_device).to(compute_device)
+    )
+    model.load_network(f"{mat_prop}.pth")
     hook_handles = []
 
     # Insert forward hooks into model
     for layer in model.model.modules():
         if isinstance(layer, torch.nn.modules.activation.MultiheadAttention):
             # print('isinstance')
-                handle = layer.register_forward_hook(save_output)
-                hook_handles.append(handle)
+            handle = layer.register_forward_hook(save_output)
+            hook_handles.append(handle)
 
     model.load_data(data)  # data is reloaded to model.data_loader
 
     save_output.clear()
     output = model.predict(model.data_loader)
 
-    elem_pred = [(i, out, output[1][i]) for
-                 i, out in enumerate(output[2]) if elem_sym in out]
-    df_elem = pd.DataFrame(elem_pred, columns=['idx', 'formula', 'prediction'])
+    elem_pred = [
+        (i, out, output[1][i]) for i, out in enumerate(output[2]) if elem_sym in out
+    ]
+    df_elem = pd.DataFrame(elem_pred, columns=["idx", "formula", "prediction"])
 
     mod_out = save_output.outputs
 
@@ -85,20 +89,19 @@ for data, in_frac  in zip(datas, in_fracs):
     n_data = len(model.data_loader.dataset)
     n_elements = model.n_elements
 
-    assert n_mats == N * B, 'something is wrong with the matrices'
+    assert n_mats == N * B, "something is wrong with the matrices"
 
     attn_data = torch.zeros(size=(n_data, N, H, n_elements, n_elements))
     for layer in range(N):
-        sliceN = [save_output.outputs[i][1].unsqueeze(1) for
-                  i in range(layer, n_mats, N)]
+        sliceN = [
+            save_output.outputs[i][1].unsqueeze(1) for i in range(layer, n_mats, N)
+        ]
         sliceN = torch.cat(sliceN, dim=0)
-        attn_data[:, layer:layer+1, :, :, :] = sliceN
+        attn_data[:, layer : layer + 1, :, :, :] = sliceN
 
-    save_output.clear()   # free up CPU RAM after getting attn info
+    save_output.clear()  # free up CPU RAM after getting attn info
     attn_data = attn_data.detach().cpu().numpy()
     data_loader = model.data_loader
-
-
 
     def get_datum(data_loader, idx=0):
         datum = data_loader.dataset[idx]
@@ -125,7 +128,6 @@ for data, in_frac  in zip(datas, in_fracs):
         form = get_datum(data_loader, idx=idx)[2]
         return form
 
-
     def get_attention(attn_mat, idx=0, layer=0, head=0):
         """
         Get one slice of the attention map.
@@ -151,26 +153,25 @@ for data, in_frac  in zip(datas, in_fracs):
 
         """
         attn_mat = attn_mat
-        assert len(attn_mat.shape) == 5, 'input attn_map is of the wrong shape'
-        if head == 'average':
+        assert len(attn_mat.shape) == 5, "input attn_map is of the wrong shape"
+        if head == "average":
             attn = attn_mat[idx, layer, :, :, :]
             attn = np.mean(attn, axis=0)
         elif isinstance(head, int):
             attn = attn_mat[idx, layer, head, :, :]
         return attn
 
-
     attn_mat = attn_data.copy()
 
     data_loader = model.data_loader
 
-    idx=1
-    layer=0
+    idx = 1
+    layer = 0
 
     other_dict = {i: [] for i in range(1, 119)}
 
-    option = [0, 1, 2, 3, 'average']
-    option_texts = ['a)', 'b)', 'c)', 'd)', 'average']
+    option = [0, 1, 2, 3, "average"]
+    option_texts = ["a)", "b)", "c)", "d)", "average"]
 
     idx_plot = 0
     head_option = option[idx_plot]
@@ -195,7 +196,7 @@ for data, in_frac  in zip(datas, in_fracs):
                 # get the raw attention value
                 other_dict[atomic_number].append(map_data[row, col])
 
-
+    # fmt: off
     all_symbols = ['None', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na',
                    'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc',
                    'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga',
@@ -208,17 +209,20 @@ for data, in_frac  in zip(datas, in_fracs):
                    'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md',
                    'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg',
                    'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
+    # fmt: on
 
-    property_tracker = {all_symbols[key]: np.array(val).mean() for key, val
-                        in other_dict.items()
-                        if len(val) != 0}
+    property_tracker = {
+        all_symbols[key]: np.array(val).mean()
+        for key, val in other_dict.items()
+        if len(val) != 0
+    }
 
     def plot(mat_prop, property_tracker):
-        ptable = pd.read_csv('data/element_properties/ptable.csv')
-        ptable.index = ptable['symbol'].values
-        elem_tracker = ptable['count']
-        n_row = ptable['row'].max()
-        n_column = ptable['column'].max()
+        ptable = pd.read_csv("data/element_properties/ptable.csv")
+        ptable.index = ptable["symbol"].values
+        elem_tracker = ptable["count"]
+        n_row = ptable["row"].max()
+        n_column = ptable["column"].max()
 
         elem_tracker = elem_tracker + pd.Series(property_tracker)
 
@@ -226,13 +230,13 @@ for data, in_frac  in zip(datas, in_fracs):
         log_scale = False
 
         fig, ax = plt.subplots(figsize=(n_column, n_row))
-        rows = ptable['row']
-        columns = ptable['column']
-        symbols = ptable['symbol']
+        rows = ptable["row"]
+        columns = ptable["column"]
+        symbols = ptable["symbol"]
         rw = 0.9  # rectangle width (rw)
         rh = rw  # rectangle height (rh)
         for row, column, symbol in zip(rows, columns, symbols):
-            row = ptable['row'].max() - row
+            row = ptable["row"].max() - row
             cmap = sns.cm.rocket_r
             count_min = elem_tracker.min()
             count_max = elem_tracker.max()
@@ -246,31 +250,45 @@ for data, in_frac  in zip(datas, in_fracs):
                     count = np.log(count)
             color = cmap(norm(count))
             if np.isnan(count):
-                color = 'silver'
+                color = "silver"
             if row < 3:
                 row += 0.5
             # element box
-            rect = patches.Rectangle((column, row), rw, rh,
-                                     linewidth=1.5,
-                                     edgecolor='gray',
-                                     facecolor=color,
-                                     alpha=1)
+            rect = patches.Rectangle(
+                (column, row),
+                rw,
+                rh,
+                linewidth=1.5,
+                edgecolor="gray",
+                facecolor=color,
+                alpha=1,
+            )
             # plot element text
-            text = plt.text(column+rw/2, row+rw/2, symbol,
-                     horizontalalignment='center',
-                     verticalalignment='center',
-                     fontsize=22,
-                     fontweight='semibold', color='white')
+            text = plt.text(
+                column + rw / 2,
+                row + rw / 2,
+                symbol,
+                horizontalalignment="center",
+                verticalalignment="center",
+                fontsize=22,
+                fontweight="semibold",
+                color="white",
+            )
 
-            text.set_path_effects([path_effects.Stroke(linewidth=3,
-                                                       foreground='#030303'),
-                           path_effects.Normal()])
+            text.set_path_effects(
+                [
+                    path_effects.Stroke(linewidth=3, foreground="#030303"),
+                    path_effects.Normal(),
+                ]
+            )
 
             ax.add_patch(rect)
 
         granularity = 20
         for i in range(granularity):
-            value = (1-i/(granularity-1))*count_min + (i/(granularity-1)) * count_max
+            value = (1 - i / (granularity - 1)) * count_min + (
+                i / (granularity - 1)
+            ) * count_max
             if log_scale:
                 if value != 0:
                     value = np.log(value)
@@ -278,49 +296,68 @@ for data, in_frac  in zip(datas, in_fracs):
             length = 9
             x_offset = 3.5
             y_offset = 7.8
-            x_loc = i/(granularity) * length + x_offset
+            x_loc = i / (granularity) * length + x_offset
             width = length / granularity
             height = 0.35
-            rect = patches.Rectangle((x_loc, y_offset), width, height,
-                                     linewidth=1.5,
-                                     edgecolor='gray',
-                                     facecolor=color,
-                                     alpha=1)
+            rect = patches.Rectangle(
+                (x_loc, y_offset),
+                width,
+                height,
+                linewidth=1.5,
+                edgecolor="gray",
+                facecolor=color,
+                alpha=1,
+            )
 
             if i in [0, 4, 9, 14, 19]:
-                text = f'{value:0.2f}'
+                text = f"{value:0.2f}"
                 if log_scale:
-                    text = f'{np.exp(value):0.1e}'.replace('+', '')
-                plt.text(x_loc+width/2, y_offset-0.4, text,
-                         horizontalalignment='center',
-                         verticalalignment='center',
-                         fontweight='semibold',
-                         fontsize=20, color='k')
+                    text = f"{np.exp(value):0.1e}".replace("+", "")
+                plt.text(
+                    x_loc + width / 2,
+                    y_offset - 0.4,
+                    text,
+                    horizontalalignment="center",
+                    verticalalignment="center",
+                    fontweight="semibold",
+                    fontsize=20,
+                    color="k",
+                )
 
             ax.add_patch(rect)
 
-        legend_title = f'{elem_sym}, {in_frac}'
-        plt.text(x_offset+length/2, y_offset+0.7,
-                 f'log({legend_title})' if log_scale else legend_title,
-                 horizontalalignment='center',
-                 verticalalignment='center',
-                 fontweight='semibold',
-                 fontsize=20, color='k')
+        legend_title = f"{elem_sym}, {in_frac}"
+        plt.text(
+            x_offset + length / 2,
+            y_offset + 0.7,
+            f"log({legend_title})" if log_scale else legend_title,
+            horizontalalignment="center",
+            verticalalignment="center",
+            fontweight="semibold",
+            fontsize=20,
+            color="k",
+        )
         # add annotation for subfigure numbering
-        plt.text(0.55, n_row+.1, option_text,
-                 fontweight='semibold', fontsize=38, color='k')
-        ax.set_ylim(-0.15, n_row+.1)
-        ax.set_xlim(0.85, n_column+1.1)
+        plt.text(
+            0.55,
+            n_row + 0.1,
+            option_text,
+            fontweight="semibold",
+            fontsize=38,
+            color="k",
+        )
+        ax.set_ylim(-0.15, n_row + 0.1)
+        ax.set_xlim(0.85, n_column + 1.1)
 
         # fig.patch.set_visible(False)
-        ax.axis('off')
+        ax.axis("off")
 
         plt.draw()
-        save_dir = 'figures/'
+        save_dir = "figures/"
         if save_dir is not None:
-            fig_name = f'{save_dir}/Figure2_{mat_prop}_ptable_{head_option}.png'
+            fig_name = f"{save_dir}/Figure2_{mat_prop}_ptable_{head_option}.png"
             os.makedirs(save_dir, exist_ok=True)
-            plt.savefig(fig_name, bbox_inches='tight', dpi=300)
+            plt.savefig(fig_name, bbox_inches="tight", dpi=300)
 
         plt.pause(0.001)
         plt.close()

@@ -4,11 +4,13 @@ import pandas as pd
 import numpy as np
 import tqdm
 import os
+
 dirpath = os.getcwd()
 
 
 class CompositionError(Exception):
     """Exception class for composition errors"""
+
     pass
 
 
@@ -22,12 +24,12 @@ def get_sym_dict(f, factor):
         sym_dict[el] += amt * factor
         f = f.replace(m.group(), "", 1)
     if f.strip():
-        raise CompositionError(f'{f} is an invalid formula!')
+        raise CompositionError(f"{f} is an invalid formula!")
     return sym_dict
 
 
 def parse_formula(formula):
-    '''
+    """
     Parameters
     ----------
         formula: str
@@ -40,19 +42,20 @@ def parse_formula(formula):
     ----------
         In the case of Metallofullerene formula (e.g. Y3N@C80),
         the @ mark will be dropped and passed to parser.
-    '''
+    """
     # for Metallofullerene like "Y3N@C80"
-    formula = formula.replace('@', '')
-    formula = formula.replace('[', '(')
-    formula = formula.replace(']', ')')
+    formula = formula.replace("@", "")
+    formula = formula.replace("[", "(")
+    formula = formula.replace("]", ")")
     m = re.search(r"\(([^\(\)]+)\)\s*([\.\d]*)", formula)
     if m:
         factor = 1
         if m.group(2) != "":
             factor = float(m.group(2))
         unit_sym_dict = get_sym_dict(m.group(1), factor)
-        expanded_sym = "".join(["{}{}".format(el, amt)
-                                for el, amt in unit_sym_dict.items()])
+        expanded_sym = "".join(
+            ["{}{}".format(el, amt) for el, amt in unit_sym_dict.items()]
+        )
         expanded_formula = formula.replace(m.group(), expanded_sym)
         return parse_formula(expanded_formula)
     sym_dict = get_sym_dict(formula, 1)
@@ -113,7 +116,7 @@ def _assign_features(matrices, elem_info, formulae, sum_feat=False):
     formulas = []
     skipped_formula = []
 
-    for h in tqdm.tqdm(range(len(formulae)), desc='Assigning Features...'):
+    for h in tqdm.tqdm(range(len(formulae)), desc="Assigning Features..."):
         elem_list = formula_mat[h]
         target = target_mat[h]
         formula = formulae[h]
@@ -153,26 +156,44 @@ def _assign_features(matrices, elem_info, formulae, sum_feat=False):
         formulas.append(formula)
 
     if len(skipped_formula) > 0:
-        print('\nNOTE: Your data contains formula with exotic elements.',
-              'These were skipped.')
+        print(
+            "\nNOTE: Your data contains formula with exotic elements.",
+            "These were skipped.",
+        )
     if sum_feat:
-        conc_list = [sum_feats, avg_feats, dev_feats,
-                     range_feats, max_feats, min_feats, mode_feats]
+        conc_list = [
+            sum_feats,
+            avg_feats,
+            dev_feats,
+            range_feats,
+            max_feats,
+            min_feats,
+            mode_feats,
+        ]
         feats = np.concatenate(conc_list, axis=1)
     else:
-        conc_list = [avg_feats, dev_feats,
-                     range_feats, max_feats, min_feats, mode_feats]
+        conc_list = [
+            avg_feats,
+            dev_feats,
+            range_feats,
+            max_feats,
+            min_feats,
+            mode_feats,
+        ]
         feats = np.concatenate(conc_list, axis=1)
 
     return feats, targets, formulas, skipped_formula
 
 
-def generate_features(df, elem_prop='oliynyk',
-                      drop_duplicates=False,
-                      extend_features=False,
-                      sum_feat=False,
-                      mini=False):
-    '''
+def generate_features(
+    df,
+    elem_prop="oliynyk",
+    drop_duplicates=False,
+    extend_features=False,
+    sum_feat=False,
+    mini=False,
+):
+    """
     Parameters
     ----------
     df: Pandas.DataFrame()
@@ -202,12 +223,13 @@ def generate_features(df, elem_prop='oliynyk',
         Target values
     formulae: pd.Series()
         Formula associated with X and y
-    '''
+    """
     if drop_duplicates:
-        if df['formula'].value_counts()[0] > 1:
-            df.drop_duplicates('formula', inplace=True)
-            print('Duplicate formula(e) removed using default pandas function')
+        if df["formula"].value_counts()[0] > 1:
+            df.drop_duplicates("formula", inplace=True)
+            print("Duplicate formula(e) removed using default pandas function")
 
+    # fmt: off
     all_symbols = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na',
                    'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc',
                    'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga',
@@ -220,13 +242,11 @@ def generate_features(df, elem_prop='oliynyk',
                    'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md',
                    'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg',
                    'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
+    # fmt: on
 
-    elem_props = pd.read_csv(dirpath
-                             + '/data/element_properties/'
-                             + elem_prop
-                             + '.csv')
-    elem_props.index = elem_props['element'].values
-    elem_props.drop(['element'], inplace=True, axis=1)
+    elem_props = pd.read_csv(dirpath + "/data/element_properties/" + elem_prop + ".csv")
+    elem_props.index = elem_props["element"].values
+    elem_props.drop(["element"], inplace=True, axis=1)
 
     elem_symbols = elem_props.index.tolist()
     elem_index = np.arange(0, elem_props.shape[0], 1)
@@ -234,15 +254,18 @@ def generate_features(df, elem_prop='oliynyk',
 
     elem_props_columns = elem_props.columns.values
 
-    column_names = np.concatenate(['avg_' + elem_props_columns,
-                                   'dev_' + elem_props_columns,
-                                   'range_' + elem_props_columns,
-                                   'max_' + elem_props_columns,
-                                   'min_' + elem_props_columns,
-                                   'mode_' + elem_props_columns])
+    column_names = np.concatenate(
+        [
+            "avg_" + elem_props_columns,
+            "dev_" + elem_props_columns,
+            "range_" + elem_props_columns,
+            "max_" + elem_props_columns,
+            "min_" + elem_props_columns,
+            "mode_" + elem_props_columns,
+        ]
+    )
     if sum_feat:
-        column_names = np.concatenate(['sum_' + elem_props_columns,
-                                       column_names])
+        column_names = np.concatenate(["sum_" + elem_props_columns, column_names])
 
     # make empty list where we will store the property value
     targets = []
@@ -259,12 +282,12 @@ def generate_features(df, elem_prop='oliynyk',
 
     if extend_features:
         features = df.columns.values.tolist()
-        features.remove('target')
+        features.remove("target")
         extra_features = df[features]
 
-    for index in tqdm.tqdm(df.index.values, desc='Processing Input Data'):
-        formula, target = df.loc[index, 'formula'], df.loc[index, 'target']
-        if 'x' in formula:
+    for index in tqdm.tqdm(df.index.values, desc="Processing Input Data"):
+        formula, target = df.loc[index, "formula"], df.loc[index, "target"]
+        if "x" in formula:
             continue
         l1, l2 = _element_composition_L(formula)
         formula_mat.append(l1)
@@ -274,24 +297,23 @@ def generate_features(df, elem_prop='oliynyk',
         target_mat.append(target)
         formulae.append(formula)
 
-    print('\tfeaturizing compositions...'.title())
+    print("\tfeaturizing compositions...".title())
 
     matrices = [formula_mat, count_mat, frac_mat, elem_mat, target_mat]
     elem_info = [elem_symbols, elem_index, elem_missing]
-    feats, targets, formulae, skipped = _assign_features(matrices,
-                                                         elem_info,
-                                                         formulae,
-                                                         sum_feat=sum_feat)
+    feats, targets, formulae, skipped = _assign_features(
+        matrices, elem_info, formulae, sum_feat=sum_feat
+    )
 
-    print('\tcreating pandas objects...'.title())
+    print("\tcreating pandas objects...".title())
 
     # split feature vectors and targets as X and y
     X = pd.DataFrame(feats, columns=column_names, index=formulae)
-    y = pd.Series(targets, index=formulae, name='target')
-    formulae = pd.Series(formulae, index=formulae, name='formula')
+    y = pd.Series(targets, index=formulae, name="target")
+    formulae = pd.Series(formulae, index=formulae, name="formula")
     if extend_features:
         extended = pd.DataFrame(extra_features, columns=features)
-        extended = extended.set_index('formula', drop=True)
+        extended = extended.set_index("formula", drop=True)
         X = pd.concat([X, extended], axis=1)
 
     # reset dataframe indices
@@ -301,7 +323,7 @@ def generate_features(df, elem_prop='oliynyk',
 
     # drop elements that aren't included in the elmenetal properties list.
     # These will be returned as feature rows completely full of NaN values.
-    X.dropna(inplace=True, how='all')
+    X.dropna(inplace=True, how="all")
     y = y.iloc[X.index]
     formulae = formulae.iloc[X.index]
 
@@ -316,11 +338,11 @@ def generate_features(df, elem_prop='oliynyk',
 
     if mini:
         np.random.seed(42)
-        booleans = np.random.rand(X.shape[-1]) <= 64/X.shape[-1]
+        booleans = np.random.rand(X.shape[-1]) <= 64 / X.shape[-1]
         X = X.iloc[:, booleans]
 
     return X, y, formulae, skipped
 
+
 # if __name__ == '__main__':
 #     pass
-

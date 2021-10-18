@@ -16,6 +16,7 @@ data_type_torch = torch.float32
 
 
 # %%
+# fmt: off
 all_symbols = ['None', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na',
                'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc',
                'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga',
@@ -28,31 +29,41 @@ all_symbols = ['None', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na
                'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md',
                'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg',
                'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
+# fmt: on
 
-color = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf']
+color = [
+    "#e41a1c",
+    "#377eb8",
+    "#4daf4a",
+    "#984ea3",
+    "#ff7f00",
+    "#ffff33",
+    "#a65628",
+    "#f781bf",
+]
 
 classification_list = []
 
-num = ''
-mat_prop = 'aflow__Egap'
+num = ""
+mat_prop = "aflow__Egap"
 
 # Get the TorchedCrabNet architecture loaded
-model = Model(CrabNet().to(compute_device), model_name=f'{mat_prop}')
+model = Model(CrabNet().to(compute_device), model_name=f"{mat_prop}")
 if True:
-    model.load_network(f'{mat_prop}{num}.pth')
-    model.model_name = f'{mat_prop}{num}'
+    model.load_network(f"{mat_prop}{num}.pth")
+    model.model_name = f"{mat_prop}{num}"
 
 if mat_prop in classification_list:
     model.classification = True
 
-mat_prop = 'aflow__Egap'
-test_data = rf'data\benchmark_data\{mat_prop}\train.csv'
+mat_prop = "aflow__Egap"
+test_data = rf"data\benchmark_data\{mat_prop}\train.csv"
 # test_data = rf'data\matbench_cv\{mat_prop}\train{num}.csv'
 
-model.load_data(test_data, batch_size=2**0)  # data is reloaded to model.data_loader
+model.load_data(test_data, batch_size=2 ** 0)  # data is reloaded to model.data_loader
 
 len_dataset = len(model.data_loader.dataset)
-n_atoms = int(len(model.data_loader.dataset[0][0])/2)
+n_atoms = int(len(model.data_loader.dataset[0][0]) / 2)
 act = np.zeros(len_dataset)
 pred = np.zeros(len_dataset)
 uncert = np.zeros(len_dataset)
@@ -62,9 +73,9 @@ fractions = np.empty((len_dataset, n_atoms))
 model.model.eval()
 model.model.avg = False
 
-simple_tracker = {i:[] for i in range(119)}
-variance_tracker = {i:[] for i in range(119)}
-element_tracker = {i:[] for i in range(119)}
+simple_tracker = {i: [] for i in range(119)}
+variance_tracker = {i: [] for i in range(119)}
+element_tracker = {i: [] for i in range(119)}
 composition_tracker = {}
 
 alls_dict = defaultdict(list)
@@ -81,9 +92,9 @@ for data in model.data_loader.dataset:
 max_len = 1
 
 for key, systems in binaries_dict.items():
-    if 'Si' not in key:
+    if "Si" not in key:
         continue
-    if 'O' not in key:
+    if "O" not in key:
         continue
     print(key)
     if len(systems) < max_len:
@@ -94,15 +105,9 @@ for key, systems in binaries_dict.items():
             X, y, formula = data
             print(formula)
             src, frac = X.unsqueeze(0).squeeze(-1).chunk(2, dim=1)
-            src = src.to(compute_device,
-                         dtype=torch.long,
-                         non_blocking=True)
-            frac = frac.to(compute_device,
-                           dtype=data_type_torch,
-                           non_blocking=True)
-            y = y.to(compute_device,
-                     dtype=data_type_torch,
-                     non_blocking=True)
+            src = src.to(compute_device, dtype=torch.long, non_blocking=True)
+            frac = frac.to(compute_device, dtype=data_type_torch, non_blocking=True)
+            y = y.to(compute_device, dtype=data_type_torch, non_blocking=True)
             output = model.model.forward(src, frac)
             mask = (src == 0).unsqueeze(-1).repeat(1, 1, 3)
             mask = (src == 0).unsqueeze(-1).repeat(1, 1, 1)
@@ -135,25 +140,19 @@ for key, systems in binaries_dict.items():
         X_data = sorted(X_data, reverse=True)
         slist = [x[0] for x in X_data]
         flist = [x[1] for x in X_data]
-        X = torch.tensor(slist+flist).unsqueeze(1)
+        X = torch.tensor(slist + flist).unsqueeze(1)
 
-        first=True
-        for i in range(0, res-1):
+        first = True
+        for i in range(0, res - 1):
             src, frac = X.unsqueeze(0).squeeze(-1).chunk(2, dim=1)
             frac = frac.clone()
             src = src.clone()
 
-            frac[:, 0:1] = 1/res + (i/res)
-            frac[:, 1:2] = (1 - frac[:, 0:1])
-            src = src.to(compute_device,
-                         dtype=torch.long,
-                         non_blocking=True)
-            frac = frac.to(compute_device,
-                           dtype=data_type_torch,
-                           non_blocking=True)
-            y = y.to(compute_device,
-                     dtype=data_type_torch,
-                     non_blocking=True)
+            frac[:, 0:1] = 1 / res + (i / res)
+            frac[:, 1:2] = 1 - frac[:, 0:1]
+            src = src.to(compute_device, dtype=torch.long, non_blocking=True)
+            frac = frac.to(compute_device, dtype=data_type_torch, non_blocking=True)
+            y = y.to(compute_device, dtype=data_type_torch, non_blocking=True)
 
             output = model.model.forward(src, frac)
             mask = (src == 0).unsqueeze(-1).repeat(1, 1, 1)
@@ -181,7 +180,9 @@ for key, systems in binaries_dict.items():
             frac_tracker.append(frac[0, :1].cpu().detach().numpy())
             elem1_tracker.append(pred_elem1)
             elem2_tracker.append(pred_elem2)
-            pred_tracker.append(((prediction * ~mask).sum() / (~mask).sum()).cpu().detach().numpy())
+            pred_tracker.append(
+                ((prediction * ~mask).sum() / (~mask).sum()).cpu().detach().numpy()
+            )
             elem1_name = all_symbols[int(src[0, 0].cpu().detach().numpy())]
             elem2_name = all_symbols[int(src[0, 1].cpu().detach().numpy())]
 
@@ -189,15 +190,47 @@ for key, systems in binaries_dict.items():
         pred_tracker = np.array(pred_tracker).ravel()
         uncertainty_tracker = np.array(uncertainty_tracker).ravel()
         plt.figure(figsize=(7, 5))
-        plt.fill_between(frac_tracker, pred_tracker-uncertainty_tracker, pred_tracker+uncertainty_tracker, alpha=0.7, color='silver')
-        plt.plot(frac_tracker, elem1_tracker, '-.', label=f'{elem1_name} contribution', color=color[0], linewidth=2)
-        plt.plot(frac_tracker, elem2_tracker, '--', label=f'{elem2_name} contribution', color=color[1], linewidth=2)
-        plt.plot(frac_tracker, pred_tracker, '-', color='gray', label='Prediction', linewidth=2)
+        plt.fill_between(
+            frac_tracker,
+            pred_tracker - uncertainty_tracker,
+            pred_tracker + uncertainty_tracker,
+            alpha=0.7,
+            color="silver",
+        )
+        plt.plot(
+            frac_tracker,
+            elem1_tracker,
+            "-.",
+            label=f"{elem1_name} contribution",
+            color=color[0],
+            linewidth=2,
+        )
+        plt.plot(
+            frac_tracker,
+            elem2_tracker,
+            "--",
+            label=f"{elem2_name} contribution",
+            color=color[1],
+            linewidth=2,
+        )
+        plt.plot(
+            frac_tracker,
+            pred_tracker,
+            "-",
+            color="gray",
+            label="Prediction",
+            linewidth=2,
+        )
         plt.xlim(0, 1)
-        plt.ylabel('$Si_xO_{1-x}$ Band Gap (eV)')
-        plt.xlabel('$x$')
+        plt.ylabel("$Si_xO_{1-x}$ Band Gap (eV)")
+        plt.xlabel("$x$")
 
-        plt.legend(ncol=1, handlelength=2, labelspacing=0.08, columnspacing=1 , framealpha=0.3)
-        plt.savefig(f'figures/Figure4_binary_plot_{elem1_name}-{elem2_name}.png',
-                    bbox_inches='tight', dpi=300)
+        plt.legend(
+            ncol=1, handlelength=2, labelspacing=0.08, columnspacing=1, framealpha=0.3
+        )
+        plt.savefig(
+            f"figures/Figure4_binary_plot_{elem1_name}-{elem2_name}.png",
+            bbox_inches="tight",
+            dpi=300,
+        )
         plt.show()

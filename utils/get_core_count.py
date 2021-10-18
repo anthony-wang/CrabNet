@@ -7,15 +7,14 @@ import warnings
 
 # %%
 def get_core_count():
-    """ Get the number of available virtual or physical CPUs on this system"""
+    """Get the number of available virtual or physical CPUs on this system"""
 
     # cpuset
     # cpuset may restrict the number of *available* processors
     try:
-        m = re.search(r'(?m)^Cpus_allowed:\s*(.*)$',
-                      open('/proc/self/status').read())
+        m = re.search(r"(?m)^Cpus_allowed:\s*(.*)$", open("/proc/self/status").read())
         if m:
-            res = bin(int(m.group(1).replace(',', ''), 16)).count('1')
+            res = bin(int(m.group(1).replace(",", ""), 16)).count("1")
             if res > 0:
                 return res
     except IOError:
@@ -24,6 +23,7 @@ def get_core_count():
     # Python 2.6+
     try:
         import multiprocessing
+
         return multiprocessing.cpu_count()
     except (ImportError, NotImplementedError):
         pass
@@ -31,13 +31,14 @@ def get_core_count():
     # https://github.com/giampaolo/psutil
     try:
         import psutil
-        return psutil.cpu_count()   # psutil.NUM_CPUS on old versions
+
+        return psutil.cpu_count()  # psutil.NUM_CPUS on old versions
     except (ImportError, AttributeError):
         pass
 
     # POSIX
     try:
-        res = int(os.sysconf('SC_NPROCESSORS_ONLN'))
+        res = int(os.sysconf("SC_NPROCESSORS_ONLN"))
 
         if res > 0:
             return res
@@ -46,7 +47,7 @@ def get_core_count():
 
     # Windows
     try:
-        res = int(os.environ['NUMBER_OF_PROCESSORS'])
+        res = int(os.environ["NUMBER_OF_PROCESSORS"])
 
         if res > 0:
             return res
@@ -56,6 +57,7 @@ def get_core_count():
     # jython
     try:
         from java.lang import Runtime
+
         runtime = Runtime.getRuntime()
         res = runtime.availableProcessors()
         if res > 0:
@@ -65,8 +67,7 @@ def get_core_count():
 
     # BSD
     try:
-        sysctl = subprocess.Popen(['sysctl', '-n', 'hw.ncpu'],
-                                  stdout=subprocess.PIPE)
+        sysctl = subprocess.Popen(["sysctl", "-n", "hw.ncpu"], stdout=subprocess.PIPE)
         scStdout = sysctl.communicate()[0]
         res = int(scStdout)
 
@@ -77,7 +78,7 @@ def get_core_count():
 
     # Linux
     try:
-        res = open('/proc/cpuinfo').read().count('processor\t:')
+        res = open("/proc/cpuinfo").read().count("processor\t:")
 
         if res > 0:
             return res
@@ -86,10 +87,10 @@ def get_core_count():
 
     # Solaris
     try:
-        pseudoDevices = os.listdir('/devices/pseudo/')
+        pseudoDevices = os.listdir("/devices/pseudo/")
         res = 0
         for pd in pseudoDevices:
-            if re.match(r'^cpuid@[0-9]+$', pd):
+            if re.match(r"^cpuid@[0-9]+$", pd):
                 res += 1
 
         if res > 0:
@@ -100,13 +101,13 @@ def get_core_count():
     # Other UNIXes (heuristic)
     try:
         try:
-            dmesg = open('/var/run/dmesg.boot').read()
+            dmesg = open("/var/run/dmesg.boot").read()
         except IOError:
-            dmesgProcess = subprocess.Popen(['dmesg'], stdout=subprocess.PIPE)
+            dmesgProcess = subprocess.Popen(["dmesg"], stdout=subprocess.PIPE)
             dmesg = dmesgProcess.communicate()[0]
 
         res = 0
-        while '\ncpu' + str(res) + ':' in dmesg:
+        while "\ncpu" + str(res) + ":" in dmesg:
             res += 1
 
         if res > 0:
@@ -114,5 +115,4 @@ def get_core_count():
     except OSError:
         pass
 
-    warnings.warn('Can not determine number of CPUs on this system',
-                  RuntimeWarning)
+    warnings.warn("Can not determine number of CPUs on this system", RuntimeWarning)

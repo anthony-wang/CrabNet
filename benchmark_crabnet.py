@@ -16,36 +16,42 @@ np.random.seed(RNG_SEED)
 
 
 # %%
-def get_model(mat_prop, classification=False, batch_size=None,
-              transfer=None, verbose=True):
+def get_model(
+    mat_prop, classification=False, batch_size=None, transfer=None, verbose=True
+):
     # Get the TorchedCrabNet architecture loaded
-    model = Model(CrabNet(compute_device=compute_device).to(compute_device),
-                  model_name=f'{mat_prop}', verbose=verbose)
+    model = Model(
+        CrabNet(compute_device=compute_device).to(compute_device),
+        model_name=f"{mat_prop}",
+        verbose=verbose,
+    )
 
     # Train network starting at pretrained weights
     if transfer is not None:
-        model.load_network(f'{transfer}.pth')
-        model.model_name = f'{mat_prop}'
+        model.load_network(f"{transfer}.pth")
+        model.model_name = f"{mat_prop}"
 
     # Apply BCEWithLogitsLoss to model output if binary classification is True
     if classification:
         model.classification = True
 
     # Get the datafiles you will learn from
-    train_data = f'data/benchmark_data/{mat_prop}/train.csv'
-    val_data = f'data/benchmark_data/{mat_prop}/val.csv'
+    train_data = f"data/benchmark_data/{mat_prop}/train.csv"
+    val_data = f"data/benchmark_data/{mat_prop}/val.csv"
 
     # Load the train and validation data before fitting the network
     data_size = pd.read_csv(train_data).shape[0]
-    batch_size = 2**round(np.log2(data_size)-4)
-    if batch_size < 2**7:
-        batch_size = 2**7
-    if batch_size > 2**12:
-        batch_size = 2**12
+    batch_size = 2 ** round(np.log2(data_size) - 4)
+    if batch_size < 2 ** 7:
+        batch_size = 2 ** 7
+    if batch_size > 2 ** 12:
+        batch_size = 2 ** 12
     # batch_size = 2**7
     model.load_data(train_data, batch_size=batch_size, train=True)
-    print(f'training with batchsize {model.batch_size} '
-          f'(2**{np.log2(model.batch_size):0.3f})')
+    print(
+        f"training with batchsize {model.batch_size} "
+        f"(2**{np.log2(model.batch_size):0.3f})"
+    )
     model.load_data(val_data, batch_size=batch_size)
 
     # Set the number of epochs, decide if you want a loss curve to be plotted
@@ -60,28 +66,31 @@ def to_csv(output, save_name):
     # parse output and save to csv
     act, pred, formulae, uncertainty = output
     df = pd.DataFrame([formulae, act, pred, uncertainty]).T
-    df.columns = ['formula', 'actual', 'predicted', 'uncertainty']
-    save_path = 'publication_predictions/mat2vec_benchmark__predictions'
+    df.columns = ["formula", "actual", "predicted", "uncertainty"]
+    save_path = "publication_predictions/mat2vec_benchmark__predictions"
     # save_path = 'publication_predictions/onehot_benchmark__predictions'
     # save_path = 'publication_predictions/random_200_benchmark__predictions'
     os.makedirs(save_path, exist_ok=True)
-    df.to_csv(f'{save_path}/{save_name}', index_label='Index')
+    df.to_csv(f"{save_path}/{save_name}", index_label="Index")
 
 
 def load_model(mat_prop, classification, file_name, verbose=True):
     # Load up a saved network.
-    model = Model(CrabNet(compute_device=compute_device).to(compute_device),
-                  model_name=f'{mat_prop}', verbose=verbose)
-    model.load_network(f'{mat_prop}.pth')
+    model = Model(
+        CrabNet(compute_device=compute_device).to(compute_device),
+        model_name=f"{mat_prop}",
+        verbose=verbose,
+    )
+    model.load_network(f"{mat_prop}.pth")
 
     # Check if classifcation task
     if classification:
         model.classification = True
 
     # Load the data you want to predict with
-    data = f'data/benchmark_data/{mat_prop}/{file_name}'
+    data = f"data/benchmark_data/{mat_prop}/{file_name}"
     # data is reloaded to model.data_loader
-    model.load_data(data, batch_size=2**9, train=False)
+    model.load_data(data, batch_size=2 ** 9, train=False)
     return model
 
 
@@ -97,10 +106,10 @@ def save_results(mat_prop, classification, file_name, verbose=True):
     # Get appropriate metrics for saving to csv
     if model.classification:
         auc = roc_auc_score(output[0], output[1])
-        print(f'\n{mat_prop} ROC AUC: {auc:0.3f}')
+        print(f"\n{mat_prop} ROC AUC: {auc:0.3f}")
     else:
         mae = np.abs(output[0] - output[1]).mean()
-        print(f'\n{mat_prop} mae: {mae:0.3g}')
+        print(f"\n{mat_prop} mae: {mae:0.3g}")
 
     # save predictions to a csv
     fname = f'{mat_prop}_{file_name.replace(".csv", "")}_output.csv'
@@ -109,23 +118,25 @@ def save_results(mat_prop, classification, file_name, verbose=True):
 
 
 # %%
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Get data to benchmark on
-    data_dir = 'data/benchmark_data'
+    data_dir = "data/benchmark_data"
     mat_props = os.listdir(data_dir)
     classification_list = []
-    print(f'training: {mat_props}')
+    print(f"training: {mat_props}")
     for mat_prop in mat_props:
         classification = False
         if mat_prop in classification_list:
             classification = True
-        print(f'property: {mat_prop}')
+        print(f"property: {mat_prop}")
         model = get_model(mat_prop, classification, verbose=True)
-        print('=====================================================')
-        print('calculating test mae')
-        model_test, t_mae = save_results(mat_prop, classification,
-                                         'test.csv', verbose=False)
-        print('calculating val mae')
-        model_val, v_mae = save_results(mat_prop, classification,
-                                        'val.csv', verbose=False)
-        print('=====================================================')
+        print("=====================================================")
+        print("calculating test mae")
+        model_test, t_mae = save_results(
+            mat_prop, classification, "test.csv", verbose=False
+        )
+        print("calculating val mae")
+        model_val, v_mae = save_results(
+            mat_prop, classification, "val.csv", verbose=False
+        )
+        print("=====================================================")
