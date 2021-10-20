@@ -17,7 +17,6 @@ from mat_discover.CrabNet.crabnet.model import Model  # type: ignore
 
 from mat_discover.CrabNet.utils.get_compute_device import get_compute_device
 
-compute_device = get_compute_device(prefer_last=True)
 RNG_SEED = 42
 torch.manual_seed(RNG_SEED)
 np.random.seed(RNG_SEED)
@@ -36,7 +35,10 @@ def get_model(
     verbose=True,
     losscurve=False,
     learningcurve=True,
+    force_cpu=False,
+    prefer_last=True,
 ):
+    compute_device = get_compute_device(force_cpu=force_cpu, prefer_last=prefer_last)
     if train_df is None and val_df is None and test_df is None:
         if mat_prop is None:
             mat_prop = "example_materials_property"
