@@ -3,22 +3,21 @@ requires = ["flit_core >=3.2,<4"]
 build-backend = "flit_core.buildapi"
 
 [project]
-name = "CrabNet"
+name = "crabnet"
 authors = [{name = "Sterling G. Baird", email = "sterling.baird@utah.edu"}]
 readme = "README.md"
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
 
+requires-python = ">=3.7,<=3.9"
+
 dependencies = [
-    "python>=3.7",
     "numpy",
     "pandas",
     "scikit-learn",
     "scipy",
     "matplotlib",
     "seaborn",
-    "pytorch>=1.7",
-    "cudatoolkit==11.3.*",
     "tqdm",
     "joblib",
     "psutil",
