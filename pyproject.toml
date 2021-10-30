@@ -4,7 +4,10 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "crabnet"
-authors = [{name = "Sterling G. Baird", email = "sterling.baird@utah.edu"}]
+authors = [
+    {name = "Sterling G. Baird", email = "sterling.baird@utah.edu"},
+    {name = "Anthony Yu-Tung Wang", email = "aytwang@alumni.uwaterloo.ca"}
+]
 readme = "README.md"
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
