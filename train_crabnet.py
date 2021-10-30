@@ -12,10 +12,10 @@ import torch
 
 from sklearn.metrics import roc_auc_score
 
-from mat_discover.CrabNet.crabnet.kingcrab import CrabNet  # type: ignore
-from mat_discover.CrabNet.crabnet.model import Model  # type: ignore
+from CrabNet.crabnet.kingcrab import CrabNet  # type: ignore
+from CrabNet.crabnet.model import Model  # type: ignore
 
-from mat_discover.CrabNet.utils.get_compute_device import get_compute_device
+from CrabNet.utils.get_compute_device import get_compute_device
 
 RNG_SEED = 42
 torch.manual_seed(RNG_SEED)
