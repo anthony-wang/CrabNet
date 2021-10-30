@@ -8,9 +8,9 @@ from datetime import datetime
 
 from sklearn.ensemble import RandomForestRegressor
 
-from utils.get_core_count import get_core_count
-from utils.modelselectionhelper import modelselectionhelper
-from utils.utils import NumpyEncoder, CONSTANTS, count_gs_param_combinations
+from crabnet.utils.get_core_count import get_core_count
+from crabnet.utils.modelselectionhelper import modelselectionhelper
+from crabnet.utils.utils import NumpyEncoder, CONSTANTS, count_gs_param_combinations
 
 
 # %%

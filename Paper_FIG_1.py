@@ -4,12 +4,12 @@ import numpy as np
 
 from crabnet.kingcrab import CrabNet
 from crabnet.model import Model
-from utils.get_compute_device import get_compute_device
+from crabnet.utils.get_compute_device import get_compute_device
 from benchmark_crabnet import get_results
 
 import torch
 
-from utils.utils import CONSTANTS
+from crabnet.utils.utils import CONSTANTS
 
 compute_device = get_compute_device()
 

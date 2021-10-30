@@ -5,8 +5,8 @@ from torch import nn
 
 import matplotlib.pyplot as plt
 from time import time
-from utils.get_compute_device import get_compute_device
-from utils.utils import EDM_CsvLoader
+from crabnet.utils.get_compute_device import get_compute_device
+from crabnet.utils.utils import EDM_CsvLoader
 
 from crabnet.kingcrab import CrabNet
 from crabnet.model import Model

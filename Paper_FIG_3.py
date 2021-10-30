@@ -10,7 +10,7 @@ from sklearn.metrics import roc_auc_score
 
 from crabnet.kingcrab import CrabNet
 from crabnet.model import Model
-from utils.get_compute_device import get_compute_device
+from crabnet.utils.get_compute_device import get_compute_device
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches

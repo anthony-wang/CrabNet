@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-from utils.composition import _fractional_composition
+from crabnet.utils.composition import _fractional_composition
 
 
 def norm_form(formula):

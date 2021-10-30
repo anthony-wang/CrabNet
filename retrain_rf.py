@@ -12,8 +12,8 @@ from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 
 from joblib import dump, load
 
-from utils.utils import get_cbfv
-from utils.utils import CONSTANTS
+from crabnet.utils.utils import get_cbfv
+from crabnet.utils.utils import CONSTANTS
 
 plt.rcParams.update({"font.size": 16})
 

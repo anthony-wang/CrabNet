@@ -12,7 +12,7 @@ from torch.optim.optimizer import Optimizer
 from torch.utils.data import Dataset, DataLoader
 from torch import nn
 
-from CrabNet.utils.composition import (
+from crabnet.utils.composition import (
     generate_features,
     _element_composition,
 )

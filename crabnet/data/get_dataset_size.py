@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 from tqdm import tqdm
-from utils.composition import _element_composition
+from crabnet.utils.composition import _element_composition
 
 
 # %%

@@ -4,8 +4,8 @@ import torch
 
 from crabnet.kingcrab import CrabNet
 from crabnet.model import Model
-from utils.get_compute_device import get_compute_device
-from utils.composition import _element_composition
+from crabnet.utils.get_compute_device import get_compute_device
+from crabnet.utils.composition import _element_composition
 
 import matplotlib.pyplot as plt
 

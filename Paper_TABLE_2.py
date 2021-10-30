@@ -6,7 +6,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
-from utils.utils import CONSTANTS
+from crabnet.utils.utils import CONSTANTS
 
 
 # %%
