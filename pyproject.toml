@@ -1,0 +1,28 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "CrabNet"
+authors = [{name = "Sterling G. Baird", email = "sterling.baird@utah.edu"}]
+readme = "README.md"
+classifiers = ["License :: OSI Approved :: MIT License"]
+dynamic = ["version", "description"]
+
+dependencies = [
+    "python>=3.7",
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "scipy",
+    "matplotlib",
+    "seaborn",
+    "pytorch>=1.7",
+    "cudatoolkit==11.3.*",
+    "tqdm",
+    "joblib",
+    "psutil",
+]
+
+[project.urls]
+Home = "https://github.com/sparks-baird/CrabNet"
