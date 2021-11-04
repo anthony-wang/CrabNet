@@ -1,5 +1,5 @@
 {% set name = "crabnet" %}
-{% set version = "1.0.5" %}
+{% set version = "1.0.6" %}
 
 
 package:
@@ -8,7 +8,7 @@ package:
 
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/crabnet-{{ version }}.tar.gz
-  sha256: c753ca524d1304ce399ca4c992c684636acccf9739400758bbd547630bf89e29
+  sha256: 92d55db1e5725d168106a50311b4e4fbaac01cbf06afc8a1a81194f16a4ee91e
 
 build:
   number: 0
@@ -22,7 +22,7 @@ requirements:
     - python >=3.6,<3.10
   run:
     - joblib
-    - cudatoolkit ==11.3.1
+    - cudatoolkit <11.4
     - pytorch >=1.9.0
     - matplotlib-base
     - numpy
