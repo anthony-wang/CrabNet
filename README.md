@@ -13,6 +13,8 @@ or
 `pip install crabnet`
 
 ```python
+from crabnet.train_crabnet import get_model
+
 crabnet_model = get_model(
 mat_prop=self.mat_prop_name,
 train_df=train_df,
