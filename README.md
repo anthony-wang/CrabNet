@@ -4,27 +4,51 @@ This software package implements the Compositionally-Restricted Attention-Based 
 
 :warning: This is a fork of the original CrabNet repository, refactored and published to PyPI and Anaconda. The instructions have not been fully updated. :warning:
 
-Some simple (updated instructions) are:
-
+## Installation
 `conda install -c sgbaird crabnet`
 
 or
 
 `pip install crabnet`
 
+## Basic Usage
+
+### Load Some Test Data
+from crabnet.data.materials_data import elasticity
+train_df, val_df = disc.data(elasticity, "train.csv")
+
+### Instantiate and Train a CrabNet Model
 ```python
 from crabnet.train_crabnet import get_model
 
 crabnet_model = get_model(
-mat_prop=self.mat_prop_name,
-train_df=train_df,
-learningcurve=False,
-force_cpu=self.force_cpu,
+    mat_prop="elasticity",
+    train_df=train_df,
+    learningcurve=False,
+    force_cpu=False,
 )
-
-train_true, train_pred, formulas, train_sigma = self.crabnet_model.predict(train_df)
 ```
 
+### Predictions
+
+Predict on the training data:
+```python
+train_true, train_pred, formulas, train_sigma = crabnet_model.predict(train_df)
+```
+
+Determine the mean-squared error:
+```python
+from sklearn.metrics import mean_squared_error
+
+mse = mean_squared_error(train_true, train_pred)
+```
+
+Predict on the validation data:
+```python
+val_true, val_pred, formulas, val_sigma = crabnet_model.predict(val_df)
+```
+
+# Old Documentation
 
 ## Table of Contents
 * How to cite
