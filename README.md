@@ -2,6 +2,15 @@
 
 This software package implements the Compositionally-Restricted Attention-Based Network (`CrabNet`) that takes only composition information to predict material properties.
 
+:warning: This is a fork of the original CrabNet repository, refactored and published to PyPI and Anaconda. The instructions have not been fully updated. :warning:
+
+Some simple (updated instructions) are:
+
+`conda install -c sgbaird crabnet`
+
+or
+
+`pip install crabnet`
 
 
 ## Table of Contents
