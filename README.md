@@ -14,8 +14,10 @@ or
 ## Basic Usage
 
 ### Load Some Test Data
+```python
 from crabnet.data.materials_data import elasticity
 train_df, val_df = disc.data(elasticity, "train.csv")
+```
 
 ### Instantiate and Train a CrabNet Model
 ```python
