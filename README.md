@@ -12,6 +12,17 @@ or
 
 `pip install crabnet`
 
+```python
+crabnet_model = get_model(
+mat_prop=self.mat_prop_name,
+train_df=train_df,
+learningcurve=False,
+force_cpu=self.force_cpu,
+)
+
+train_true, train_pred, formulas, train_sigma = self.crabnet_model.predict(train_df)
+```
+
 
 ## Table of Contents
 * How to cite
