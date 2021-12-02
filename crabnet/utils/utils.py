@@ -557,12 +557,13 @@ class EDM_CsvLoader:
         n_elements=6,
         inference=False,
         verbose=True,
+        elem_prop="mat2vec",
     ):
         self.data = data
         self.main_data = list(
             get_edm(
                 self.data,
-                elem_prop="mat2vec",
+                elem_prop=elem_prop,
                 n_elements=n_elements,
                 inference=inference,
                 verbose=verbose,
@@ -635,6 +636,7 @@ class Lamb(Optimizer):
         defaults = dict(lr=lr, betas=betas, eps=eps, weight_decay=weight_decay)
         self.adam = adam
         self.min_trust = min_trust
+        # REVIEW: what is params and what does it do?
         super(Lamb, self).__init__(params, defaults)
 
     def step(self, closure=None):

@@ -21,7 +21,7 @@ class ResidualNetwork(nn.Module):
     https://doi.org/10.1038/s41467-020-19964-7
     """
 
-    def __init__(self, input_dim, output_dim, hidden_layer_dims):
+    def __init__(self, input_dim, output_dim, hidden_layer_dims, bias):
         """
         Inputs
         ----------
@@ -36,7 +36,7 @@ class ResidualNetwork(nn.Module):
         )
         self.res_fcs = nn.ModuleList(
             [
-                nn.Linear(dims[i], dims[i + 1], bias=False)
+                nn.Linear(dims[i], dims[i + 1], bias=bias)
                 if (dims[i] != dims[i + 1])
                 else nn.Identity()
                 for i in range(len(dims) - 1)
@@ -55,14 +55,14 @@ class ResidualNetwork(nn.Module):
 
 
 class Embedder(nn.Module):
-    def __init__(self, d_model, compute_device=None):
+    def __init__(self, d_model, compute_device=None, elem_prop="mat2vec"):
         super().__init__()
         self.d_model = d_model
         self.compute_device = compute_device
 
         elem_dir = join(dirname(__file__), "data", "element_properties")
         # # Choose what element information the model receives
-        mat2vec = join(elem_dir, "mat2vec.csv")  # element embedding
+        mat2vec = join(elem_dir, elem_prop + ".csv")  # element embedding
         # mat2vec = f'{elem_dir}/onehot.csv'  # onehot encoding (atomic number)
         # mat2vec = f'{elem_dir}/random_200.csv'  # random vec for elements
 
@@ -72,6 +72,7 @@ class Embedder(nn.Module):
         zeros = np.zeros((1, feat_size))
         cat_array = np.concatenate([zeros, cbfv])
         cat_array = torch.as_tensor(cat_array, dtype=data_type_torch)
+        # NOTE: Parameters within nn.Embedding
         self.cbfv = nn.Embedding.from_pretrained(cat_array).to(
             self.compute_device, dtype=data_type_torch
         )
@@ -126,7 +127,23 @@ class FractionalEncoder(nn.Module):
 
 # %%
 class Encoder(nn.Module):
-    def __init__(self, d_model, N, heads, frac=False, attn=True, compute_device=None):
+    def __init__(
+        self,
+        d_model,
+        N,
+        heads,
+        frac=False,
+        attn=True,
+        compute_device=None,
+        pe_resolution=5000,
+        ple_resolution=5000,
+        elem_prop="mat2vec",
+        emb_scaler=1.0,
+        pos_scaler=1.0,
+        pos_scaler_log=1.0,
+        dim_feedforward=2048,
+        dropout=0.1,
+    ):
         super().__init__()
         self.d_model = d_model
         self.N = N
@@ -134,24 +151,36 @@ class Encoder(nn.Module):
         self.fractional = frac
         self.attention = attn
         self.compute_device = compute_device
-        self.embed = Embedder(d_model=self.d_model, compute_device=self.compute_device)
-        self.pe = FractionalEncoder(self.d_model, resolution=5000, log10=False)
-        self.ple = FractionalEncoder(self.d_model, resolution=5000, log10=True)
+        self.pe_resolution = pe_resolution
+        self.ple_resolution = ple_resolution
+        self.elem_prop = elem_prop
+        self.embed = Embedder(
+            d_model=self.d_model,
+            compute_device=self.compute_device,
+            elem_prop=self.elem_prop,
+        )
+        self.pe = FractionalEncoder(self.d_model, resolution=pe_resolution, log10=False)
+        self.ple = FractionalEncoder(
+            self.d_model, resolution=ple_resolution, log10=True
+        )
 
-        self.emb_scaler = nn.parameter.Parameter(torch.tensor([1.0]))
-        self.pos_scaler = nn.parameter.Parameter(torch.tensor([1.0]))
-        self.pos_scaler_log = nn.parameter.Parameter(torch.tensor([1.0]))
+        self.emb_scaler = nn.parameter.Parameter(torch.tensor([emb_scaler]))
+        self.pos_scaler = nn.parameter.Parameter(torch.tensor([pos_scaler]))
+        self.pos_scaler_log = nn.parameter.Parameter(torch.tensor([pos_scaler_log]))
 
         if self.attention:
             encoder_layer = nn.TransformerEncoderLayer(
-                self.d_model, nhead=self.heads, dim_feedforward=2048, dropout=0.1
+                self.d_model,
+                nhead=self.heads,
+                dim_feedforward=dim_feedforward,
+                dropout=dropout,
             )
             self.transformer_encoder = nn.TransformerEncoder(
                 encoder_layer, num_layers=self.N
             )
 
     def forward(self, src, frac):
-        x = self.embed(src) * 2 ** self.emb_scaler
+        x = self.embed(src) * self.emb_scaler  # * 2 ** self.emb_scaler
         mask = frac.unsqueeze(dim=-1)
         mask = torch.matmul(mask, mask.transpose(-2, -1))
         mask[mask != 0] = 1
@@ -159,8 +188,11 @@ class Encoder(nn.Module):
 
         pe = torch.zeros_like(x)
         ple = torch.zeros_like(x)
-        pe_scaler = 2 ** (1 - self.pos_scaler) ** 2
-        ple_scaler = 2 ** (1 - self.pos_scaler_log) ** 2
+        # NOTE: why was this 2 ** ... ?
+        # pe_scaler = 2 ** (1 - self.pos_scaler) ** 2
+        # ple_scaler = 2 ** (1 - self.pos_scaler_log) ** 2
+        pe_scaler = self.pos_scaler
+        ple_scaler = self.pos_scaler_log
         pe[:, :, : self.d_model // 2] = self.pe(frac) * pe_scaler
         ple[:, :, self.d_model // 2 :] = self.ple(frac) * ple_scaler
 
@@ -182,7 +214,24 @@ class Encoder(nn.Module):
 
 # %%
 class CrabNet(nn.Module):
-    def __init__(self, out_dims=3, d_model=512, N=3, heads=4, compute_device=None):
+    def __init__(
+        self,
+        out_dims=3,
+        d_model=512,
+        N=3,
+        heads=4,
+        compute_device=None,
+        out_hidden=[1024, 512, 256, 128],
+        pe_resolution=5000,
+        ple_resolution=5000,
+        elem_prop="mat2vec",
+        bias=False,
+        emb_scaler=1.0,
+        pos_scaler=1.0,
+        pos_scaler_log=1.0,
+        dim_feedforward=2048,
+        dropout=0.1,
+    ):
         super().__init__()
         self.avg = True
         self.out_dims = out_dims
@@ -190,14 +239,25 @@ class CrabNet(nn.Module):
         self.N = N
         self.heads = heads
         self.compute_device = compute_device
+        self.bias = bias
         self.encoder = Encoder(
             d_model=self.d_model,
             N=self.N,
             heads=self.heads,
             compute_device=self.compute_device,
+            pe_resolution=pe_resolution,
+            ple_resolution=ple_resolution,
+            elem_prop=elem_prop,
+            emb_scaler=emb_scaler,
+            pos_scaler=pos_scaler,
+            pos_scaler_log=pos_scaler_log,
+            dim_feedforward=dim_feedforward,
+            dropout=dropout,
         )
-        self.out_hidden = [1024, 512, 256, 128]
-        self.output_nn = ResidualNetwork(self.d_model, self.out_dims, self.out_hidden)
+        self.out_hidden = out_hidden
+        self.output_nn = ResidualNetwork(
+            self.d_model, self.out_dims, self.out_hidden, self.bias
+        )
 
     def forward(self, src, frac):
         output = self.encoder(src, frac)

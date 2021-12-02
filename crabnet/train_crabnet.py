@@ -37,7 +37,133 @@ def get_model(
     learningcurve=True,
     force_cpu=False,
     prefer_last=True,
+    fudge=0.02,
+    d_model=512,
+    out_dims=3,
+    N=3,
+    heads=4,
+    out_hidden=[1024, 512, 256, 128],
+    emb_scaler=1.0,
+    pos_scaler=1.0,
+    pos_scaler_log=1.0,
+    bias=False,
+    dim_feedforward=2048,
+    dropout=0.1,
+    elem_prop="mat2vec",
+    pe_resolution=5000,
+    ple_resolution=5000,
+    epochs=40,
+    epochs_step=10,
+    criterion=None,
+    lr=1e-3,
+    betas=(0.9, 0.999),
+    eps=1e-6,
+    weight_decay=0,
+    adam=False,
+    min_trust=None,
+    alpha=0.5,
+    k=6,
+    base_lr=1e-4,
+    max_lr=6e-3,
 ):
+    """Get a CrabNet model with default parameters set.
+    #TODO: flesh out descriptions of parameters, as well as feasible min/max bounds
+    where appropriate
+
+    Parameters
+    ----------
+    data_dir : str, optional
+        data directory, by default join(dirname(__file__), "data", "materials_data")
+    mat_prop : str, optional
+        name of material property (doesn't affect computation), by default None
+    train_df : DataFrame, optional
+        Training DataFrame with formula and target columns, by default None
+    val_df : DataFrame, optional
+        Validation DataFrame with formula and target columns (target can be dummy
+        values, e.g. 0.0), by default None
+    test_df : DataFrame, optional
+        Test DataFrame with formula and target columns (OK if only train_df and val_df
+        are specified), by default None
+    classification : bool, optional
+        Whether to perform classification. If False, then use regression, by default False
+    batch_size : int, optional
+        batch size for training the neural network, by default None
+    transfer : str, optional
+        Name of model to use for transfer learning, by default None
+    verbose : bool, optional
+        Whether to print verbose model information during the run, by default True
+    losscurve : bool, optional
+        Whether to plot a loss curve, by default False
+    learningcurve : bool, optional
+        Whether to plot a learning curve, by default True
+    force_cpu : bool, optional
+        Whether to force use of CPU. If False, then if compatible GPU is available, GPU is used, by default False
+    prefer_last : bool, optional
+        Whether to prefer the last used device (i.e. CPU or GPU), by default True
+    fudge : float, optional
+        The "fudge" (i.e. noise) applied to the fractional encodings, by default 0.02
+    d_model : int, optional
+        Model size. See paper, by default 512
+    out_dims : int, optional
+        [description], by default 3
+    N : int, optional
+        [description], by default 3
+    heads : int, optional
+        Number of attention heads to use, by default 4
+    out_hidden : list, optional
+        Hidden output dimensions of neural network, by default [1024, 512, 256, 128]
+    emb_scaler : float, optional
+        Embedding scaler. Value to multiply the embedding (`x`) by, by default 1.0
+    pos_scaler : float, optional
+        Positional scaler. Value to multiply the prevalance encoding (`pe`) by, by default 1.0
+    pos_scaler_log : float, optional
+        Positional log scaler. Value to multiply the prevalence log encoding (`ple`) by, by default 1.0
+    bias : bool, optional
+        Whether to bias nn.Linear, by default False
+    dim_feedforward : int, optional
+        [description], by default 2048
+    dropout : float, optional
+        [description], by default 0.1
+    elem_prop : str, optional
+        Which elemental feature vector to use. Possible values are "jarvis", "magpie",
+        "mat2vec", "oliynyk", "onehot", "ptable", and "random_200", by default "mat2vec"
+    pe_resolution : int, optional
+        Number of discretizations for the prevalence encoding, by default 5000
+    ple_resolution : int, optional
+        Number of discretizations for the prevalence log encoding, by default 5000
+    epochs : int, optional
+        How many epochs to allow the neural network to run for, by default 40
+    epochs_step : int, optional
+        [description], by default 10
+    criterion : torch.nn Module, optional
+        Or in other words the loss function (e.g. BCEWithLogitsLoss for classification
+        or RobustL1 for regression), by default None
+    lr : float, optional
+        Learning rate, by default 1e-3
+    betas : tuple, optional
+        [description], by default (0.9, 0.999)
+    eps : [type], optional
+        [description], by default 1e-6
+    weight_decay : int, optional
+        [description], by default 0
+    adam : bool, optional
+        Whether to constrain the Lamb model to be the Adam model, by default False
+    min_trust : [type], optional
+        [description], by default None
+    alpha : float, optional
+        [description], by default 0.5
+    k : int, optional
+        [description], by default 6
+    base_lr : float, optional
+        Base learning rate, by default 1e-4
+    max_lr : float, optional
+        Max learning rate, by default 6e-3
+
+    Returns
+    -------
+    model
+        instantiated CrabNet model
+    """
     compute_device = get_compute_device(force_cpu=force_cpu, prefer_last=prefer_last)
     if train_df is None and val_df is None and test_df is None:
         if mat_prop is None:
@@ -50,9 +176,31 @@ def get_model(
 
     # Get the TorchedCrabNet architecture loaded
     model = Model(
-        CrabNet(compute_device=compute_device).to(compute_device),
+        CrabNet(
+            compute_device=compute_device,
+            out_dims=out_dims,
+            d_model=d_model,
+            N=N,
+            heads=heads,
+            out_hidden=out_hidden,
+            pe_resolution=pe_resolution,
+            ple_resolution=ple_resolution,
+            elem_prop=elem_prop,
+            bias=bias,
+            emb_scaler=emb_scaler,
+            pos_scaler=pos_scaler,
+            pos_scaler_log=pos_scaler_log,
+            dim_feedforward=dim_feedforward,
+            dropout=dropout,
+        ).to(compute_device),
         model_name=f"{mat_prop}",
         verbose=verbose,
+        fudge=fudge,
+        out_dims=out_dims,
+        d_model=d_model,
+        N=N,
+        heads=heads,
+        elem_prop=elem_prop,
     )
 
     # Train network starting at pretrained weights
@@ -81,11 +229,12 @@ def get_model(
         data_size = train_data.shape[0]
 
     # Load the train and validation data before fitting the network
-    batch_size = 2 ** round(np.log2(data_size) - 4)
-    if batch_size < 2 ** 7:
-        batch_size = 2 ** 7
-    if batch_size > 2 ** 12:
-        batch_size = 2 ** 12
+    if batch_size is None:
+        batch_size = 2 ** round(np.log2(data_size) - 4)
+        if batch_size < 2 ** 7:
+            batch_size = 2 ** 7
+        if batch_size > 2 ** 12:
+            batch_size = 2 ** 12
     model.load_data(train_data, batch_size=batch_size, train=True)
     print(
         f"training with batchsize {model.batch_size} "
@@ -95,7 +244,23 @@ def get_model(
         model.load_data(val_data, batch_size=batch_size)
 
     # Set the number of epochs, decide if you want a loss curve to be plotted
-    model.fit(epochs=40, losscurve=losscurve, learningcurve=learningcurve)
+    model.fit(
+        epochs=epochs,
+        losscurve=losscurve,
+        learningcurve=learningcurve,
+        epochs_step=epochs_step,
+        criterion=criterion,
+        lr=lr,
+        betas=betas,
+        eps=eps,
+        weight_decay=weight_decay,
+        adam=adam,
+        min_trust=min_trust,
+        alpha=alpha,
+        k=k,
+        base_lr=base_lr,
+        max_lr=max_lr,
+    )
 
     # Save the network (saved as f"{model_name}.pth")
     model.save_network()
