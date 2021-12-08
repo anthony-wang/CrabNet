@@ -145,12 +145,24 @@ class Model:
         verbose=True,
         force_cpu=False,
         prefer_last=True,
+        fudge=0.02,
+        out_dims=3,
+        d_model=512,
+        N=3,
+        heads=4,
+        elem_prop="mat2vec",
     ):
         if model is None:
             compute_device = get_compute_device(
                 force_cpu=force_cpu, prefer_last=prefer_last
             )
-            model = CrabNet(compute_device=compute_device).to(compute_device)
+            CrabNet(
+                compute_device=compute_device,
+                out_dims=out_dims,
+                d_model=d_model,
+                N=N,
+                heads=heads,
+            )
         self.model = model
         self.model_name = model_name
         self.data_loader = None
@@ -158,8 +170,9 @@ class Model:
         self.classification = False
         self.n_elements = n_elements
         self.compute_device = model.compute_device
-        self.fudge = 0.02  #  expected fractional tolerance (std. dev) ~= 2%
+        self.fudge = fudge  #  expected fractional tolerance (std. dev) ~= 2%
         self.verbose = verbose
+        self.elem_prop = elem_prop
         if self.verbose:
             print("\nModel architecture: out_dims, d_model, N, heads")
             print(
@@ -178,6 +191,7 @@ class Model:
             n_elements=self.n_elements,
             inference=inference,
             verbose=self.verbose,
+            elem_prop=self.elem_prop,
         )
         print(
             f"loading data with up to {data_loaders.n_elements:0.0f} "
@@ -251,7 +265,25 @@ class Model:
         datalen = len(self.train_loader.dataset)
         # print(f'training speed: {datalen/dt:0.3f}')
 
-    def fit(self, epochs=None, checkin=None, losscurve=False, learningcurve=True):
+    def fit(
+        self,
+        epochs=None,
+        checkin=None,
+        losscurve=False,
+        learningcurve=True,
+        epochs_step=10,
+        criterion=None,
+        lr=1e-3,
+        betas=(0.9, 0.999),
+        eps=1e-6,
+        weight_decay=0,
+        adam=False,
+        min_trust=None,
+        alpha=0.5,
+        k=6,
+        base_lr=1e-4,
+        max_lr=6e-3,
+    ):
         assert_train_str = "Please Load Training Data (self.train_loader)"
         assert_val_str = "Please Load Validation Data (self.data_loader)"
         assert self.train_loader is not None, assert_train_str
@@ -260,7 +292,7 @@ class Model:
         self.loss_curve["train"] = []
         self.loss_curve["val"] = []
 
-        self.epochs_step = 10
+        self.epochs_step = epochs_step
         self.step_size = self.epochs_step * len(self.train_loader)
         print(
             f"stepping every {self.step_size} training passes,",
@@ -271,6 +303,8 @@ class Model:
             epochs = int(n_iterations / len(self.data_loader))
             print(f"running for {epochs} epochs")
         if checkin is None:
+            # TODO: not sure if epochs_step has to be 10 (and epochs=40) for this to
+            # work (check with Anthony)
             checkin = self.epochs_step * 2
             print(f"checkin at {self.epochs_step*2} " f"epochs to match lr scheduler")
         if epochs % (self.epochs_step * 2) != 0:
@@ -282,18 +316,29 @@ class Model:
             epochs = updated_epochs
 
         self.step_count = 0
-        self.criterion = RobustL1
-        if self.classification:
-            print("Using BCE loss for classification task")
-            self.criterion = BCEWithLogitsLoss
-        base_optim = Lamb(params=self.model.parameters())
-        optimizer = Lookahead(base_optimizer=base_optim)
+        if criterion is None:
+            if self.classification:
+                print("Using BCE loss for classification task")
+                self.criterion = BCEWithLogitsLoss
+            else:
+                self.criterion = RobustL1
+        base_optim = Lamb(
+            params=self.model.parameters(),
+            lr=lr,
+            betas=betas,
+            eps=eps,
+            weight_decay=weight_decay,
+            adam=adam,
+            min_trust=min_trust,
+        )
+        optimizer = Lookahead(base_optimizer=base_optim, alpha=alpha, k=k)
+        # NOTE: SWA has hyperparameters, but not sure I want to deal with them now
         self.optimizer = SWA(optimizer)
 
         lr_scheduler = CyclicLR(
             self.optimizer,
-            base_lr=1e-4,
-            max_lr=6e-3,
+            base_lr=base_lr,
+            max_lr=max_lr,
             cycle_momentum=False,
             step_size_up=self.step_size,
         )
@@ -304,6 +349,7 @@ class Model:
         self.lr_list = []
         self.xswa = []
         self.yswa = []
+        # NOTE: parameter
         self.discard_n = 3
 
         for epoch in range(epochs):
@@ -320,6 +366,7 @@ class Model:
                 dt = time() - ti
                 datasize = len(act_t)
                 # print(f'inference speed: {datasize/dt:0.3f}')
+                # PARAMETER: mae vs. rmse?
                 mae_t = mean_absolute_error(act_t, pred_t)
                 self.loss_curve["train"].append(mae_t)
                 act_v, pred_v, _, _ = self.predict(loader=self.data_loader)
