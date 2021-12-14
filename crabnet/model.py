@@ -283,6 +283,7 @@ class Model:
         k=6,
         base_lr=1e-4,
         max_lr=6e-3,
+        verbose=True,
     ):
         assert_train_str = "Please Load Training Data (self.train_loader)"
         assert_val_str = "Please Load Validation Data (self.data_loader)"
@@ -294,31 +295,38 @@ class Model:
 
         self.epochs_step = epochs_step
         self.step_size = self.epochs_step * len(self.train_loader)
-        print(
-            f"stepping every {self.step_size} training passes,",
-            f"cycling lr every {self.epochs_step} epochs",
-        )
+        if verbose:
+            print(
+                f"stepping every {self.step_size} training passes,",
+                f"cycling lr every {self.epochs_step} epochs",
+            )
         if epochs is None:
             n_iterations = 1e4
             epochs = int(n_iterations / len(self.data_loader))
-            print(f"running for {epochs} epochs")
+            if verbose:
+                print(f"running for {epochs} epochs")
         if checkin is None:
             # TODO: not sure if epochs_step has to be 10 (and epochs=40) for this to
             # work (check with Anthony)
             checkin = self.epochs_step * 2
-            print(f"checkin at {self.epochs_step*2} " f"epochs to match lr scheduler")
+            if verbose:
+                print(
+                    f"checkin at {self.epochs_step*2} " f"epochs to match lr scheduler"
+                )
         if epochs % (self.epochs_step * 2) != 0:
             updated_epochs = epochs - epochs % (self.epochs_step * 2)
-            print(
-                f"epochs not divisible by {self.epochs_step * 2}, "
-                f"updating epochs to {updated_epochs} for learning"
-            )
+            if verbose:
+                print(
+                    f"epochs not divisible by {self.epochs_step * 2}, "
+                    f"updating epochs to {updated_epochs} for learning"
+                )
             epochs = updated_epochs
 
         self.step_count = 0
         if criterion is None:
             if self.classification:
-                print("Using BCE loss for classification task")
+                if verbose:
+                    print("Using BCE loss for classification task")
                 self.criterion = BCEWithLogitsLoss
             else:
                 self.criterion = RobustL1
@@ -380,7 +388,8 @@ class Model:
                     val_auc = roc_auc_score(act_v, pred_v)
                     train_str = f"train auc: {train_auc:0.3f}"
                     val_str = f"val auc: {val_auc:0.3f}"
-                print(epoch_str, train_str, val_str)
+                if verbose:
+                    print(epoch_str, train_str, val_str)
 
                 if self.epoch >= (self.epochs_step * self.swa_start - 1):
                     if (self.epoch + 1) % (self.epochs_step * 2) == 0:
@@ -451,11 +460,12 @@ class Model:
                     plt.show()
 
             if self.optimizer.discard_count >= self.discard_n:
-                print(
-                    f"Discarded: {self.optimizer.discard_count}/"
-                    f"{self.discard_n} weight updates, "
-                    f"early-stopping now"
-                )
+                if verbose:
+                    print(
+                        f"Discarded: {self.optimizer.discard_count}/"
+                        f"{self.discard_n} weight updates, "
+                        f"early-stopping now"
+                    )
                 self.optimizer.swap_swa_sgd()
                 break
 
