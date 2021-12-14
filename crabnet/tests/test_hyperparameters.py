@@ -5,7 +5,7 @@ from crabnet.train_crabnet import get_model
 
 
 def test_crabnet():
-    train_df, val_df = data(elasticity)
+    train_df, val_df = data(elasticity, dummy=True)
     mdl = get_model(
         train_df=train_df,
         val_df=val_df,
