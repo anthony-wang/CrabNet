@@ -182,7 +182,7 @@ class Model:
             print(f"Running on compute device: {self.compute_device}")
             print(f"Model size: {count_parameters(self.model)} parameters\n")
 
-    def load_data(self, data, batch_size=2 ** 9, train=False):
+    def load_data(self, data, batch_size=2 ** 9, train=False, verbose=True):
         self.batch_size = batch_size
         inference = not train
         data_loaders = EDM_CsvLoader(
@@ -193,10 +193,11 @@ class Model:
             verbose=self.verbose,
             elem_prop=self.elem_prop,
         )
-        print(
-            f"loading data with up to {data_loaders.n_elements:0.0f} "
-            f"elements in the formula"
-        )
+        if verbose:
+            print(
+                f"loading data with up to {data_loaders.n_elements:0.0f} "
+                f"elements in the formula"
+            )
 
         # update n_elements after loading dataset
         self.n_elements = data_loaders.n_elements

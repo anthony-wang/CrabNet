@@ -239,13 +239,14 @@ def get_model(
             batch_size = 2 ** 7
         if batch_size > 2 ** 12:
             batch_size = 2 ** 12
-    model.load_data(train_data, batch_size=batch_size, train=True)
-    print(
-        f"training with batchsize {model.batch_size} "
-        f"(2**{np.log2(model.batch_size):0.3f})"
-    )
+    model.load_data(train_data, batch_size=batch_size, train=True, verbose=verbose)
+    if verbose:
+        print(
+            f"training with batchsize {model.batch_size} "
+            f"(2**{np.log2(model.batch_size):0.3f})"
+        )
     if val_data is not None:
-        model.load_data(val_data, batch_size=batch_size)
+        model.load_data(val_data, batch_size=batch_size, verbose=verbose)
 
     # Set the number of epochs, decide if you want a loss curve to be plotted
     model.fit(
@@ -308,7 +309,7 @@ def load_model(model, mat_prop, classification, data, verbose=True):
     if usepath and type(data) is str:
         data = f"{mat_prop}/{mat_prop}/{data}"
     # data is reloaded to model.data_loader
-    model.load_data(data, batch_size=2 ** 9, train=False)
+    model.load_data(data, batch_size=2 ** 9, train=False, verbose=verbose)
     return model
 
 
@@ -323,7 +324,7 @@ def save_results(model, mat_prop, classification, data, verbose=True):
         model = load_model(model, mat_prop, classification, data, verbose=verbose)
     else:
         usepath = False
-        model.load_data(data, batch_size=2 ** 9, train=False)
+        model.load_data(data, batch_size=2 ** 9, train=False, verbose=verbose)
     model, output = get_results(model)
 
     # Get appropriate metrics for saving to csv
