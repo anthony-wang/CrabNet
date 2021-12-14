@@ -516,15 +516,17 @@ class Model:
 
         return (act, pred, formulae, uncert)
 
-    def save_network(self, model_name=None):
+    def save_network(self, model_name=None, verbose=True):
         if model_name is None:
             model_name = self.model_name
             os.makedirs("models/trained_models", exist_ok=True)
             path = f"models/trained_models/{model_name}.pth"
-            print(f"Saving network ({model_name}) to {path}")
+            if verbose:
+                print(f"Saving network ({model_name}) to {path}")
         else:
             path = f"models/trained_models/{model_name}.pth"
-            print(f"Saving checkpoint ({model_name}) to {path}")
+            if verbose:
+                print(f"Saving checkpoint ({model_name}) to {path}")
 
         self.network = {
             "weights": self.model.state_dict(),
