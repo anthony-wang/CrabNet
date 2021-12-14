@@ -213,7 +213,7 @@ class Model:
             self.train_loader = data_loader
         self.data_loader = data_loader
 
-    def train(self):
+    def train(self, verbose=True):
         self.model.train()
         ti = time()
         minima = []
@@ -249,18 +249,21 @@ class Model:
             epoch_check = (self.epoch + 1) % (2 * self.epochs_step) == 0
             learning_time = epoch_check and self.epoch >= swa_check
             if learning_time:
-                act_v, pred_v, _, _ = self.predict(loader=self.data_loader)
+                act_v, pred_v, _, _ = self.predict(
+                    loader=self.data_loader, verbose=verbose
+                )
                 mae_v = mean_absolute_error(act_v, pred_v)
                 self.optimizer.update_swa(mae_v)
                 minima.append(self.optimizer.minimum_found)
 
         if learning_time and not any(minima):
             self.optimizer.discard_count += 1
-            print(f"Epoch {self.epoch} failed to improve.")
-            print(
-                f"Discarded: {self.optimizer.discard_count}/"
-                f"{self.discard_n} weight updates"
-            )
+            if verbose:
+                print(f"Epoch {self.epoch} failed to improve.")
+                print(
+                    f"Discarded: {self.optimizer.discard_count}/"
+                    f"{self.discard_n} weight updates"
+                )
 
         dt = time() - ti
         datalen = len(self.train_loader.dataset)
@@ -365,20 +368,24 @@ class Model:
             self.epoch = epoch
             self.epochs = epochs
             ti = time()
-            self.train()
+            self.train(verbose=verbose)
             # print(f'epoch time: {(time() - ti):0.3f}')
             self.lr_list.append(self.optimizer.param_groups[0]["lr"])
 
             if (epoch + 1) % checkin == 0 or epoch == epochs - 1 or epoch == 0:
                 ti = time()
-                act_t, pred_t, _, _ = self.predict(loader=self.train_loader)
+                act_t, pred_t, _, _ = self.predict(
+                    loader=self.train_loader, verbose=verbose
+                )
                 dt = time() - ti
                 datasize = len(act_t)
                 # print(f'inference speed: {datasize/dt:0.3f}')
                 # PARAMETER: mae vs. rmse?
                 mae_t = mean_absolute_error(act_t, pred_t)
                 self.loss_curve["train"].append(mae_t)
-                act_v, pred_v, _, _ = self.predict(loader=self.data_loader)
+                act_v, pred_v, _, _ = self.predict(
+                    loader=self.data_loader, verbose=verbose
+                )
                 mae_v = mean_absolute_error(act_v, pred_v)
                 self.loss_curve["val"].append(mae_v)
                 epoch_str = f"Epoch: {epoch}/{epochs} ---"
@@ -473,11 +480,11 @@ class Model:
         if not (self.optimizer.discard_count >= self.discard_n):
             self.optimizer.swap_swa_sgd()
 
-    def predict(self, data=None, loader=None):
+    def predict(self, data=None, loader=None, verbose=True):
         if data is None and loader is None:
             raise SyntaxError("Specify either data *or* loader, not neither.")
         elif data is not None and loader is None:
-            self.load_data(data)
+            self.load_data(data, verbose=verbose)
             loader = self.data_loader
         elif data is not None and loader is not None:
             raise SyntaxError("Specify either data *or* loader, not both.")
