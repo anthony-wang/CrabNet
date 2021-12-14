@@ -137,7 +137,8 @@ def get_model(
         [description], by default 10
     criterion : torch.nn Module, optional
         Or in other words the loss function (e.g. BCEWithLogitsLoss for classification
-        or RobustL1 for regression), by default None
+        or RobustL1 for regression), by default None. Possible values are
+        `BCEWithLogitsLoss`, `RobustL1`, and `RobustL2`.
     lr : float, optional
         Learning rate, by default 1e-3
     betas : tuple, optional
@@ -260,6 +261,7 @@ def get_model(
         k=k,
         base_lr=base_lr,
         max_lr=max_lr,
+        verbose=verbose,
     )
 
     # Save the network (saved as f"{model_name}.pth")
@@ -415,6 +417,8 @@ def main(
         model, mat_prop, classification, train_data, verbose=False
     )
     if val_data is not None:
+        if isinstance(val_data, pd.DataFrame):
+            val_data[val_data.target.isnull()] = 0
         if verbose:
             print("-----------------------------------------------------")
             print("calculating val mae")
