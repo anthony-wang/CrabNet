@@ -65,6 +65,7 @@ def get_model(
     k=6,
     base_lr=1e-4,
     max_lr=6e-3,
+    save=True,
 ):
     """Get a CrabNet model with default parameters set.
     #TODO: flesh out descriptions of parameters, as well as feasible min/max bounds
@@ -159,6 +160,8 @@ def get_model(
         Base learning rate, by default 1e-4
     max_lr : float, optional
         Max learning rate, by default 6e-3
+    save : bool, optional
+        Whether to save the network or not, by default True.
 
     Returns
     -------
@@ -265,7 +268,8 @@ def get_model(
     )
 
     # Save the network (saved as f"{model_name}.pth")
-    model.save_network()
+    if save:
+        model.save_network(verbose=verbose)
     return model
 
 
