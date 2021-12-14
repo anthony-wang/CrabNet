@@ -313,8 +313,10 @@ def load_model(model, mat_prop, classification, data, verbose=True):
     return model
 
 
-def get_results(model):
-    output = model.predict(loader=model.data_loader)  # predict the data saved here
+def get_results(model, verbose=True):
+    output = model.predict(
+        loader=model.data_loader, verbose=verbose
+    )  # predict the data saved here
     return model, output
 
 
@@ -330,10 +332,12 @@ def save_results(model, mat_prop, classification, data, verbose=True):
     # Get appropriate metrics for saving to csv
     if model.classification:
         auc = roc_auc_score(output[0], output[1])
-        print(f"{mat_prop} ROC AUC: {auc:0.3f}")
+        if verbose:
+            print(f"{mat_prop} ROC AUC: {auc:0.3f}")
     else:
         mae = np.abs(output[0] - output[1]).mean()
-        print(f"{mat_prop} mae: {mae:0.3g}")
+        if verbose:
+            print(f"{mat_prop} mae: {mae:0.3g}")
 
     # save predictions to a csv
     if usepath:
