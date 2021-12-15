@@ -1,5 +1,5 @@
 {% set name = "crabnet" %}
-{% set version = "1.1.5" %}
+{% set version = "1.1.7" %}
 
 
 package:
@@ -8,7 +8,7 @@ package:
 
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/crabnet-{{ version }}.tar.gz
-  sha256: 9c950583b743f5e2feb6c0d945a6d72d9ba65fc6eb44d7087a227cd33251e695
+  sha256: 1644f6cdc3480f180e7025ef0c38794ed4a7e73682ce535857f86fe64496cae2
 
 build:
   number: 0
