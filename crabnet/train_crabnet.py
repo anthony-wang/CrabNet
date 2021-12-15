@@ -327,7 +327,7 @@ def save_results(model, mat_prop, classification, data, verbose=True):
     else:
         usepath = False
         model.load_data(data, batch_size=2 ** 9, train=False, verbose=verbose)
-    model, output = get_results(model)
+    model, output = get_results(model, verbose=verbose)
 
     # Get appropriate metrics for saving to csv
     if model.classification:
