@@ -239,14 +239,14 @@ def get_model(
             batch_size = 2 ** 7
         if batch_size > 2 ** 12:
             batch_size = 2 ** 12
-    model.load_data(train_data, batch_size=batch_size, train=True, verbose=verbose)
+    model.load_data(train_data, batch_size=batch_size, train=True)
     if verbose:
         print(
             f"training with batchsize {model.batch_size} "
             f"(2**{np.log2(model.batch_size):0.3f})"
         )
     if val_data is not None:
-        model.load_data(val_data, batch_size=batch_size, verbose=verbose)
+        model.load_data(val_data, batch_size=batch_size)
 
     # Set the number of epochs, decide if you want a loss curve to be plotted
     model.fit(
@@ -265,12 +265,11 @@ def get_model(
         k=k,
         base_lr=base_lr,
         max_lr=max_lr,
-        verbose=verbose,
     )
 
     # Save the network (saved as f"{model_name}.pth")
     if save:
-        model.save_network(verbose=verbose)
+        model.save_network()
     return model
 
 
