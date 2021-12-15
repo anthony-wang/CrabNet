@@ -320,7 +320,7 @@ def get_results(model, verbose=True):
     return model, output
 
 
-def save_results(model, mat_prop, classification, data, verbose=True):
+def save_results(model, mat_prop, classification, data, verbose=False):
     if type(model) is str:
         usepath = True
         model = load_model(model, mat_prop, classification, data, verbose=verbose)
