@@ -24,11 +24,11 @@ np.random.seed(RNG_SEED)
 
 # %%
 def get_model(
-    data_dir=join(dirname(__file__), "data", "materials_data"),
-    mat_prop=None,
     train_df=None,
     val_df=None,
     test_df=None,
+    data_dir=join(dirname(__file__), "data", "materials_data"),
+    mat_prop=None,
     classification=False,
     batch_size=None,
     transfer=None,
