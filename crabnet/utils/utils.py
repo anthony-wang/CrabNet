@@ -475,7 +475,7 @@ def get_edm(
         df["formula"] = df["cif_id"].str.split("_ICSD").str[0]
 
     df.loc[:, "count"] = [
-        len(_element_composition(form)) for form in df.loc[:, "formula"]
+        len(_element_composition(form)) for form in df.formula.values.toli
     ]
     # df = df[df["count"] != 1]  # drop pure elements
     if not inference:
