@@ -20,6 +20,7 @@ from .utils.utils import (
     Lamb,
     Lookahead,
     RobustL1,
+    RobustL2,
     BCEWithLogitsLoss,
     EDM_CsvLoader,
     Scaler,
@@ -324,6 +325,13 @@ class Model:
             epochs = updated_epochs
 
         self.step_count = 0
+
+        criterion_lookup = {
+            "RobustL1": RobustL1,
+            "RobustL2": RobustL2,
+            "BCEWithLogitsLoss": BCEWithLogitsLoss,
+        }
+
         if criterion is None:
             if self.classification:
                 if self.verbose:
@@ -331,6 +339,11 @@ class Model:
                 self.criterion = BCEWithLogitsLoss
             else:
                 self.criterion = RobustL1
+        elif type(criterion) is str:
+            self.criterion = criterion_lookup[criterion]
+        else:
+            self.criterion = criterion
+
         base_optim = Lamb(
             params=self.model.parameters(),
             lr=lr,
