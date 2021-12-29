@@ -2,7 +2,9 @@
 
 This software package implements the Compositionally-Restricted Attention-Based Network (`CrabNet`) that takes only composition information to predict material properties.
 
-:warning: This is a fork of the original CrabNet repository, refactored and published to PyPI and Anaconda. The instructions have not been fully updated. :warning:
+> :warning: This is a fork of the [original CrabNet repository](https://github.com/anthony-wang/CrabNet) :warning:
+
+This is a refactored version of CrabNet, published to PyPI (`pip`) and Anaconda (`conda`). In addition to using `.csv` files, it allows direct passing of Pandas DataFrames as training and validation datasets, similar to [automatminer](https://hackingmaterials.lbl.gov/automatminer/). It also exposes many of the model parameters at the top-level via `get_model`. These changes make CrabNet portable and extensible, and may be incorporated into the parent repository at a later date. Basic instructions for this fork are given as follows, with the old documentation preserved towards the end.
 
 ## Installation
 `conda install -c sgbaird crabnet`
