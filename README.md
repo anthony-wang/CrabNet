@@ -69,6 +69,8 @@ Open `conda-env.yml` and `pip install` all of the packages listed there.
 We recommend that you create a separate Python environment for this project.
 
 
+### Alternative installation
+There is [another version of CrabNet](https://github.com/sgbaird/CrabNet) for which changes may be incorporated into (this) the parent repository at a future date. Similar to [automatminer](https://hackingmaterials.lbl.gov/automatminer/), this version facilitates passing of DataFrames for training and validation data, is `conda` and `pip` installable, and exposes many of the model hyperparameters at the top-level. Additional instructions can be found at [the fork](https://github.com/sgbaird/CrabNet).
 
 ## Reproduce publication results
 To reproduce the publication results, please follow the below steps.
