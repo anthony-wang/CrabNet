@@ -231,7 +231,7 @@ class CONSTANTS:
 
 
 # %%
-def get_cbfv(data, elem_prop="oliynyk", scale=False):
+def get_cbfv(data, elem_prop="oliynyk", scale=False, extend_features=False):
     """
     Loads the compound csv file and featurizes it, then scales the features
     using StandardScaler.
@@ -263,7 +263,9 @@ def get_cbfv(data, elem_prop="oliynyk", scale=False):
     # elem_prop = 'oliynyk'
     mini = False
     # mini = True
-    X, y, formula, skipped = generate_features(df, elem_prop, mini=mini)
+    X, y, formula, skipped = generate_features(
+        df, elem_prop, mini=mini, extend_features=extend_features
+    )
     if scale:
         # scale each column of data to have a mean of 0 and a variance of 1
         scaler = StandardScaler()
@@ -475,7 +477,7 @@ def get_edm(
         df["formula"] = df["cif_id"].str.split("_ICSD").str[0]
 
     df.loc[:, "count"] = [
-        len(_element_composition(form)) for form in df.formula.values.toli
+        len(_element_composition(form)) for form in df.formula.values.tolist()
     ]
     # df = df[df["count"] != 1]  # drop pure elements
     if not inference:
