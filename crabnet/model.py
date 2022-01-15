@@ -157,7 +157,7 @@ class Model:
             compute_device = get_compute_device(
                 force_cpu=force_cpu, prefer_last=prefer_last
             )
-            CrabNet(
+            model = CrabNet(
                 compute_device=compute_device,
                 out_dims=out_dims,
                 d_model=d_model,
