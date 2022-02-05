@@ -21,6 +21,7 @@ RNG_SEED = 42
 torch.manual_seed(RNG_SEED)
 np.random.seed(RNG_SEED)
 
+compute_device = get_compute_device(prefer_last=True)
 
 # %%
 def get_model(
@@ -68,6 +69,7 @@ def get_model(
     save=True,
 ):
     """Get a CrabNet model with default parameters set.
+    
     #TODO: flesh out descriptions of parameters, as well as feasible min/max bounds
     where appropriate
 
