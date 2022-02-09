@@ -79,8 +79,8 @@ def data(
     Parameters
     ----------
     module : Module
-        The module within mat_discover that contains e.g. "train.csv". For example,
-        from mat_discover.CrabNet.data.materials_data import elasticity
+        The module within CrabNet that contains e.g. "train.csv". For example,
+        `from CrabNet.data.materials_data import elasticity`
     fname : str, optional
         Filename of text file to open.
     dummy : bool, optional
@@ -182,11 +182,12 @@ class Model:
             print(f"Running on compute device: {self.compute_device}")
             print(f"Model size: {count_parameters(self.model)} parameters\n")
 
-    def load_data(self, data, batch_size=2 ** 9, train=False):
+    def load_data(self, data, extra_features=None, batch_size=2 ** 9, train=False):
         self.batch_size = batch_size
         inference = not train
         data_loaders = EDM_CsvLoader(
             data=data,
+            extra_features=extra_features,
             batch_size=batch_size,
             n_elements=self.n_elements,
             inference=inference,
@@ -218,7 +219,7 @@ class Model:
         ti = time()
         minima = []
         for i, data in enumerate(self.train_loader):
-            X, y, formula = data
+            X, y, formula, extra_features = data
             y = self.scaler.scale(y)
             src, frac = X.squeeze(-1).chunk(2, dim=1)
             # add a small jitter to the input fractions to improve model
@@ -235,7 +236,7 @@ class Model:
             )
             y = y.to(self.compute_device, dtype=data_type_torch, non_blocking=True)
 
-            output = self.model.forward(src, frac)
+            output = self.model.forward(src, frac, extra_features=extra_features)
             prediction, uncertainty = output.chunk(2, dim=-1)
             loss = self.criterion(prediction.view(-1), uncertainty.view(-1), y.view(-1))
 
@@ -504,19 +505,20 @@ class Model:
         pred = np.zeros(len_dataset)
         uncert = np.zeros(len_dataset)
         formulae = np.empty(len_dataset, dtype=list)
+        extra_features = np.empty(len_dataset)
         atoms = np.empty((len_dataset, n_atoms))
         fractions = np.empty((len_dataset, n_atoms))
         self.model.eval()
         with torch.no_grad():
             for i, data in enumerate(loader):
-                X, y, formula = data
+                X, y, formula, extra_features = data
                 src, frac = X.squeeze(-1).chunk(2, dim=1)
                 src = src.to(self.compute_device, dtype=torch.long, non_blocking=True)
                 frac = frac.to(
                     self.compute_device, dtype=data_type_torch, non_blocking=True
                 )
                 y = y.to(self.compute_device, dtype=data_type_torch, non_blocking=True)
-                output = self.model.forward(src, frac)
+                output = self.model.forward(src, frac, extra_features=extra_features)
                 prediction, uncertainty = output.chunk(2, dim=-1)
                 uncertainty = torch.exp(uncertainty) * self.scaler.std
                 prediction = self.scaler.unscale(prediction)

@@ -56,11 +56,7 @@ class ResidualNetwork(nn.Module):
 
 class Embedder(nn.Module):
     def __init__(
-        self,
-        d_model: int,
-        compute_device: str = None,
-        elem_prop: str = "mat2vec",
-        extra_features: pd.DataFrame = None,
+        self, d_model: int, compute_device: str = None, elem_prop: str = "mat2vec"
     ):
         super().__init__()
         self.d_model = d_model
@@ -73,8 +69,6 @@ class Embedder(nn.Module):
         # mat2vec = f'{elem_dir}/random_200.csv'  # random vec for elements
 
         cbfv = pd.read_csv(mat2vec, index_col=0).values
-        if extra_features is not None:
-            cbfv = pd.concat(cbfv, extra_features, axis=1)
         feat_size = cbfv.shape[-1]
         self.fc_mat2vec = nn.Linear(feat_size, d_model).to(self.compute_device)
         zeros = np.zeros((1, feat_size))
@@ -85,8 +79,10 @@ class Embedder(nn.Module):
             self.compute_device, dtype=data_type_torch
         )
 
-    def forward(self, src):
+    def forward(self, src, extra_features=None):
         mat2vec_emb = self.cbfv(src)
+        if extra_features is not None:
+            mat2vec_emb = torch.concat((mat2vec_emb, extra_features), axis=1)
         x_emb = self.fc_mat2vec(mat2vec_emb)
         return x_emb
 
@@ -187,8 +183,8 @@ class Encoder(nn.Module):
                 encoder_layer, num_layers=self.N
             )
 
-    def forward(self, src, frac):
-        x = self.embed(src) * self.emb_scaler  # * 2 ** self.emb_scaler
+    def forward(self, src, frac, extra_features=None):
+        x = self.embed(src, extra_features) * self.emb_scaler  # * 2 ** self.emb_scaler
         mask = frac.unsqueeze(dim=-1)
         mask = torch.matmul(mask, mask.transpose(-2, -1))
         mask[mask != 0] = 1
@@ -267,8 +263,8 @@ class CrabNet(nn.Module):
             self.d_model, self.out_dims, self.out_hidden, self.bias
         )
 
-    def forward(self, src, frac):
-        output = self.encoder(src, frac)
+    def forward(self, src, frac, extra_features=None):
+        output = self.encoder(src, frac, extra_features)
 
         # average the "element contribution" at the end
         # mask so you only average "elements"
