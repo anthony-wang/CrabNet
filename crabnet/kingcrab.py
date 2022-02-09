@@ -55,7 +55,13 @@ class ResidualNetwork(nn.Module):
 
 
 class Embedder(nn.Module):
-    def __init__(self, d_model, compute_device=None, elem_prop="mat2vec"):
+    def __init__(
+        self,
+        d_model: int,
+        compute_device: str = None,
+        elem_prop: str = "mat2vec",
+        extra_features: pd.DataFrame = None,
+    ):
         super().__init__()
         self.d_model = d_model
         self.compute_device = compute_device
@@ -67,6 +73,8 @@ class Embedder(nn.Module):
         # mat2vec = f'{elem_dir}/random_200.csv'  # random vec for elements
 
         cbfv = pd.read_csv(mat2vec, index_col=0).values
+        if extra_features is not None:
+            cbfv = pd.concat(cbfv, extra_features, axis=1)
         feat_size = cbfv.shape[-1]
         self.fc_mat2vec = nn.Linear(feat_size, d_model).to(self.compute_device)
         zeros = np.zeros((1, feat_size))
