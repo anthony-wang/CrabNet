@@ -4,7 +4,7 @@ This software package implements the Compositionally-Restricted Attention-Based 
 
 > :warning: This is a fork of the [original CrabNet repository](https://github.com/anthony-wang/CrabNet) :warning:
 
-This is a refactored version of CrabNet, published to PyPI (`pip`) and Anaconda (`conda`). In addition to using `.csv` files, it allows direct passing of Pandas DataFrames as training and validation datasets, similar to [automatminer](https://hackingmaterials.lbl.gov/automatminer/). It also exposes many of the model parameters at the top-level via `get_model`. These changes make CrabNet portable and extensible, and may be incorporated into the parent repository at a later date. Basic instructions for this fork are given as follows, with the old documentation preserved towards the end.
+This is a refactored version of CrabNet, published to PyPI (`pip`) and Anaconda (`conda`). In addition to using `.csv` files, it allows direct passing of Pandas DataFrames as training and validation datasets, similar to [automatminer](https://hackingmaterials.lbl.gov/automatminer/). It also exposes many of the model parameters at the top-level via `get_model`. An `extend_features` is also implemented which allows utilization of data other than the elemental compositions (e.g. state variables such as temperature or applied load). These changes make CrabNet portable and extensible, and may be incorporated into the parent repository at a later date. Basic instructions for this fork are given as follows, with the old documentation preserved towards the end.
 
 ## Installation
 `conda install -c sgbaird crabnet`
