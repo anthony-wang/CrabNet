@@ -148,6 +148,8 @@ class Model:
         fudge=0.02,
         out_dims=3,
         d_model=512,
+        extend_features=None,
+        d_extend=0,
         N=3,
         heads=4,
         elem_prop="mat2vec",
@@ -160,6 +162,7 @@ class Model:
                 compute_device=compute_device,
                 out_dims=out_dims,
                 d_model=d_model,
+                d_extend=d_extend,
                 N=N,
                 heads=heads,
             )
@@ -170,6 +173,7 @@ class Model:
         self.classification = False
         self.n_elements = n_elements
         self.compute_device = model.compute_device
+        self.extend_features = extend_features
         self.fudge = fudge  #  expected fractional tolerance (std. dev) ~= 2%
         self.verbose = verbose
         self.elem_prop = elem_prop
@@ -235,7 +239,9 @@ class Model:
                 self.compute_device, dtype=data_type_torch, non_blocking=True
             )
             y = y.to(self.compute_device, dtype=data_type_torch, non_blocking=True)
-
+            extra_features = extra_features.to(
+                self.compute_device, dtype=data_type_torch, non_blocking=True
+            )
             output = self.model.forward(src, frac, extra_features=extra_features)
             prediction, uncertainty = output.chunk(2, dim=-1)
             loss = self.criterion(prediction.view(-1), uncertainty.view(-1), y.view(-1))
@@ -495,7 +501,11 @@ class Model:
         if data is None and loader is None:
             raise SyntaxError("Specify either data *or* loader, not neither.")
         elif data is not None and loader is None:
-            self.load_data(data)
+            if self.extend_features is not None:
+                extra_features = data[self.extend_features]
+            else:
+                extra_features = None
+            self.load_data(data, extra_features=extra_features)
             loader = self.data_loader
         elif data is not None and loader is not None:
             raise SyntaxError("Specify either data *or* loader, not both.")
@@ -505,7 +515,6 @@ class Model:
         pred = np.zeros(len_dataset)
         uncert = np.zeros(len_dataset)
         formulae = np.empty(len_dataset, dtype=list)
-        extra_features = np.empty(len_dataset)
         atoms = np.empty((len_dataset, n_atoms))
         fractions = np.empty((len_dataset, n_atoms))
         self.model.eval()
@@ -518,6 +527,9 @@ class Model:
                     self.compute_device, dtype=data_type_torch, non_blocking=True
                 )
                 y = y.to(self.compute_device, dtype=data_type_torch, non_blocking=True)
+                extra_features = extra_features.to(
+                    self.compute_device, dtype=data_type_torch, non_blocking=True
+                )
                 output = self.model.forward(src, frac, extra_features=extra_features)
                 prediction, uncertainty = output.chunk(2, dim=-1)
                 uncertainty = torch.exp(uncertainty) * self.scaler.std

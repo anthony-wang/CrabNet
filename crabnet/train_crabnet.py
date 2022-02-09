@@ -184,12 +184,19 @@ def get_model(
             mat_prop = "DataFrame_property"
         use_path = False
 
+    if extend_features is None:
+        d_extend = 0
+    else:
+        d_extend = len(extend_features)
+
     # Get the TorchedCrabNet architecture loaded
     model = Model(
         CrabNet(
             compute_device=compute_device,
             out_dims=out_dims,
             d_model=d_model,
+            d_extend=d_extend,
+            extend_features=extend_features,
             N=N,
             heads=heads,
             out_hidden=out_hidden,
@@ -208,6 +215,7 @@ def get_model(
         fudge=fudge,
         out_dims=out_dims,
         d_model=d_model,
+        extend_features=extend_features,
         N=N,
         heads=heads,
         elem_prop=elem_prop,
@@ -235,18 +243,18 @@ def get_model(
         train_df_tmp = pd.read_csv(train_data)
         val_df_tmp = pd.read_csv(val_data)
         data_size = pd.read_csv(train_data).shape[0]
-        if extend_features is not None:
-            extra_train_data = train_df_tmp[extend_features]
-            extra_val_data = val_df_tmp[extend_features]
+        if model.extend_features is not None:
+            extra_train_data = train_df_tmp[model.extend_features]
+            extra_val_data = val_df_tmp[model.extend_features]
         else:
             extra_train_data = None
             extra_val_data = None
     else:
         train_data = train_df
         val_data = val_df
-        if extend_features is not None:
-            extra_train_data = train_df[extend_features]
-            extra_val_data = val_df[extend_features]
+        if model.extend_features is not None:
+            extra_train_data = train_df[model.extend_features]
+            extra_val_data = val_df[model.extend_features]
         else:
             extra_train_data = None
             extra_val_data = None
@@ -269,7 +277,6 @@ def get_model(
         )
     if val_data is not None:
         model.load_data(val_data, batch_size=batch_size, extra_features=extra_val_data)
-
     # Set the number of epochs, decide if you want a loss curve to be plotted
     model.fit(
         epochs=epochs,

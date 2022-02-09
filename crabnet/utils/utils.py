@@ -402,15 +402,15 @@ class EDMDataset(Dataset):
 
     def __init__(self, dataset, n_comp, extra_features=None):
         self.data = dataset
-        self.extra_features = extra_features
         self.n_comp = n_comp
 
         self.X = np.array(self.data[0])
         self.y = np.array(self.data[1])
         self.formula = np.array(self.data[2])
         if extra_features is None:
-            extra_features = [None] * self.X.shape[0]
-        self.extra_features = np.array(self.data[3])
+            self.extra_features = np.zeros((self.X.shape[0], 0))
+        else:
+            self.extra_features = extra_features.values
 
         self.shape = [
             (self.X.shape),
@@ -584,6 +584,7 @@ class EDM_CsvLoader:
                 verbose=verbose,
             )
         )
+
         self.extra_features = extra_features
         self.n_train = len(self.main_data[0])
         self.n_elements = self.main_data[0].shape[1] // 2
