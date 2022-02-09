@@ -11,6 +11,8 @@ This is a refactored version of CrabNet, published to PyPI (`pip`) and Anaconda 
 
 or
 
+[Install PyTorch](https://pytorch.org/get-started/locally/) (specific to your hardware, e.g. `pip install torch==1.10.2+cu102 -f https://download.pytorch.org/whl/cu102/torch_stable.html`), then
+
 `pip install crabnet`
 
 ## Basic Usage
