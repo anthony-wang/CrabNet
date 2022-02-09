@@ -53,6 +53,20 @@ Predict on the validation data:
 val_true, val_pred, formulas, val_sigma = crabnet_model.predict(val_df)
 ```
 
+### Extend Features
+To include additional features that get added after the transformer architecture, but before a recurrent neural network, include the additional features in your DataFrames and pass the name(s) of these additional features (i.e. columns) as a list into `extend_features`.
+
+```python
+crabnet_model = get_model(
+    mat_prop="hardness",
+    train_df=train_df, # contains "formula", "target", and "state_var0" columns
+    extend_features=["state_var0"],
+    learningcurve=False,
+    force_cpu=False,
+)
+```
+
+
 # Old Documentation
 
 ## Table of Contents
