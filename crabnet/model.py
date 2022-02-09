@@ -1,4 +1,4 @@
-from logging import warn
+from warnings import warn
 import os
 from time import time
 import numpy as np
@@ -107,7 +107,6 @@ def data(
     DataFrame, DataFrame, DataFrame
         If test_size > 0 and split==True, then training, validation, and test DataFrames are returned.
     """
-
     train_csv = open_text(module, fname)
     df = pd.read_csv(train_csv)
 
@@ -251,6 +250,11 @@ class Model:
             learning_time = epoch_check and self.epoch >= swa_check
             if learning_time:
                 act_v, pred_v, _, _ = self.predict(loader=self.data_loader)
+                if np.any(np.isnan(pred_v)):
+                    warn(
+                        "NaN values found in `pred_v`. Replacing with DummyRegressor() values (i.e. mean of training targets)."
+                    )
+                    pred_v = np.nan_to_num(pred_v)
                 mae_v = mean_absolute_error(act_v, pred_v)
                 self.optimizer.update_swa(mae_v)
                 minima.append(self.optimizer.minimum_found)

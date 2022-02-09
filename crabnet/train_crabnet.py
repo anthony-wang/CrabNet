@@ -314,10 +314,8 @@ def load_model(model, mat_prop, classification, data, verbose=True):
     return model
 
 
-def get_results(model, verbose=True):
-    output = model.predict(
-        loader=model.data_loader, verbose=verbose
-    )  # predict the data saved here
+def get_results(model):
+    output = model.predict(loader=model.data_loader)  # predict the data saved here
     return model, output
 
 
