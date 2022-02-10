@@ -251,9 +251,7 @@ class Model:
             if learning_time:
                 act_v, pred_v, _, _ = self.predict(loader=self.data_loader)
                 if np.any(np.isnan(pred_v)):
-                    warn(
-                        "NaN values found in `pred_v`. Replacing with DummyRegressor() values (i.e. mean of training targets)."
-                    )
+                    warn("NaN values found in `pred_v`. Replacing with zeros.")
                     pred_v = np.nan_to_num(pred_v)
                 mae_v = mean_absolute_error(act_v, pred_v)
                 self.optimizer.update_swa(mae_v)
@@ -393,9 +391,15 @@ class Model:
                 datasize = len(act_t)
                 # print(f'inference speed: {datasize/dt:0.3f}')
                 # PARAMETER: mae vs. rmse?
+                if np.any(np.isnan(pred_t)):
+                    warn("NaN values found in `pred_t`. Replacing with zeros.")
+                    pred_t = np.nan_to_num(pred_t)
                 mae_t = mean_absolute_error(act_t, pred_t)
                 self.loss_curve["train"].append(mae_t)
                 act_v, pred_v, _, _ = self.predict(loader=self.data_loader)
+                if np.any(np.isnan(pred_v)):
+                    warn("NaN values found in `pred_v`. Replacing with zeros.")
+                    pred_v = np.nan_to_num(pred_v)
                 mae_v = mean_absolute_error(act_v, pred_v)
                 self.loss_curve["val"].append(mae_v)
                 epoch_str = f"Epoch: {epoch}/{epochs} ---"
