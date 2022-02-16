@@ -11,6 +11,7 @@ from torch.optim.lr_scheduler import CyclicLR
 
 from utils.utils import (Lamb, Lookahead, RobustL1, BCEWithLogitsLoss,
                          EDM_CsvLoader, Scaler, DummyScaler, count_parameters)
+from utils.get_compute_device import get_compute_device
 from utils.optim import SWA
 
 
@@ -41,6 +42,8 @@ class Model():
         self.verbose = verbose
         self.drop_unary = drop_unary
         self.scale = scale
+        if self.compute_device is None:
+            self.compute_device = get_compute_device()
         if self.verbose:
             print('\nModel architecture: out_dims, d_model, N, heads')
             print(f'{self.model.out_dims}, {self.model.d_model}, '
