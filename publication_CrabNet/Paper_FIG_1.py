@@ -5,7 +5,7 @@ import numpy as np
 from crabnet.kingcrab import CrabNet
 from crabnet.model import Model
 from utils.get_compute_device import get_compute_device
-from benchmark_crabnet import get_results
+from publication_CrabNet.benchmark_crabnet import get_results
 
 import torch
 
