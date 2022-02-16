@@ -27,7 +27,9 @@ class Model():
                  model,
                  model_name='UnnamedModel',
                  n_elements='infer',
-                 verbose=True):
+                 verbose=True,
+                 drop_unary=True,
+                 scale=True):
         self.model = model
         self.model_name = model_name
         self.data_loader = None
@@ -37,6 +39,8 @@ class Model():
         self.compute_device = model.compute_device
         self.fudge = 0.02  #  expected fractional tolerance (std. dev) ~= 2%
         self.verbose = verbose
+        self.drop_unary = drop_unary
+        self.scale = scale
         if self.verbose:
             print('\nModel architecture: out_dims, d_model, N, heads')
             print(f'{self.model.out_dims}, {self.model.d_model}, '
@@ -52,7 +56,9 @@ class Model():
                                      batch_size=batch_size,
                                      n_elements=self.n_elements,
                                      inference=inference,
-                                     verbose=self.verbose)
+                                     verbose=self.verbose,
+                                     drop_unary=self.drop_unary,
+                                     scale=self.scale)
         print(f'loading data with up to {data_loaders.n_elements:0.0f} '
               f'elements in the formula')
 
