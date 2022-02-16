@@ -341,7 +341,7 @@ class Model():
 
     def load_network(self, path):
         path = f'models/trained_models/{path}'
-        network = torch.load(path, map_location='cuda')
+        network = torch.load(path, map_location=self.compute_device)
         base_optim = Lamb(params=self.model.parameters())
         optimizer = Lookahead(base_optimizer=base_optim)
         self.optimizer = SWA(optimizer)
