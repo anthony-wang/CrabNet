@@ -14,7 +14,10 @@ class CompositionError(Exception):
 
 def get_sym_dict(f, factor):
     sym_dict = collections.defaultdict(float)
-    for m in re.finditer(r"([A-Z][a-z]*)\s*([-*\.\d]*)", f):
+    # compile regex for speedup
+    regex = r"([A-Z][a-z]*)\s*([-*\.\d]*)"
+    r = re.compile(regex)
+    for m in re.finditer(r, f):
         el = m.group(1)
         amt = 1
         if m.group(2).strip() != "":
@@ -45,7 +48,10 @@ def parse_formula(formula):
     formula = formula.replace('@', '')
     formula = formula.replace('[', '(')
     formula = formula.replace(']', ')')
-    m = re.search(r"\(([^\(\)]+)\)\s*([\.\d]*)", formula)
+    # compile regex for speedup
+    regex = r"\(([^\(\)]+)\)\s*([\.\d]*)"
+    r = re.compile(regex)
+    m = re.search(r, formula)
     if m:
         factor = 1
         if m.group(2) != "":
@@ -118,13 +124,17 @@ def _assign_features(matrices, elem_info, formulae, sum_feat=False):
         target = target_mat[h]
         formula = formulae[h]
         comp_mat = np.zeros(shape=(len(elem_list), elem_mat.shape[-1]))
+        skipped = False
 
         for i, elem in enumerate(elem_list):
             if elem in elem_missing:
-                skipped_formula.append(formula)
+                skipped = True
             else:
                 row = elem_index[elem_symbols.index(elem)]
                 comp_mat[i, :] = elem_mat[row]
+
+        if skipped:
+            skipped_formula.append(formula)
 
         range_feats.append(np.ptp(comp_mat, axis=0))
         # var_feats.append(comp_mat.var(axis=0))
@@ -184,10 +194,10 @@ def generate_features(df, elem_prop='oliynyk',
         valid element properties:
             'oliynyk',
             'jarvis',
-            'atom2vec',
             'magpie',
             'mat2vec',
-            'onehot'
+            'onehot',
+            'random_200'
     drop_duplicates: boolean
         Decide to keep or drop duplicate compositions
     extend_features: boolean
@@ -221,10 +231,25 @@ def generate_features(df, elem_prop='oliynyk',
                    'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg',
                    'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
 
-    elem_props = pd.read_csv(dirpath
-                             + '/data/element_properties/'
-                             + elem_prop
-                             + '.csv')
+    cbfv_path = (dirpath
+                + '/data/element_properties/'
+                + elem_prop
+                + '.csv')
+
+    if not os.path.exists(cbfv_path):
+        cbfv_path = (dirpath
+                    + '/data/element_properties/bm_element_props/'
+                    + elem_prop
+                    + '.csv')
+
+    if not os.path.exists(cbfv_path):
+        cbfv_path = (dirpath
+                    + '/data/element_properties/mb_element_props/'
+                    + elem_prop
+                    + '.csv')
+
+    elem_props = pd.read_csv(cbfv_path)
+
     elem_props.index = elem_props['element'].values
     elem_props.drop(['element'], inplace=True, axis=1)
 

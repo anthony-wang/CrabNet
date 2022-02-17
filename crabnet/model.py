@@ -28,6 +28,7 @@ class Model():
                  model,
                  model_name='UnnamedModel',
                  n_elements='infer',
+                 capture_every=None,
                  verbose=True,
                  drop_unary=True,
                  scale=True):
@@ -39,18 +40,24 @@ class Model():
         self.n_elements = n_elements
         self.compute_device = model.compute_device
         self.fudge = 0.02  #  expected fractional tolerance (std. dev) ~= 2%
+        self.capture_every = capture_every
         self.verbose = verbose
         self.drop_unary = drop_unary
         self.scale = scale
         if self.compute_device is None:
             self.compute_device = get_compute_device()
+        self.capture_flag = False
+        self.formula_current = None
+        self.act_v = None
+        self.pred_v = None
         if self.verbose:
             print('\nModel architecture: out_dims, d_model, N, heads')
             print(f'{self.model.out_dims}, {self.model.d_model}, '
                   f'{self.model.N}, {self.model.heads}')
             print(f'Running on compute device: {self.compute_device}')
             print(f'Model size: {count_parameters(self.model)} parameters\n')
-
+        if self.capture_every is not None:
+            print(f'capturing attention tensors every {self.capture_every}')
 
     def load_data(self, file_name, batch_size=2**9, train=False):
         self.batch_size = batch_size
@@ -106,6 +113,19 @@ class Model():
                      dtype=data_type_torch,
                      non_blocking=True)
 
+            ##################################
+            # Force evaluate dataset so that we can capture it in the hook
+            # here we are using the train_loader, but we can also use
+            # general data_loader
+            if self.capture_every == 'step':
+                print('capturing every step!')
+                # print(f'data_loader size: {len(self.data_loader.dataset)}')
+                self.capture_flag = True
+                # (act, pred, formulae, uncert)
+                self.act_v, self.pred_v, _, _ = self.predict(self.data_loader)
+                self.capture_flag = False
+            ##################################
+
             output = self.model.forward(src, frac)
             prediction, uncertainty = output.chunk(2, dim=-1)
             loss = self.criterion(prediction.view(-1),
@@ -122,7 +142,8 @@ class Model():
             epoch_check = (self.epoch + 1) % (2 * self.epochs_step) == 0
             learning_time = epoch_check and self.epoch >= swa_check
             if learning_time:
-                act_v, pred_v, _, _ = self.predict(self.data_loader)
+                with torch.no_grad():
+                    act_v, pred_v, _, _ = self.predict(self.data_loader)
                 mae_v = mean_absolute_error(act_v, pred_v)
                 self.optimizer.update_swa(mae_v)
                 minima.append(self.optimizer.minimum_found)
@@ -147,7 +168,9 @@ class Model():
         self.loss_curve['train'] = []
         self.loss_curve['val'] = []
 
-        self.epochs_step = 10
+        # change epochs_step
+        # self.epochs_step = 10
+        self.epochs_step = 1
         self.step_size = self.epochs_step * len(self.train_loader)
         print(f'stepping every {self.step_size} training passes,',
               f'cycling lr every {self.epochs_step} epochs')
@@ -160,9 +183,10 @@ class Model():
             print(f'checkin at {self.epochs_step*2} '
                   f'epochs to match lr scheduler')
         if epochs % (self.epochs_step * 2) != 0:
-            updated_epochs = epochs - epochs % (self.epochs_step * 2)
-            print(f'epochs not divisible by {self.epochs_step * 2}, '
-                  f'updating epochs to {updated_epochs} for learning')
+            # updated_epochs = epochs - epochs % (self.epochs_step * 2)
+            # print(f'epochs not divisible by {self.epochs_step * 2}, '
+            #       f'updating epochs to {updated_epochs} for learning')
+            updated_epochs = epochs
             epochs = updated_epochs
 
         self.step_count = 0
@@ -196,15 +220,30 @@ class Model():
             # print(f'epoch time: {(time() - ti):0.3f}')
             self.lr_list.append(self.optimizer.param_groups[0]['lr'])
 
+            ##################################
+            # Force evaluate dataset so that we can capture it in the hook
+            # here we are using the train_loader, but we can also use
+            # general data_loader
+            if self.capture_every == 'epoch':
+                print('capturing every epoch!')
+                # print(f'data_loader size: {len(self.data_loader.dataset)}')
+                self.capture_flag = True
+                # (act, pred, formulae, uncert)
+                self.act_v, self.pred_v, _, _ = self.predict(self.data_loader)
+                self.capture_flag = False
+            ##################################
+
             if (epoch+1) % checkin == 0 or epoch == epochs - 1 or epoch == 0:
                 ti = time()
-                act_t, pred_t, _, _ = self.predict(self.train_loader)
+                with torch.no_grad():
+                    act_t, pred_t, _, _ = self.predict(self.train_loader)
                 dt = time() - ti
                 datasize = len(act_t)
                 # print(f'inference speed: {datasize/dt:0.3f}')
                 mae_t = mean_absolute_error(act_t, pred_t)
                 self.loss_curve['train'].append(mae_t)
-                act_v, pred_v, _, _ = self.predict(self.data_loader)
+                with torch.no_grad():
+                    act_v, pred_v, _, _ = self.predict(self.data_loader)
                 mae_v = mean_absolute_error(act_v, pred_v)
                 self.loss_curve['val'].append(mae_v)
                 epoch_str = f'Epoch: {epoch}/{epochs} ---'
@@ -295,6 +334,14 @@ class Model():
         with torch.no_grad():
             for i, data in enumerate(loader):
                 X, y, formula = data
+                if self.capture_flag:
+                    self.formula_current = None
+                    # HACK for PyTorch v1.8.0
+                    # this output used to be a list, but is now a tuple
+                    if isinstance(formula, tuple):
+                        self.formula_current = list(formula)
+                    elif isinstance(formula, list):
+                        self.formula_current = formula.copy()
                 src, frac = X.squeeze(-1).chunk(2, dim=1)
                 src = src.to(self.compute_device,
                              dtype=torch.long,
@@ -316,12 +363,13 @@ class Model():
                                  i*self.batch_size+len(y),
                                  1)
 
-                atoms[data_loc, :] = src.cpu().numpy()
-                fractions[data_loc, :] = frac.cpu().numpy()
-                act[data_loc] = y.view(-1).cpu().numpy()
-                pred[data_loc] = prediction.view(-1).cpu().detach().numpy()
-                uncert[data_loc] = uncertainty.view(-1).cpu().detach().numpy()
+                atoms[data_loc, :] = src.cpu().numpy().astype('int32')
+                fractions[data_loc, :] = frac.cpu().numpy().astype('float32')
+                act[data_loc] = y.view(-1).cpu().numpy().astype('float32')
+                pred[data_loc] = prediction.view(-1).cpu().detach().numpy().astype('float32')
+                uncert[data_loc] = uncertainty.view(-1).cpu().detach().numpy().astype('float32')
                 formulae[data_loc] = formula
+        self.model.train()
 
         return (act, pred, formulae, uncert)
 

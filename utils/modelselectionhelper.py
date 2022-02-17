@@ -5,6 +5,13 @@ from time import time
 from utils.utils import get_cbfv
 
 from utils.estimatorselectionhelper import EstimatorSelectionHelper
+from utils.utils import CONSTANTS
+cons = CONSTANTS()
+
+
+# %%
+mb_props = cons.matbench_props
+bm_props = cons.benchmark_props
 
 
 # %%
@@ -30,56 +37,58 @@ def modelselectionhelper(models,
         ti_ep = time()
 
         for mp in mat_props:
-            print(f'fitting {mp} with {ep} using {cv}-fold CV')
+            if ep in cons.eps \
+                or (ep is mp and (ep in mb_props or ep in bm_props)):
+                print(f'fitting {mp} with {ep} using {cv}-fold CV')
             ti_mp = time()
 
-            trainpath = os.path.join(mat_props_dir, mp, 'train.csv')
-            valpath = os.path.join(mat_props_dir, mp, 'val.csv')
+                trainpath = os.path.join(mat_props_dir, mp, 'train.csv')
+                valpath = os.path.join(mat_props_dir, mp, 'val.csv')
 
-            if (not os.path.exists(trainpath) or
-                not os.path.exists(valpath)):
-                trainpath = os.path.join(mat_props_dir, mp, 'train0.csv')
-                valpath = os.path.join(mat_props_dir, mp, 'val0.csv')
+                if (not os.path.exists(trainpath) or
+                    not os.path.exists(valpath)):
+                    trainpath = os.path.join(mat_props_dir, mp, 'train0.csv')
+                    valpath = os.path.join(mat_props_dir, mp, 'val0.csv')
 
-            X, y, form, skipped = get_cbfv(trainpath, elem_prop=ep)
-            X_val, y_val, form_val, skipped_val = get_cbfv(valpath, elem_prop=ep)
+                X, y, form, skipped = get_cbfv(trainpath, elem_prop=ep)
+                X_val, y_val, form_val, skipped_val = get_cbfv(valpath, elem_prop=ep)
 
-            # Sample the dataset for faster gridsearch
-            n_samples = 2000
-            if X.shape[0] > n_samples:
-                print(f'Sampling training data to {n_samples} samples '
-                      f'to speed up initial gridsearch')
-                X = X.sample(n=n_samples)
-                y = y.loc[X.index]
-                form = form.loc[X.index]
+                # Sample the dataset for faster gridsearch
+                n_samples = 2000
+                if X.shape[0] > n_samples:
+                    print(f'Sampling training data to {n_samples} samples '
+                          f'to speed up initial gridsearch')
+                    X = X.sample(n=n_samples)
+                    y = y.loc[X.index]
+                    form = form.loc[X.index]
 
-            helper1 = EstimatorSelectionHelper(models, params)
-            helper1.fit(X,
-                        y,
-                        scoring=scoring,
-                        n_jobs=n_jobs,
-                        cv=cv,
-                        refit=refit,
-                        verbose=verbose,
-                        random_seed=random_seed)
+                helper1 = EstimatorSelectionHelper(models, params)
+                helper1.fit(X,
+                            y,
+                            scoring=scoring,
+                            n_jobs=n_jobs,
+                            cv=cv,
+                            refit=refit,
+                            verbose=verbose,
+                            random_seed=random_seed)
 
-            output = helper1.score_summary(ep, mp, fig_dir,
-                                           sort_by='mean_test_r2')
-            score_summary, best_models = output
+                output = helper1.score_summary(ep, mp, fig_dir,
+                                               sort_by='mean_test_r2')
+                score_summary, best_models = output
 
-            print('\n************************************************')
-            print(f'finished {mp} with {ep}')
-            print('saving score summary and best models files')
-            print('************************************************')
+                print('\n************************************************')
+                print(f'finished {mp} with {ep}')
+                print('saving score summary and best models files')
+                print('************************************************')
 
-            outpath_all = os.path.join(metrics_dir, f'{ep}_{mp}.csv')
-            score_summary.to_csv(outpath_all, index=False)
+                outpath_all = os.path.join(metrics_dir, f'{ep}_{mp}.csv')
+                score_summary.to_csv(outpath_all, index=False)
 
-            outpath_best = os.path.join(metrics_dir, f'best_{ep}_{mp}.csv')
-            best_models.to_csv(outpath_best, index=False)
+                outpath_best = os.path.join(metrics_dir, f'best_{ep}_{mp}.csv')
+                best_models.to_csv(outpath_best, index=False)
 
-            dt_mp = time() - ti_mp
-            print(f'time elapsed for {mp} with {ep}: {dt_mp:0.4f} s')
+                dt_mp = time() - ti_mp
+                print(f'time elapsed for {mp} with {ep}: {dt_mp:0.4f} s')
 
         dt_ep = time() - ti_ep
         print(f'time elapsed for all material properties '
