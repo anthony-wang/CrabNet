@@ -54,4 +54,4 @@ The references in bibtex form:
 For the steps, please see the readme located at [README_CrabNet.md](README_CrabNet.md).
 
 ## Model interpretability with `CrabNet`
-For the steps, please see the readme located at [README_CrabNet.md](README_ExplainableGap.md).
+For the steps, please see the readme located at [README_ExplainableGap.md](README_ExplainableGap.md).
