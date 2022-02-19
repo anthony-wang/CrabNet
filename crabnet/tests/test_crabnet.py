@@ -1,3 +1,4 @@
+#%%
 """Test CrabNet's fit and predict via `get_model()` and `predict()`."""
 import numpy as np
 from crabnet.model import data
@@ -29,3 +30,5 @@ if __name__ == "__main__":
     train_true, train_pred, formulas, train_sigma = test_extend_features()
     train_true, train_pred, formulas, train_sigma = test_crabnet()
     1 + 1
+
+# %%
