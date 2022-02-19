@@ -1,16 +1,13 @@
 """Compare CrabNet `extend_features` with XGBoost for hardness dataset.
 
-
 Dependency: `pip install vickers_hardness`, but then might run into issue with shapely.
 See fix here: https://github.com/uncertainty-toolbox/uncertainty-toolbox/issues/59
 
 """
-from warnings import warn
 from os.path import join
 from pathlib import Path
 from typing import List
 
-import numpy as np
 import pandas as pd
 from crabnet.model import data
 import vickers_hardness.data as vh_data
@@ -21,13 +18,12 @@ from sklearn.model_selection import (
     GroupShuffleSplit,
     KFold,
     ShuffleSplit,
-    cross_validate,
 )
 from vickers_hardness.utils.plotting import parity_with_err
 from vickers_hardness.vickers_hardness_ import VickersHardness
 
 dummy = False
-hyperopt = True
+hyperopt = False
 split_by_groups = True
 
 # %% directories
@@ -147,7 +143,7 @@ for name in names:
     else:
         raise NotImplementedError(f"{name} not implemented")
 
-    y_true, y_pred = [xgb_df["actual_hardness"], xgb_df["predicted_hardness"]]
+    y_true, y_pred = [tmp_df["actual_hardness"], tmp_df["predicted_hardness"]]
     mae = mean_absolute_error(y_true, y_pred)
     rmse = mean_squared_error(y_true, y_pred, squared=False)
     print(f"{name} MAE: {mae:.5f}")
