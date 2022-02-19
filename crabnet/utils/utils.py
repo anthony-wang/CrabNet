@@ -439,9 +439,7 @@ class EDMDataset(Dataset):
         return (X, y, formula, extra_features)
 
 
-def get_edm(
-    data, elem_prop="mat2vec", n_elements="infer", inference=False, verbose=True
-):
+def get_edm(data, n_elements="infer", inference=False, verbose=True, groupby=False):
     """
     Build a element descriptor matrix.
 
@@ -449,8 +447,6 @@ def get_edm(
     ----------
     data: str or DataFrame
         Filepath to data or DataFrame.
-    elem_prop : str, optional
-        DESCRIPTION. The default is 'oliynyk'.
 
     Returns
     -------
@@ -491,7 +487,7 @@ def get_edm(
         len(_element_composition(form)) for form in df.formula.values.tolist()
     ]
     # df = df[df["count"] != 1]  # drop pure elements
-    if not inference:
+    if not inference and groupby:
         df = df.groupby(by="formula").mean().reset_index()  # mean of duplicates
 
     list_ohm = [OrderedDict(_element_composition(form)) for form in df["formula"]]
@@ -546,7 +542,7 @@ class EDM_CsvLoader:
         data,
         extra_features=None,
         batch_size=64,
-        num_workers=1,
+        groupby=False,
         random_state=0,
         shuffle=True,
         pin_memory=True,
@@ -568,6 +564,8 @@ class EDM_CsvLoader:
             train/val ratio if val_file not given
         batch_size: float, optional (default=64)
             Step size for the Gaussian filter
+        groupby: bool, optional
+            Whether to reduce repeat formulas to a unique set, by default False.
         random_state: int, optional (default=123)
             Random seed for sampling the dataset. Only used if validation data is
             not given.
@@ -578,10 +576,10 @@ class EDM_CsvLoader:
         self.main_data = list(
             get_edm(
                 self.data,
-                elem_prop=elem_prop,
                 n_elements=n_elements,
                 inference=inference,
                 verbose=verbose,
+                groupby=groupby,
             )
         )
 

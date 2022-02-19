@@ -380,7 +380,8 @@ class Encoder(nn.Module):
             x = x.masked_fill(hmask == 0, 0)
 
         if self.extend_features is not None:
-            X_extra = extra_features.repeat(1, 1, 4).permute([1, 2, 0])
+            n_elements = x.shape[1]
+            X_extra = extra_features.repeat(1, 1, n_elements).permute([1, 2, 0])
             x = torch.concat((x, X_extra), axis=2)
 
         return x
@@ -480,10 +481,7 @@ class CrabNet(nn.Module):
         self.out_hidden = out_hidden
         self.transfer_nn = TransferNetwork(512, 512)
         self.output_nn = ResidualNetwork(
-            self.d_model + self.d_extend,
-            self.out_dims,
-            self.out_hidden,
-            self.bias,
+            self.d_model + self.d_extend, self.out_dims, self.out_hidden, self.bias,
         )
 
     def forward(self, src, frac, extra_features=None):
