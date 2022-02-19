@@ -35,6 +35,7 @@ def get_model(
     classification=False,
     batch_size=None,
     transfer=None,
+    extend_transfer=True,
     verbose=True,
     losscurve=False,
     learningcurve=True,
@@ -221,6 +222,12 @@ def get_model(
         heads=heads,
         elem_prop=elem_prop,
     )
+
+    # if training freeze one layer
+    # if transfering unfreeze the layer to tune
+    if not extend_transfer:
+        for param in model.layers.fc1.parameters():
+            param.requires_grad = False
 
     # Train network starting at pretrained weights
     if transfer is not None:

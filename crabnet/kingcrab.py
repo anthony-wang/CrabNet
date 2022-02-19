@@ -88,9 +88,8 @@ class TransferNetwork(nn.Module):
         Dimensions of ouput layer
     """
 
-    def __init__(self, input_dims=512, output_dims=512, transfer=False):
+    def __init__(self, input_dims, output_dims):
         super().__init__()
-        self.transfer = transfer
         self.layers = nn.Sequential(
             OrderedDict(
                 [
@@ -479,9 +478,14 @@ class CrabNet(nn.Module):
             dropout=dropout,
         )
         self.out_hidden = out_hidden
-        self.transfer_nn = TransferNetwork(512, 512)
+        self.transfer_nn = TransferNetwork(
+            self.d_model + self.d_extend, self.d_model + self.d_extend
+        )
         self.output_nn = ResidualNetwork(
-            self.d_model + self.d_extend, self.out_dims, self.out_hidden, self.bias,
+            self.d_model + self.d_extend,
+            self.out_dims,
+            self.out_hidden,
+            self.bias,
         )
 
     def forward(self, src, frac, extra_features=None):
@@ -503,7 +507,7 @@ class CrabNet(nn.Module):
             Model output containing predicted value and undcertainty for that value
         """
         output = self.encoder(src, frac, extra_features)
-
+        # print('WE GOT THIS FAR')
         output = self.transfer_nn(output)
         # average the "element contribution" at the end
         # mask so you only average "elements"
