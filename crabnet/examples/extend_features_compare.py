@@ -8,6 +8,7 @@ from os.path import join
 from pathlib import Path
 from typing import List
 
+import numpy as np
 import pandas as pd
 from crabnet.model import data
 import vickers_hardness.data as vh_data
@@ -25,10 +26,15 @@ from vickers_hardness.vickers_hardness_ import VickersHardness
 dummy = False
 hyperopt = False
 split_by_groups = True
+remove_load = True
 
 # %% directories
 figure_dir = join("figures", "extend_features")
 result_dir = join("results", "extend_features")
+
+if remove_load:
+    figure_dir = join(figure_dir, "without_load")
+    result_dir = join(result_dir, "without_load")
 
 crabnet_figures = join(figure_dir, "crabnet")
 crabnet_results = join(result_dir, "crabnet")
@@ -50,6 +56,9 @@ y = prediction["hardness"]
 if dummy:
     X = X.head(50)
     y = y.head(50)
+
+if remove_load:
+    X["load"] = np.zeros(X.shape[0])  # could try np.random.rand
 
 # %% K-fold cross-validation
 if split_by_groups:
@@ -149,8 +158,17 @@ for name in names:
     print(f"{name} MAE: {mae:.5f}")
     print(f"{name} RMSE: {rmse:.5f}")
     tmp_df.sort_index().to_csv(join(result_dir, name, f"{cvtype}-results.csv"))
-1 + 1
 
+# %% with applied load
+# crabnet MAE: 3.06177
+# crabnet RMSE: 5.12390
+# xgboost MAE: 2.34908
+# xgboost RMSE: 3.81564
+
+# %% without applied load
+
+
+1 + 1
 
 # %% Code Graveyard
 
