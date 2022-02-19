@@ -26,6 +26,6 @@ def test_extend_features():
 
 
 if __name__ == "__main__":
-    train_true, train_pred, formulas, train_sigma = test_extend_features()
     train_true, train_pred, formulas, train_sigma = test_crabnet()
+    train_true, train_pred, formulas, train_sigma = test_extend_features()
     1 + 1
