@@ -1,3 +1,4 @@
+#%%
 """Train CrabNet using data for a given material property.
 
 Use the crabnet environment.
@@ -70,7 +71,7 @@ def get_model(
     save=True,
 ):
     """Get a CrabNet model with default parameters set.
-    
+
     #TODO: flesh out descriptions of parameters, as well as feasible min/max bounds
     where appropriate
 
@@ -112,9 +113,9 @@ def get_model(
     d_model : int, optional
         Model size. See paper, by default 512
     out_dims : int, optional
-        [description], by default 3
+        Output dimensions for Residual Network, by default 3
     N : int, optional
-        [description], by default 3
+        Number of attention layers, by default 3
     heads : int, optional
         Number of attention heads to use, by default 4
     out_hidden : list, optional
@@ -263,10 +264,10 @@ def get_model(
     # Load the train and validation data before fitting the network
     if batch_size is None:
         batch_size = 2 ** round(np.log2(data_size) - 4)
-        if batch_size < 2 ** 7:
-            batch_size = 2 ** 7
-        if batch_size > 2 ** 12:
-            batch_size = 2 ** 12
+        if batch_size < 2**7:
+            batch_size = 2**7
+        if batch_size > 2**12:
+            batch_size = 2**12
     model.load_data(
         train_data, batch_size=batch_size, train=True, extra_features=extra_train_data
     )
@@ -337,7 +338,7 @@ def load_model(model, mat_prop, classification, data, verbose=True):
     if usepath and type(data) is str:
         data = f"{mat_prop}/{mat_prop}/{data}"
     # data is reloaded to model.data_loader
-    model.load_data(data, batch_size=2 ** 9, train=False, verbose=verbose)
+    model.load_data(data, batch_size=2**9, train=False, verbose=verbose)
     return model
 
 
@@ -352,7 +353,7 @@ def save_results(model, mat_prop, classification, data, verbose=False):
         model = load_model(model, mat_prop, classification, data, verbose=verbose)
     else:
         usepath = False
-        model.load_data(data, batch_size=2 ** 9, train=False, verbose=verbose)
+        model.load_data(data, batch_size=2**9, train=False, verbose=verbose)
     model, output = get_results(model, verbose=verbose)
 
     # Get appropriate metrics for saving to csv

@@ -1,11 +1,13 @@
+#%%
 from os.path import join, dirname
+from turtle import forward
 
 import numpy as np
 import pandas as pd
 
 import torch
 from torch import nn
-
+from collections import OrderedDict
 
 # %%
 RNG_SEED = 42
@@ -69,6 +71,40 @@ class ResidualNetwork(nn.Module):
 
     def __repr__(self):
         return f"{self.__class__.__name__}"
+
+
+class TransferNetwork(nn.Module):
+    """
+    Model class for learning extended representations of materials during transfer
+    learning. This network was designed to have little impact on predictions during
+    training and enhance learning with the inclusion of extended features.
+
+    Parameters
+    ----------
+    input_dims : int
+        Dimensions of input layer
+
+    output_dims : int
+        Dimensions of ouput layer
+    """
+
+    def __init__(self, input_dims=512, output_dims=512, transfer=False):
+        super().__init__()
+        self.transfer = transfer
+        self.layers = nn.Sequential(
+            OrderedDict(
+                [
+                    ("fc1", nn.Linear(input_dims, 512)),
+                    ("leakyrelu1", nn.LeakyReLU()),
+                    ("fc2", nn.Linear(512, output_dims)),
+                    ("leakyrelu2", nn.LeakyReLU()),
+                ]
+            )
+        )
+
+    def forward(self, x):
+        x = self.layers(x)
+        return x
 
 
 class Embedder(nn.Module):
@@ -442,6 +478,7 @@ class CrabNet(nn.Module):
             dropout=dropout,
         )
         self.out_hidden = out_hidden
+        self.transfer_nn = TransferNetwork(512, 512)
         self.output_nn = ResidualNetwork(
             self.d_model + self.d_extend,
             self.out_dims,
@@ -469,6 +506,7 @@ class CrabNet(nn.Module):
         """
         output = self.encoder(src, frac, extra_features)
 
+        output = self.transfer_nn(output)
         # average the "element contribution" at the end
         # mask so you only average "elements"
         mask = (src == 0).unsqueeze(-1).repeat(1, 1, self.out_dims)
