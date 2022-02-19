@@ -344,7 +344,7 @@ class Encoder(nn.Module):
             x = x.masked_fill(hmask == 0, 0)
 
         if self.extend_features is not None:
-            X_extra = extra_features.repeat(1, 1, 4).permute([1, 2, 0])
+            X_extra = extra_features.repeat(1, 1, x.shape[1]).permute([1, 2, 0])
             x = torch.concat((x, X_extra), axis=2)
 
         return x
