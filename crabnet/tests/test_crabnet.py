@@ -28,6 +28,9 @@ def test_extend_features():
 
 def test_extend_transfer():
 
+    train_df["state_var0"] = np.random.rand(train_df.shape[0])
+    val_df["state_var0"] = np.random.rand(val_df.shape[0])
+
     mdl = get_model(
         train_df=train_df,
         val_df=val_df,
@@ -36,9 +39,6 @@ def test_extend_transfer():
         extend_features=["state_var0"],
         verbose=True,
     )
-
-    train_df["state_var0"] = np.random.rand(train_df.shape[0])
-    val_df["state_var0"] = np.random.rand(val_df.shape[0])
 
     mdl.fit(transfer=True, extend_transfer=True)
 
