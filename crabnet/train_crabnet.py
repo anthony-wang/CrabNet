@@ -35,7 +35,7 @@ def get_model(
     classification=False,
     batch_size=None,
     transfer=None,
-    extend_transfer=True,
+    extend_transfer=False,
     verbose=True,
     losscurve=False,
     learningcurve=True,
@@ -223,16 +223,19 @@ def get_model(
         elem_prop=elem_prop,
     )
 
-    # if training freeze one layer
-    # if transfering unfreeze the layer to tune
-    if not extend_transfer:
-        for param in model.layers.fc1.parameters():
-            param.requires_grad = False
-
     # Train network starting at pretrained weights
     if transfer is not None:
         model.load_network(f"{transfer}.pth")
         model.model_name = f"{mat_prop}"
+
+    # if training freeze one layer
+    # if transfering unfreeze the layer to tune
+    if extend_transfer == False:
+        for param in model.layers.fc1.parameters():
+            param.requires_grad = False
+    else:
+        for param in model.layers.fc1.parameters():
+            param.requires_grad = True
 
     # Apply BCEWithLogitsLoss to model output if binary classification is True
     if classification:
