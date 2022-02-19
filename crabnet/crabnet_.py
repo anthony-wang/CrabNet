@@ -771,7 +771,7 @@ class CrabNet(nn.Module):
         if return_uncertainty:
             return pred, uncert
         else:
-        return pred
+            return pred
 
     def save_network(self, model_name=None):
         if model_name is None:
