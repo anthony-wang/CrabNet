@@ -26,13 +26,13 @@ from sklearn.model_selection import (
 from vickers_hardness.utils.plotting import parity_with_err
 from vickers_hardness.vickers_hardness_ import VickersHardness
 
-dummy = True
+dummy = False
 hyperopt = True
 split_by_groups = True
 
 # %% directories
-figure_dir = "figures"
-result_dir = "results"
+figure_dir = join("figures", "extend_features")
+result_dir = join("results", "extend_features")
 
 crabnet_figures = join(figure_dir, "crabnet")
 crabnet_results = join(result_dir, "crabnet")
