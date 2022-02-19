@@ -38,7 +38,7 @@ np.random.seed(RNG_SEED)
 data_type_torch = torch.float32
 
 
-def groupby_formula(df, how="max"):
+def groupby_formula(df, how="max", mapper=None):
     """Group identical compositions together and preserve original indices.
 
     See https://stackoverflow.com/a/49216427/13697228
@@ -55,10 +55,12 @@ def groupby_formula(df, how="max"):
     DataFrame
         The grouped DataFrame such that the original indices are preserved.
     """
+    if mapper is not None:
+        df = df.rename(columns=mapper)
     grp_df = (
         df.reset_index()
         .groupby(by="formula")
-        .agg({"index": lambda x: tuple(x), "target": "max"})
+        .agg({"index": lambda x: tuple(x), "target": how})
         .reset_index()
     )
     return grp_df
@@ -67,6 +69,7 @@ def groupby_formula(df, how="max"):
 def data(
     module,
     fname="train.csv",
+    mapper=None,
     groupby=True,
     dummy=False,
     split=True,
@@ -83,6 +86,8 @@ def data(
         `from CrabNet.data.materials_data import elasticity`
     fname : str, optional
         Filename of text file to open.
+    mapper: dict, optional
+        Column renamer for pandas DataFrame (i.e. used in `df.rename(columns=mapper)` By default, None.
     dummy : bool, optional
         Whether to pare down the data to a small test set, by default False
     groupby : bool, optional
@@ -111,7 +116,7 @@ def data(
     df = pd.read_csv(train_csv)
 
     if groupby:
-        df = groupby_formula(df, how="max")
+        df = groupby_formula(df, how="max", mapper=mapper)
 
     if dummy:
         ntot = min(100, len(df))

@@ -4,9 +4,10 @@ from crabnet.model import data
 from crabnet.data.materials_data import elasticity
 from crabnet.train_crabnet import get_model
 
+train_df, val_df = data(elasticity, dummy=True)
+
 
 def test_crabnet():
-    train_df, val_df = data(elasticity, dummy=True)
     mdl = get_model(train_df=train_df, val_df=val_df, verbose=True)
 
     train_true, train_pred, formulas, train_sigma = mdl.predict(val_df)
@@ -14,7 +15,6 @@ def test_crabnet():
 
 
 def test_extend_features():
-    train_df, val_df = data(elasticity, dummy=True)
     train_df["state_var0"] = np.random.rand(train_df.shape[0])
     val_df["state_var0"] = np.random.rand(val_df.shape[0])
     mdl = get_model(
