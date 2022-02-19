@@ -26,8 +26,9 @@ from sklearn.model_selection import (
 from vickers_hardness.utils.plotting import parity_with_err
 from vickers_hardness.vickers_hardness_ import VickersHardness
 
-hyperopt = False
-split_by_groups = False
+dummy = True
+hyperopt = True
+split_by_groups = True
 
 # %% directories
 figure_dir = "figures"
@@ -50,36 +51,37 @@ prediction = data(vh_data, "hv_comp_load.csv", groupby=False, split=False)
 y = prediction["hardness"]
 # X, X_test, y, y_test = train_test_split(X, y, test_size=0.1)
 
+if dummy:
+    X = X.head(50)
+    y = y.head(50)
 
 # %% K-fold cross-validation
 if split_by_groups:
     ss = GroupShuffleSplit(n_splits=1, test_size=0.1, random_state=42)
     cv = GroupKFold()
     cvtype = "gcv"
-    groups = X["formula"]
 else:
     ss = ShuffleSplit(n_splits=1, test_size=0.1, random_state=42)
     cv = KFold(shuffle=True, random_state=100)  # ignores groups
     cvtype = "cv"
+
+if split_by_groups:
+    groups = X["formula"]
+else:
     groups = None
 
 trainval_idx, test_idx = list(ss.split(X, y, groups=groups))[0]
 X_test, y_test = X.iloc[test_idx, :], y[test_idx]
 X, y = X.iloc[trainval_idx, :], y.iloc[trainval_idx]
 
-results = cross_validate(
-    VickersHardness(hyperopt=hyperopt),
-    X,
-    y,
-    groups=groups,
-    cv=cv,
-    scoring="neg_mean_absolute_error",
-    return_estimator=True,
-)
+if split_by_groups:
+    subgroups = X["formula"]
+else:
+    subgroups = None
 
 crabnet_dfs = []
 xgb_dfs = []
-for train_index, test_index in cv.split(X, y, groups):
+for train_index, test_index in cv.split(X, y, subgroups):
     X_train, X_val = X.iloc[train_index, :], X.iloc[test_index, :]
     y_train, y_val = y.iloc[train_index], y.iloc[test_index]
     train_df = pd.DataFrame(
@@ -98,16 +100,28 @@ for train_index, test_index in cv.split(X, y, groups):
     y_true, y_pred, formulas, y_std = mdl.predict(val_df)
     crabnet_dfs.append(
         pd.DataFrame(
-            {"actual_hardness": y_true, "predicted_hardness": y_pred, "y_std": y_std}
+            {
+                "actual_hardness": y_true,
+                "predicted_hardness": y_pred,
+                "y_std": y_std,
+                "load": val_df["load"],
+                "formula": val_df["formula"],
+            }
         )
     )
 
     vickers = VickersHardness(hyperopt=hyperopt)
+    vickers.fit(X_train, y_train)
     y_pred, y_std = vickers.predict(X_val, y_val, return_uncertainty=True)
-    y_true = val_df["target"]
     xgb_dfs.append(
         pd.DataFrame(
-            {"actual_hardness": y_true, "predicted_hardness": y_pred, "y_std": y_std}
+            {
+                "actual_hardness": val_df["target"],
+                "predicted_hardness": y_pred,
+                "y_std": y_std,
+                "load": val_df["load"],
+                "formula": val_df["formula"],
+            }
         )
     )
 
@@ -144,3 +158,12 @@ for name in names:
 
 # %% Code Graveyard
 
+# results = cross_validate(
+#     VickersHardness(hyperopt=hyperopt),
+#     X,
+#     y,
+#     groups=groups,
+#     cv=cv,
+#     scoring="neg_mean_absolute_error",
+#     return_estimator=True,
+# )
