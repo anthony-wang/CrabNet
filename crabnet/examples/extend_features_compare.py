@@ -166,7 +166,10 @@ for name in names:
 # xgboost RMSE: 3.81564
 
 # %% without applied load
-
+# crabnet MAE: 4.42722
+# crabnet RMSE: 6.24093
+# xgboost MAE: 3.96865
+# xgboost RMSE: 5.22576
 
 1 + 1
 
