@@ -154,6 +154,41 @@ class Model:
         heads=4,
         elem_prop="mat2vec",
     ):
+        """
+        Model class for instantiating, training, and predicting with CrabNet models
+
+        Parameters
+        ----------
+        model : CrabNet Model, optional
+            Specify existing CrabNet model to use, by default None
+        model_name : str, optional
+            The name of your model, by default "UnnamedModel"
+        n_elements : str, optional
+            The maximum number of elements to consider during featurization, by default "infer"
+        verbose : bool, optional
+            Whether model information and progress should be printed, by default True
+        force_cpu : bool, optional
+            Put all models on the cpu regardless of other available devices CPU, by default False
+        prefer_last : bool, optional
+            Whether to prefer last used compute_device, by default True
+        fudge : float, optional
+            The "fudge" (i.e. noise) applied to the fractional encodings, by default 0.02
+        out_dims : int, optional
+            Output dimensions for Residual Network, by default 3
+        d_model : int, optional
+            Size of the Model, see paper, by default 512
+        extend_features : _type_, optional
+            Whether extended features will be included, by default None
+        d_extend : int, optional
+            Number of extended features to include, by default 0
+        N : int, optional
+            Number of attention layers, by default 3
+        heads : int, optional
+            Number of attention heads to use, by default 4
+        elem_prop : str, optional
+            Which elemental feature vector to use. Possible values are "jarvis", "magpie",
+            "mat2vec", "oliynyk", "onehot", "ptable", and "random_200", by default "mat2vec"
+        """
         if model is None:
             compute_device = get_compute_device(
                 force_cpu=force_cpu, prefer_last=prefer_last
@@ -186,7 +221,7 @@ class Model:
             print(f"Running on compute device: {self.compute_device}")
             print(f"Model size: {count_parameters(self.model)} parameters\n")
 
-    def load_data(self, data, extra_features=None, batch_size=2 ** 9, train=False):
+    def load_data(self, data, extra_features=None, batch_size=2**9, train=False):
         self.batch_size = batch_size
         inference = not train
         data_loaders = EDM_CsvLoader(
