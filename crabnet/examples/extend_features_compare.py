@@ -5,7 +5,10 @@ Dependency: `pip install vickers_hardness`, but then might run into issue with s
 See fix here: https://github.com/uncertainty-toolbox/uncertainty-toolbox/issues/59
 
 """
+from warnings import warn
 from os.path import join
+from pathlib import Path
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -25,6 +28,19 @@ from vickers_hardness.vickers_hardness_ import VickersHardness
 
 hyperopt = False
 split_by_groups = False
+
+# %% directories
+figure_dir = "figures"
+result_dir = "results"
+
+crabnet_figures = join(figure_dir, "crabnet")
+crabnet_results = join(result_dir, "crabnet")
+
+xgboost_figures = join(figure_dir, "xgboost")
+xgboost_results = join(result_dir, "xgboost")
+
+for path in [crabnet_figures, crabnet_results, xgboost_figures, xgboost_results]:
+    Path(path).mkdir(parents=True, exist_ok=True)
 
 # %% load dataset
 X = data(vh_data, "hv_des.csv", groupby=False, split=False).rename(
@@ -49,7 +65,7 @@ else:
 
 trainval_idx, test_idx = list(ss.split(X, y, groups=groups))[0]
 X_test, y_test = X.iloc[test_idx, :], y[test_idx]
-X, y = X.iloc[trainval_idx, :], y[trainval_idx]
+X, y = X.iloc[trainval_idx, :], y.iloc[trainval_idx]
 
 results = cross_validate(
     VickersHardness(hyperopt=hyperopt),
@@ -61,39 +77,68 @@ results = cross_validate(
     return_estimator=True,
 )
 
+crabnet_dfs = []
+xgb_dfs = []
 for train_index, test_index in cv.split(X, y, groups):
-    X_train, X_test = X[train_index], X[test_index]
-    y_train, y_test = y[train_index], y[test_index]
+    X_train, X_val = X.iloc[train_index, :], X.iloc[test_index, :]
+    y_train, y_val = y.iloc[train_index], y.iloc[test_index]
     train_df = pd.DataFrame(
         {"formula": X_train["formula"], "load": X_train["load"], "target": y_train}
     )
     val_df = pd.DataFrame(
-        {"formula": X_train["formula"], "load": X_train["load"], "target": y_train}
+        {"formula": X_val["formula"], "load": X_val["load"], "target": y_val}
     )
     mdl = get_model(
-        train_df=train_df, val_df=val_df, extend_features=["state_var0"], verbose=True
+        train_df=train_df,
+        val_df=val_df,
+        extend_features=["load"],
+        verbose=True,
+        learningcurve=False,
+    )
+    y_true, y_pred, formulas, y_std = mdl.predict(val_df)
+    crabnet_dfs.append(
+        pd.DataFrame(
+            {"actual_hardness": y_true, "predicted_hardness": y_pred, "y_std": y_std}
+        )
     )
 
-train_true, train_pred, formulas, train_sigma = mdl.predict(val_df)
+    vickers = VickersHardness(hyperopt=hyperopt)
+    y_pred, y_std = vickers.predict(X_val, y_val, return_uncertainty=True)
+    y_true = val_df["target"]
+    xgb_dfs.append(
+        pd.DataFrame(
+            {"actual_hardness": y_true, "predicted_hardness": y_pred, "y_std": y_std}
+        )
+    )
 
-estimators = results["estimator"]
-result_dfs = [estimator.result_df for estimator in estimators]
-merge_df = pd.concat(result_dfs)
-merge_df["actual_hardness"] = y
+crabnet_df = pd.concat(crabnet_dfs)
+xgb_df = pd.concat(xgb_dfs)
 
 parity_with_err(
-    merge_df, error_y="y_upper", error_y_minus="y_lower", fname=f"parity_ci_{cvtype}"
+    crabnet_df,
+    error_y="y_std",
+    figfolder=crabnet_figures,
+    fname=f"parity_stderr_{cvtype}",
 )
-parity_with_err(merge_df, error_y="y_std", fname=f"parity_stderr_{cvtype}")
-parity_with_err(merge_df, fname=f"parity_stderr_calib_{cvtype}")
+parity_with_err(
+    xgb_df, error_y="y_std", figfolder=xgboost_figures, fname=f"parity_stderr_{cvtype}",
+)
 
-y_true, y_pred = [merge_df["actual_hardness"], merge_df["predicted_hardness"]]
-mae = mean_absolute_error(y_true, y_pred)
-rmse = mean_squared_error(y_true, y_pred, squared=False)
-print(f"MAE: {mae:.5f}")
-print(f"RMSE: {rmse:.5f}")
+names: List[str] = ["crabnet", "xgboost"]
+for name in names:
+    if name == "crabnet":
+        tmp_df = crabnet_df
+    elif name == "xgboost":
+        tmp_df = xgb_df
+    else:
+        raise NotImplementedError(f"{name} not implemented")
 
-merge_df.sort_index().to_csv(join("results", f"{cvtype}-results.csv"))
+    y_true, y_pred = [xgb_df["actual_hardness"], xgb_df["predicted_hardness"]]
+    mae = mean_absolute_error(y_true, y_pred)
+    rmse = mean_squared_error(y_true, y_pred, squared=False)
+    print(f"{name} MAE: {mae:.5f}")
+    print(f"{name} RMSE: {rmse:.5f}")
+    tmp_df.sort_index().to_csv(join(result_dir, name, f"{cvtype}-results.csv"))
 1 + 1
 
 
