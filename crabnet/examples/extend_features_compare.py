@@ -45,9 +45,9 @@ else:
     ss = ShuffleSplit(n_splits=1, test_size=0.1, random_state=42)
     cv = KFold(shuffle=True, random_state=100)  # ignores groups
     cvtype = "cv"
-    groups=None
+    groups = None
 
-trainval_idx, test_idx = ss.split(X, y, groups=groups)
+trainval_idx, test_idx = list(ss.split(X, y, groups=groups))[0]
 X_test, y_test = X.iloc[test_idx, :], y[test_idx]
 X, y = X.iloc[trainval_idx, :], y[trainval_idx]
 
