@@ -159,13 +159,15 @@ for name in names:
     print(f"{name} RMSE: {rmse:.5f}")
     tmp_df.sort_index().to_csv(join(result_dir, name, f"{cvtype}-results.csv"))
 
-# %% with applied load
+
+# %% append column (e.g. 512 features --> 513 features)
+## with applied load
 # crabnet MAE: 3.06177
 # crabnet RMSE: 5.12390
 # xgboost MAE: 2.34908
 # xgboost RMSE: 3.81564
 
-# %% without applied load
+## without applied load
 # crabnet MAE: 4.42722
 # crabnet RMSE: 6.24093
 # xgboost MAE: 3.96865
