@@ -332,7 +332,7 @@ def load_model(model, mat_prop, classification, data, verbose=True):
     if type(model) is str:
         usepath = True
         model = Model(
-            CrabNet(compute_device=compute_device).to(compute_device),
+            _CrabNet(compute_device=compute_device).to(compute_device),
             model_name=f"{mat_prop}",
             verbose=verbose,
         )
