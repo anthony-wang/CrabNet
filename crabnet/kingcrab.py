@@ -336,7 +336,7 @@ class Encoder(nn.Module):
         src : torch.tensor
             Tensor containing integers corresponding to elements in compound
         frac : torch.tensor
-            Tensor containing the fractions of each element in compoud
+            Tensor containing the fractions of each element in compound
         extra_features : bool, optional
             Whether to append extra features after encoding, by default None
 
