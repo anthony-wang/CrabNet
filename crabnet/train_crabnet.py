@@ -13,7 +13,7 @@ import torch
 
 from sklearn.metrics import roc_auc_score
 
-from crabnet.kingcrab import CrabNet  # type: ignore
+from crabnet.kingcrab import _CrabNet  # type: ignore
 from crabnet.model import Model  # type: ignore
 
 from crabnet.utils.get_compute_device import get_compute_device
@@ -193,7 +193,7 @@ def get_model(
 
     # Get the TorchedCrabNet architecture loaded
     model = Model(
-        CrabNet(
+        _CrabNet(
             compute_device=compute_device,
             out_dims=out_dims,
             d_model=d_model,
@@ -230,12 +230,14 @@ def get_model(
 
     # if training freeze one layer
     # if transfering unfreeze the layer to tune
-    if extend_transfer == False:
-        for param in model.layers.fc1.parameters():
-            param.requires_grad = False
-    else:
-        for param in model.layers.fc1.parameters():
-            param.requires_grad = True
+
+    # if extend_features is not None:
+    #     if not extend_transfer:
+    #         for param in model.layers.fc1.parameters():
+    #             param.requires_grad = False
+    #     else:
+    #         for param in model.layers.fc1.parameters():
+    #             param.requires_grad = True
 
     # Apply BCEWithLogitsLoss to model output if binary classification is True
     if classification:
