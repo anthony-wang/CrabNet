@@ -8,10 +8,10 @@ train_df, val_df = data(elasticity, dummy=True)
 
 
 def test_crabnet():
-    cb = CrabNet(verbose=True)
+    cb = CrabNet(compute_device="cpu", verbose=True)
     cb.fit(train_df)
-    train_true, train_pred, formulas, train_sigma = cb.predict(val_df)
-    return train_true, train_pred, formulas, train_sigma
+    train_pred, train_sigma = cb.predict(val_df, return_uncertainty=True)
+    return train_pred, train_sigma
 
 
 def test_extend_features():
@@ -19,11 +19,11 @@ def test_extend_features():
     val_df["state_var0"] = np.random.rand(val_df.shape[0])
     cb = CrabNet(verbose=True, extend_features=["state_var0"])
     cb.fit(train_df)
-    train_true, train_pred, formulas, train_sigma = cb.predict(val_df)
-    return train_true, train_pred, formulas, train_sigma
+    train_pred, train_sigma = cb.predict(val_df, return_uncertainty=True)
+    return train_pred, train_sigma
 
 
 if __name__ == "__main__":
-    train_true, train_pred, formulas, train_sigma = test_crabnet()
-    train_true, train_pred, formulas, train_sigma = test_extend_features()
+    train_pred, train_sigma = test_crabnet()
+    train_pred, train_sigma = test_extend_features()
     1 + 1
