@@ -123,10 +123,7 @@ class Embedder(nn.Module):
     """
 
     def __init__(
-        self,
-        d_model: int,
-        compute_device: str = None,
-        elem_prop: str = "mat2vec",
+        self, d_model: int, compute_device: str = None, elem_prop: str = "mat2vec",
     ):
         super().__init__()
         self.d_model = d_model
@@ -387,7 +384,7 @@ class Encoder(nn.Module):
 
 
 # %%
-class CrabNet(nn.Module):
+class _CrabNet(nn.Module):
     """
     CrabNet model class
 
@@ -482,10 +479,7 @@ class CrabNet(nn.Module):
             self.d_model + self.d_extend, self.d_model + self.d_extend
         )
         self.output_nn = ResidualNetwork(
-            self.d_model + self.d_extend,
-            self.out_dims,
-            self.out_hidden,
-            self.bias,
+            self.d_model + self.d_extend, self.out_dims, self.out_hidden, self.bias,
         )
 
     def forward(self, src, frac, extra_features=None):
@@ -508,7 +502,8 @@ class CrabNet(nn.Module):
         """
         output = self.encoder(src, frac, extra_features)
         # print('WE GOT THIS FAR')
-        output = self.transfer_nn(output)
+        # output = self.transfer_nn(output)
+        
         # average the "element contribution" at the end
         # mask so you only average "elements"
         mask = (src == 0).unsqueeze(-1).repeat(1, 1, self.out_dims)
@@ -526,4 +521,4 @@ class CrabNet(nn.Module):
 
 # %%
 if __name__ == "__main__":
-    model = CrabNet()
+    model = _CrabNet()
