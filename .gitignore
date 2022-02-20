@@ -159,3 +159,5 @@ figures/lc_data/DataFrame_property_lc.png
 scratch/
 results/predicted_hv.csv
 .DS_Store
+figures/lc_data/UnnamedModel_lc.csv
+figures/lc_data/UnnamedModel_lc.png
