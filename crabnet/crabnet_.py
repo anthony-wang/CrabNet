@@ -31,7 +31,7 @@ from .utils.utils import (
 )
 from crabnet.utils.optim import SWA
 
-from crabnet.kingcrab import Encoder, ResidualNetwork, TransferNetwork
+from crabnet.kingcrab import _CrabNet, TransferNetwork, ResidualNetwork
 
 # %%
 RNG_SEED = 42
@@ -146,6 +146,7 @@ def data(
 class CrabNet(nn.Module):
     def __init__(
         self,
+        model=None,
         model_name="UnnamedModel",
         n_elements="infer",
         verbose=True,
@@ -168,12 +169,15 @@ class CrabNet(nn.Module):
         pos_scaler_log=1.0,
         dim_feedforward=2048,
         dropout=0.1,
+        val_size=0.2,
     ):
         """
         Model class for instantiating, training, and predicting with CrabNet models.
 
         Parameters
         ----------
+        model : _CrabNet
+            Instantiated CrabNet class, by default None.
         model_name : str, optional
             The name of your model, by default "UnnamedModel"
         n_elements : str, optional
@@ -192,8 +196,6 @@ class CrabNet(nn.Module):
             Size of the Model, see paper, by default 512
         extend_features : _type_, optional
             Whether extended features will be included, by default None
-        d_extend : int, optional
-            Number of extended features to include, by default 0
         N : int, optional
             Number of attention layers, by default 3
         heads : int, optional
@@ -224,13 +226,20 @@ class CrabNet(nn.Module):
         dim_feedforward : int, optional
             Dimenions of the feed forward network following transformer, by default 2048
         dropout : float, optional
-            Percent dropout in the feed forward network following the transformer, by default 0.1
+            Percent dropout in the feed forward network following the transformer, by
+            default 0.1
+        val_size : float, optional
+            fraction of validation data to take from training data only if `val_df` is
+            None. By default, 0.2
         """
         super().__init__()
         if compute_device is None:
             compute_device = get_compute_device(
                 force_cpu=force_cpu, prefer_last=prefer_last
             )
+        elif compute_device == "cpu":
+            compute_device = torch.device("cpu")
+        self.compute_device = compute_device
 
         self.avg = True
         self.out_dims = out_dims
@@ -240,22 +249,15 @@ class CrabNet(nn.Module):
         self.heads = heads
         self.compute_device = compute_device
         self.bias = bias
-        self.encoder = Encoder(
-            d_model=self.d_model,
-            N=self.N,
-            heads=self.heads,
-            extend_features=extend_features,
-            compute_device=self.compute_device,
-            pe_resolution=pe_resolution,
-            ple_resolution=ple_resolution,
-            elem_prop=elem_prop,
-            emb_scaler=emb_scaler,
-            pos_scaler=pos_scaler,
-            pos_scaler_log=pos_scaler_log,
-            dim_feedforward=dim_feedforward,
-            dropout=dropout,
-        )
         self.out_hidden = out_hidden
+
+        self.pe_resolution = pe_resolution
+        self.ple_resolution = ple_resolution
+        self.emb_scaler = emb_scaler
+        self.pos_scaler = pos_scaler
+        self.pos_scaler_log = pos_scaler_log
+        self.dim_feedforward = dim_feedforward
+        self.dropout = dropout
 
         self.model_name = model_name
         self.data_loader = None
@@ -263,15 +265,14 @@ class CrabNet(nn.Module):
         self.classification = False
         self.n_elements = n_elements
 
-        if compute_device is None:
-            compute_device = get_compute_device(
-                force_cpu=force_cpu, prefer_last=prefer_last
-            )
-
-        self.compute_device = compute_device
         self.fudge = fudge  #  expected fractional tolerance (std. dev) ~= 2%
         self.verbose = verbose
         self.elem_prop = elem_prop
+
+        self.val_size = val_size
+
+        self.model = model
+
         if self.verbose:
             print("\nModel architecture: out_dims, d_model, N, heads")
             print(f"{self.out_dims}, {self.d_model}, " f"{self.N}, {self.heads}")
@@ -310,43 +311,7 @@ class CrabNet(nn.Module):
             self.train_loader = data_loader
         self.data_loader = data_loader
 
-    def forward(self, src, frac, extra_features=None):
-        """
-        Forward method of the CrabNet model class
-
-        Parameters
-        ----------
-        src : torch.tensor
-            Tensor containing element numbers corresponding to elements in compound
-        frac : torch.tensor
-            Tensor containing fractional amounts of each element in compound
-        extra_features : bool, optional
-            Whether to append extra features after encoding, by default None
-
-        Returns
-        -------
-        torch.tensor
-            Model output containing predicted value and undcertainty for that value
-        """
-        output = self.encoder(src, frac, extra_features)
-
-        output = self.transfer_nn(output)
-        # average the "element contribution" at the end
-        # mask so you only average "elements"
-        mask = (src == 0).unsqueeze(-1).repeat(1, 1, self.out_dims)
-        output = self.output_nn(output)  # simple linear
-        if self.avg:
-            output = output.masked_fill(mask, 0)
-            output = output.sum(dim=1) / (~mask).sum(dim=1)
-            output, logits = output.chunk(2, dim=-1)
-            probability = torch.ones_like(output)
-            probability[:, : logits.shape[-1]] = torch.sigmoid(logits)
-            output = output * probability
-
-        return output
-
     def train(self):
-        self.train()
         ti = time()
         minima = []
         for i, data in enumerate(self.train_loader):
@@ -369,7 +334,7 @@ class CrabNet(nn.Module):
             extra_features = extra_features.to(
                 self.compute_device, dtype=data_type_torch, non_blocking=True
             )
-            output = self.forward(src, frac, extra_features=extra_features)
+            output = self.model.forward(src, frac, extra_features=extra_features)
             prediction, uncertainty = output.chunk(2, dim=-1)
             loss = self.criterion(prediction.view(-1), uncertainty.view(-1), y.view(-1))
 
@@ -383,13 +348,13 @@ class CrabNet(nn.Module):
             epoch_check = (self.epoch + 1) % (2 * self.epochs_step) == 0
             learning_time = epoch_check and self.epoch >= swa_check
             if learning_time:
-                act_v, pred_v, _, _ = self.predict(loader=self.data_loader)
+                pred_v, true_v = self.predict(loader=self.data_loader, return_true=True)
                 if np.any(np.isnan(pred_v)):
                     warn(
                         "NaN values found in `pred_v`. Replacing with DummyRegressor() values (i.e. mean of training targets)."
                     )
                     pred_v = np.nan_to_num(pred_v)
-                mae_v = mean_absolute_error(act_v, pred_v)
+                mae_v = mean_absolute_error(true_v, pred_v)
                 self.optimizer.update_swa(mae_v)
                 minima.append(self.optimizer.minimum_found)
 
@@ -434,12 +399,26 @@ class CrabNet(nn.Module):
         transfer=None,
         save=True,
     ):
-        if extend_features is None:
-            self.d_extend = 0
-        else:
-            self.d_extend = len(extend_features)
+        self.d_extend = 0 if extend_features is None else len(extend_features)
 
-        self.transfer_nn = TransferNetwork(512, 512)
+        if self.model is None:
+            self.model = _CrabNet(
+                compute_device=self.compute_device,
+                out_dims=self.out_dims,
+                d_model=self.d_model,
+                d_extend=self.d_extend,
+                N=self.N,
+                heads=self.heads,
+                pe_resolution=self.pe_resolution,
+                ple_resolution=self.ple_resolution,
+                emb_scaler=self.emb_scaler,
+                pos_scaler=self.pos_scaler,
+                pos_scaler_log=self.pos_scaler_log,
+                dim_feedforward=self.dim_feedforward,
+                dropout=self.dropout,
+            ).to(self.compute_device)
+
+        # self.transfer_nn = TransferNetwork(512, 512)
         self.output_nn = ResidualNetwork(
             self.d_model + self.d_extend, self.out_dims, self.out_hidden, self.bias,
         )
@@ -461,6 +440,9 @@ class CrabNet(nn.Module):
             if mat_prop is None:
                 mat_prop = "DataFrame_property"
             use_path = False
+
+        if val_df is None:
+            train_df, val_df = train_test_split(train_df, test_size=self.val_size)
 
         if use_path:
             # Get the datafiles you will learn from
@@ -532,8 +514,9 @@ class CrabNet(nn.Module):
                 f"cycling lr every {self.epochs_step} epochs",
             )
         if epochs is None:
-            n_iterations = 1e4
-            epochs = int(n_iterations / len(self.data_loader))
+            # n_iterations = 1e4
+            # epochs = int(n_iterations / len(self.data_loader))
+            epochs = 40
             if self.verbose:
                 print(f"running for {epochs} epochs")
         if checkin is None:
@@ -574,7 +557,7 @@ class CrabNet(nn.Module):
             self.criterion = criterion
 
         base_optim = Lamb(
-            params=self.parameters(),
+            params=self.model.parameters(),
             lr=lr,
             betas=betas,
             eps=eps,
@@ -613,22 +596,24 @@ class CrabNet(nn.Module):
 
             if (epoch + 1) % checkin == 0 or epoch == epochs - 1 or epoch == 0:
                 ti = time()
-                act_t, pred_t, _, _ = self.predict(loader=self.train_loader)
+                pred_t, true_t = self.predict(
+                    loader=self.train_loader, return_true=True,
+                )
                 dt = time() - ti
-                datasize = len(act_t)
+                datasize = len(true_t)
                 # print(f'inference speed: {datasize/dt:0.3f}')
                 # PARAMETER: mae vs. rmse?
-                mae_t = mean_absolute_error(act_t, pred_t)
+                mae_t = mean_absolute_error(true_t, pred_t)
                 self.loss_curve["train"].append(mae_t)
-                act_v, pred_v, _, _ = self.predict(loader=self.data_loader)
-                mae_v = mean_absolute_error(act_v, pred_v)
+                pred_v, true_v = self.predict(loader=self.data_loader, return_true=True)
+                mae_v = mean_absolute_error(true_v, pred_v)
                 self.loss_curve["val"].append(mae_v)
                 epoch_str = f"Epoch: {epoch}/{epochs} ---"
                 train_str = f'train mae: {self.loss_curve["train"][-1]:0.3g}'
                 val_str = f'val mae: {self.loss_curve["val"][-1]:0.3g}'
                 if self.classification:
-                    train_auc = roc_auc_score(act_t, pred_t)
-                    val_auc = roc_auc_score(act_v, pred_v)
+                    train_auc = roc_auc_score(true_t, pred_t)
+                    val_auc = roc_auc_score(true_v, pred_v)
                     train_str = f"train auc: {train_auc:0.3f}"
                     val_str = f"val auc: {val_auc:0.3f}"
                 if self.verbose:
@@ -719,7 +704,38 @@ class CrabNet(nn.Module):
         if save:
             self.save_network()
 
-    def predict(self, test_df=None, loader=None, return_uncertainty=False):
+    def predict(
+        self,
+        test_df: pd.DataFrame = None,
+        loader=None,
+        return_uncertainty=False,
+        return_true=False,
+    ):
+        """_summary_
+
+        Parameters
+        ----------
+        test_df : _type_, optional
+            _description_, by default None
+        loader : _type_, optional
+            _description_, by default None
+        return_uncertainty : bool, optional
+            _description_, by default False
+        return_true : bool, optional
+            _description_, by default False
+
+        Returns
+        -------
+        _type_
+            _description_
+
+        Raises
+        ------
+        SyntaxError
+            _description_
+        SyntaxError
+            _description_
+        """
         if test_df is None and loader is None:
             raise SyntaxError("Specify either data *or* loader, not neither.")
         elif test_df is not None and loader is None:
@@ -739,7 +755,7 @@ class CrabNet(nn.Module):
         formulae = np.empty(len_dataset, dtype=list)
         atoms = np.empty((len_dataset, n_atoms))
         fractions = np.empty((len_dataset, n_atoms))
-        self.eval()
+        self.model.eval()
         with torch.no_grad():
             for i, test_df in enumerate(loader):
                 X, y, formula, extra_features = test_df
@@ -752,7 +768,7 @@ class CrabNet(nn.Module):
                 extra_features = extra_features.to(
                     self.compute_device, dtype=data_type_torch, non_blocking=True
                 )
-                output = self.forward(src, frac, extra_features=extra_features)
+                output = self.model.forward(src, frac, extra_features=extra_features)
                 prediction, uncertainty = output.chunk(2, dim=-1)
                 uncertainty = torch.exp(uncertainty) * self.scaler.std
                 prediction = self.scaler.unscale(prediction)
@@ -768,8 +784,12 @@ class CrabNet(nn.Module):
                 uncert[data_loc] = uncertainty.view(-1).cpu().detach().numpy()
                 formulae[data_loc] = formula
 
-        if return_uncertainty:
+        if return_uncertainty and return_true:
+            return pred, uncert, act
+        elif return_uncertainty and not return_true:
             return pred, uncert
+        elif not return_uncertainty and return_true:
+            return pred, act
         else:
             return pred
 
@@ -786,7 +806,7 @@ class CrabNet(nn.Module):
                 print(f"Saving checkpoint ({model_name}) to {path}")
 
         self.network = {
-            "weights": self.state_dict(),
+            "weights": self.model.state_dict(),
             "scaler_state": self.scaler.state_dict(),
             "model_name": model_name,
         }
@@ -798,11 +818,11 @@ class CrabNet(nn.Module):
             network = torch.load(path, map_location=self.compute_device)
         else:
             network = model_data
-        base_optim = Lamb(params=self.parameters())
+        base_optim = Lamb(params=self.model.parameters())
         optimizer = Lookahead(base_optimizer=base_optim)
         self.optimizer = SWA(optimizer)
         self.scaler = Scaler(torch.zeros(3))
-        self.load_state_dict(network["weights"])
+        self.model.load_state_dict(network["weights"])
         self.scaler.load_state_dict(network["scaler_state"])
         self.model_name = network["model_name"]
 
