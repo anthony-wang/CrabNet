@@ -29,7 +29,7 @@ from .utils.utils import (
 )
 from crabnet.utils.optim import SWA
 
-from crabnet.kingcrab import CrabNet
+from crabnet.kingcrab import _CrabNet
 
 # %%
 RNG_SEED = 42
@@ -83,7 +83,7 @@ def data(
     ----------
     module : Module
         The module within CrabNet that contains e.g. "train.csv". For example,
-        `from CrabNet.data.materials_data import elasticity`
+        `from crabnet.data.materials_data import elasticity`
     fname : str, optional
         Filename of text file to open.
     mapper: dict, optional
@@ -164,7 +164,7 @@ class Model:
 
         Parameters
         ----------
-        model : CrabNet Model, optional
+        model : _CrabNet Model, optional
             Specify existing CrabNet model to use, by default None
         model_name : str, optional
             The name of your model, by default "UnnamedModel"
@@ -198,7 +198,7 @@ class Model:
             compute_device = get_compute_device(
                 force_cpu=force_cpu, prefer_last=prefer_last
             )
-            model = CrabNet(
+            model = _CrabNet(
                 compute_device=compute_device,
                 out_dims=out_dims,
                 d_model=d_model,
@@ -226,7 +226,7 @@ class Model:
             print(f"Running on compute device: {self.compute_device}")
             print(f"Model size: {count_parameters(self.model)} parameters\n")
 
-    def load_data(self, data, extra_features=None, batch_size=2**9, train=False):
+    def load_data(self, data, extra_features=None, batch_size=2 ** 9, train=False):
         self.batch_size = batch_size
         inference = not train
         data_loaders = EDM_CsvLoader(
