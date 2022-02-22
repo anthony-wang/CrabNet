@@ -13,7 +13,7 @@ import torch
 
 from sklearn.metrics import roc_auc_score
 
-from crabnet.kingcrab import _CrabNet  # type: ignore
+from crabnet.kingcrab import SubCrab  # type: ignore
 from crabnet.model import Model  # type: ignore
 
 from crabnet.utils.get_compute_device import get_compute_device
@@ -193,7 +193,7 @@ def get_model(
 
     # Get the TorchedCrabNet architecture loaded
     model = Model(
-        _CrabNet(
+        SubCrab(
             compute_device=compute_device,
             out_dims=out_dims,
             d_model=d_model,
@@ -332,7 +332,7 @@ def load_model(model, mat_prop, classification, data, verbose=True):
     if type(model) is str:
         usepath = True
         model = Model(
-            _CrabNet(compute_device=compute_device).to(compute_device),
+            SubCrab(compute_device=compute_device).to(compute_device),
             model_name=f"{mat_prop}",
             verbose=verbose,
         )
