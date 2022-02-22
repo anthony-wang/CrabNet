@@ -14,6 +14,9 @@ jobs:
   flit-publish-gh-release:
     name: Test, Publish to PyPI, and Release on GitHub
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
     strategy:
       max-parallel: 9
       fail-fast: true
@@ -35,19 +38,16 @@ jobs:
       uses: psf/black@stable #https://black.readthedocs.io/en/stable/integrations/github_actions.html
         
     - name: Install dependencies
-      shell: bash {0}
       run: |
         pip install --upgrade pip
         pip install flit torch coveralls pytest # torch is CPU version
         flit install
 
     - name: Pytest
-      shell: bash {0}
       run: |
         coverage run --source=crabnet -m pytest
         
     - name: Publish to PyPI
-      shell: bash {0}
       run: |
         git clean -f # remove untracked files
         flit publish
@@ -82,15 +82,11 @@ jobs:
         miniconda-version: "latest"
         auto-update-conda: true
         activate-environment: crabnet
-    
     - name: Install dependencies
-      shell: bash {0}
-      run: |    
+      run: |
         conda install git conda-build conda-verify anaconda-client
         conda install  -c conda-forge grayskull flit coveralls conda-souschef
-        
-    - name: Build and publish
-      shell: bash {0}
+    - name: Build and Publish
       env:
         ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
       run: |
@@ -105,7 +101,7 @@ jobs:
         cd ..
         
     - name: Upload to coveralls
-      shell: bash {0}
+      shell: bash -l {0}
       run: coveralls --service=github
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
