@@ -18,13 +18,13 @@ data_type_torch = torch.float32
 class ResidualNetwork(nn.Module):
     """
     Feed forward Residual Neural Network as seen in Roost.
-    
+
     https://doi.org/10.1038/s41467-020-19964-7
     """
 
     def __init__(self, input_dim, output_dim, hidden_layer_dims, bias):
         """Instantiate a ResidualNetwork model.
-        
+
         Parameters
         ----------
         input_dim : int
@@ -75,14 +75,14 @@ class ResidualNetwork(nn.Module):
 
 class TransferNetwork(nn.Module):
     """Learn extended representations of materials during transfer learning.
-    
+
     This network was designed to have little impact on predictions during
     training and enhance learning with the inclusion of extended features.
     """
 
     def __init__(self, input_dims, output_dims):
         """Instantiate a TransferNetwork to learn extended representations.
-        
+
         Parameters
         ----------
         input_dims : int
@@ -124,10 +124,13 @@ class Embedder(nn.Module):
     """Perform composition-based embeddings of elemental features."""
 
     def __init__(
-        self, d_model: int, compute_device: str = None, elem_prop: str = "mat2vec",
+        self,
+        d_model: int,
+        compute_device: str = None,
+        elem_prop: str = "mat2vec",
     ):
         """Embed elemental features, similar to CBFV.
-        
+
         Parameters
         ----------
         d_model : int
@@ -181,14 +184,14 @@ class Embedder(nn.Module):
 # %%
 class FractionalEncoder(nn.Module):
     """Encode element fractional amount using a "fractional encoding".
-    
+
     This is inspired by the positional encoder discussed by Vaswani.
     https://arxiv.org/abs/1706.03762
     """
 
     def __init__(self, d_model, resolution=100, log10=False, compute_device=None):
         """Instantiate the FractionalEncoder.
-        
+
         Parameters
         ----------
         d_model : int
@@ -248,7 +251,7 @@ class FractionalEncoder(nn.Module):
 # %%
 class Encoder(nn.Module):
     """Create elemental descriptor matrix via element embeddings and frac. encodings.
-    
+
     See the CrabNet paper for further details:
     https://www.nature.com/articles/s41524-021-00545-1
     """
@@ -272,7 +275,7 @@ class Encoder(nn.Module):
         dropout=0.1,
     ):
         """Instantiate the Encoder class to create elemental descriptor matrix (EDM).
-        
+
         Parameters
         ----------
         d_model : _type_
@@ -417,7 +420,7 @@ class SubCrab(nn.Module):
         dropout=0.1,
     ):
         """Instantiate a SubCrab class to be used within CrabNet.
-        
+
         Parameters
         ----------
         out_dims : int, optional
@@ -487,7 +490,10 @@ class SubCrab(nn.Module):
             self.d_model + self.d_extend, self.d_model + self.d_extend
         )
         self.output_nn = ResidualNetwork(
-            self.d_model + self.d_extend, self.out_dims, self.out_hidden, self.bias,
+            self.d_model + self.d_extend,
+            self.out_dims,
+            self.out_hidden,
+            self.bias,
         )
 
     def forward(self, src, frac, extra_features=None):

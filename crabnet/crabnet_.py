@@ -286,7 +286,7 @@ class CrabNet(nn.Module):
         self,
         data: Union[str, pd.DataFrame],
         extra_features: pd.DataFrame = None,
-        batch_size: int = 2 ** 9,
+        batch_size: int = 2**9,
         train: bool = False,
     ):
         """Load data using PyTorch Dataloader.
@@ -393,7 +393,7 @@ class CrabNet(nn.Module):
 
     def _add_jitter(self, src, frac, type="normal"):
         """Add a small jitter to the input fractions.
-        
+
         This improves model robustness and increases stability.
 
         Parameters
@@ -476,7 +476,10 @@ class CrabNet(nn.Module):
 
         # self.transfer_nn = TransferNetwork(512, 512)
         self.output_nn = ResidualNetwork(
-            self.d_model + self.d_extend, self.out_dims, self.out_hidden, self.bias,
+            self.d_model + self.d_extend,
+            self.out_dims,
+            self.out_hidden,
+            self.bias,
         )
 
         # Train network starting at pretrained weights
@@ -644,7 +647,10 @@ class CrabNet(nn.Module):
         epoch : int
             The current epoch.
         """
-        pred_t, true_t = self.predict(loader=self.train_loader, return_true=True,)
+        pred_t, true_t = self.predict(
+            loader=self.train_loader,
+            return_true=True,
+        )
         mae_t = mean_absolute_error(true_t, pred_t)
         self.loss_curve["train"].append(mae_t)
         pred_v, true_v = self.predict(loader=self.data_loader, return_true=True)
@@ -700,7 +706,7 @@ class CrabNet(nn.Module):
 
     def _plot_learningcurve(self, checkin: int):
         """Plot the learning curve periodically (beginning, checkin, end).
-        
+
         checkin : int
             When to do the checkin step. If None, then automatically assigned as half
             the number of epochs, by default None
@@ -725,7 +731,12 @@ class CrabNet(nn.Module):
         )
         if self.epoch >= (self.epochs_step * self.swa_start - 1):
             plt.plot(
-                self.xswa, self.yswa, "o", ms=12, mfc="none", label="SWA point",
+                self.xswa,
+                self.yswa,
+                "o",
+                ms=12,
+                mfc="none",
+                label="SWA point",
             )
         plt.ylim(0, 2 * np.mean(self.loss_curve["val"]))
         plt.title(f"{self.model_name}")
@@ -855,10 +866,10 @@ class CrabNet(nn.Module):
         # Load the train and validation data before fitting the network
         if batch_size is None:
             batch_size = 2 ** round(np.log2(data_size) - 4)
-            if batch_size < 2 ** 7:
-                batch_size = 2 ** 7
-            if batch_size > 2 ** 12:
-                batch_size = 2 ** 12
+            if batch_size < 2**7:
+                batch_size = 2**7
+            if batch_size > 2**12:
+                batch_size = 2**12
         return batch_size
 
     def _separate_extended_features(
@@ -868,7 +879,7 @@ class CrabNet(nn.Module):
         data_dir: Union[str, PathLike],
     ):
         """Extract extra features specified by `extend_features` from data.
-        
+
         Because `data_dir` can be specified instead of `train_df` and `val_df`, the data
         will be read twice if using a file: once to pull out the extra features here,
         and once when the dataset is loaded into the Dataloader.
@@ -1087,7 +1098,7 @@ class CrabNet(nn.Module):
         model_data : Union[str, Any]
             Either the filename of the saved model or the network (see `self.network`)
             as a dictionary of the form:
-            
+
                 {
                 "weights": self.model.state_dict(),
                 "scaler_state": self.scaler.state_dict(),
@@ -1139,7 +1150,7 @@ class CrabNet(nn.Module):
             self.classification = True
 
         # data is reloaded to self.data_loader
-        self.load_data(data, batch_size=2 ** 9, train=False)
+        self.load_data(data, batch_size=2**9, train=False)
 
 
 # %%

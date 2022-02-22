@@ -276,10 +276,10 @@ def get_model(
     # Load the train and validation data before fitting the network
     if batch_size is None:
         batch_size = 2 ** round(np.log2(data_size) - 4)
-        if batch_size < 2 ** 7:
-            batch_size = 2 ** 7
-        if batch_size > 2 ** 12:
-            batch_size = 2 ** 12
+        if batch_size < 2**7:
+            batch_size = 2**7
+        if batch_size > 2**12:
+            batch_size = 2**12
     model.load_data(
         train_data, batch_size=batch_size, train=True, extra_features=extra_train_data
     )
@@ -350,7 +350,7 @@ def load_model(model, mat_prop, classification, data, verbose=True):
     if usepath and type(data) is str:
         data = f"{mat_prop}/{mat_prop}/{data}"
     # data is reloaded to model.data_loader
-    model.load_data(data, batch_size=2 ** 9, train=False, verbose=verbose)
+    model.load_data(data, batch_size=2**9, train=False, verbose=verbose)
     return model
 
 
@@ -365,7 +365,7 @@ def save_results(model, mat_prop, classification, data, verbose=False):
         model = load_model(model, mat_prop, classification, data, verbose=verbose)
     else:
         usepath = False
-        model.load_data(data, batch_size=2 ** 9, train=False, verbose=verbose)
+        model.load_data(data, batch_size=2**9, train=False, verbose=verbose)
     model, output = get_results(model, verbose=verbose)
 
     # Get appropriate metrics for saving to csv

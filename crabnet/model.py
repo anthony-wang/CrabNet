@@ -226,7 +226,7 @@ class Model:
             print(f"Running on compute device: {self.compute_device}")
             print(f"Model size: {count_parameters(self.model)} parameters\n")
 
-    def load_data(self, data, extra_features=None, batch_size=2 ** 9, train=False):
+    def load_data(self, data, extra_features=None, batch_size=2**9, train=False):
         self.batch_size = batch_size
         inference = not train
         data_loaders = EDM_CsvLoader(

@@ -140,7 +140,10 @@ parity_with_err(
     fname=f"parity_stderr_{cvtype}",
 )
 parity_with_err(
-    xgb_df, error_y="y_std", figfolder=xgboost_figures, fname=f"parity_stderr_{cvtype}",
+    xgb_df,
+    error_y="y_std",
+    figfolder=xgboost_figures,
+    fname=f"parity_stderr_{cvtype}",
 )
 
 names: List[str] = ["crabnet", "xgboost"]

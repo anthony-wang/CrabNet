@@ -52,7 +52,7 @@ def model(mat_prop, classification_list, simple=False):
         model.classification = True
 
     dataset = rf"{data_dir}\{mat_prop}\train.csv"
-    model.load_data(dataset, batch_size=2 ** 7)  # data is reloaded to model.data_loader
+    model.load_data(dataset, batch_size=2**7)  # data is reloaded to model.data_loader
 
     model.model.eval()
     model.model.avg = False

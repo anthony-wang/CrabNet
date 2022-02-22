@@ -60,7 +60,7 @@ mat_prop = "aflow__Egap"
 test_data = rf"data\benchmark_data\{mat_prop}\train.csv"
 # test_data = rf'data\matbench_cv\{mat_prop}\train{num}.csv'
 
-model.load_data(test_data, batch_size=2 ** 0)  # data is reloaded to model.data_loader
+model.load_data(test_data, batch_size=2**0)  # data is reloaded to model.data_loader
 
 len_dataset = len(model.data_loader.dataset)
 n_atoms = int(len(model.data_loader.dataset[0][0]) / 2)

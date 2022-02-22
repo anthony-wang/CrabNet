@@ -42,10 +42,10 @@ def get_model(
     # Load the train and validation data before fitting the network
     data_size = pd.read_csv(train_data).shape[0]
     batch_size = 2 ** round(np.log2(data_size) - 4)
-    if batch_size < 2 ** 7:
-        batch_size = 2 ** 7
-    if batch_size > 2 ** 12:
-        batch_size = 2 ** 12
+    if batch_size < 2**7:
+        batch_size = 2**7
+    if batch_size > 2**12:
+        batch_size = 2**12
     # batch_size = 2**7
     model.load_data(train_data, batch_size=batch_size, train=True)
     print(
@@ -90,7 +90,7 @@ def load_model(mat_prop, i, classification, file_name, verbose=True):
     # Load the data you want to predict with
     data = f"data/matbench_cv/{mat_prop}/{file_name}"
     # data is reloaded to model.data_loader
-    model.load_data(data, batch_size=2 ** 9)
+    model.load_data(data, batch_size=2**9)
     return model
 
 

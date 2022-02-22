@@ -54,7 +54,7 @@ def act_pred(
     )
 
     ax2.plot(
-        [-(10 ** 9), 10 ** 9], [-(10 ** 9), 10 ** 9], "k--", alpha=0.8, label="ideal"
+        [-(10**9), 10**9], [-(10**9), 10**9], "k--", alpha=0.8, label="ideal"
     )
 
     ax2.set_ylabel("Predicted value (Units)")
