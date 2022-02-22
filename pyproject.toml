@@ -35,6 +35,7 @@ test = [
     "pre-commit",
     "sphinx==4.2.0",
     "myst-parser==0.15.2",
+    "sphinx_rtd_theme",
     "nbformat >=4.2.0", # for Jupyter Notebook in VS Code
     "black >=22.1.0",
 ]
