@@ -29,7 +29,7 @@ from .utils.utils import (
 )
 from crabnet.utils.optim import SWA
 
-from crabnet.kingcrab import _CrabNet
+from crabnet.kingcrab import SubCrab
 
 # %%
 RNG_SEED = 42
@@ -198,7 +198,7 @@ class Model:
             compute_device = get_compute_device(
                 force_cpu=force_cpu, prefer_last=prefer_last
             )
-            model = _CrabNet(
+            model = SubCrab(
                 compute_device=compute_device,
                 out_dims=out_dims,
                 d_model=d_model,
