@@ -2,7 +2,7 @@
 
 The Compositionally-Restricted Attention-Based Network (`CrabNet`), inspired by natural language processing transformers, uses compositional information to predict material properties.
 
-<img src=https://user-images.githubusercontent.com/45469701/155030619-3a5f75e8-b28d-4801-a54c-58a800ee874c.png width=250>
+<img src=https://user-images.githubusercontent.com/45469701/155030619-3a5f75e8-b28d-4801-a54c-58a800ee874c.png width=150>
 
 > :warning: This is a fork of the [original CrabNet repository](https://github.com/anthony-wang/CrabNet) :warning:
 
