@@ -20,13 +20,13 @@ properties in just a few lines of code! `Get started learning about CrabNet <htt
 
 .. raw:: html
 
-   <a class="github-button" href="https://github.com/sparks-baird/crabnet"
+   <a class="github-button" href="https://github.com/anthony-wang/crabnet"
    data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star
-   sparks-baird/crabnet on GitHub">Star</a>
+   anthony-wang/crabnet on GitHub">(Original Repo) Star</a>
    <a class="github-button"
    href="https://github.com/sgbaird" data-size="large" data-show-count="true"
    aria-label="Follow @sgbaird on GitHub">Follow @sgbaird</a>
-   <a class="github-button" href="https://github.com/sparks-baird/mat_discover/issues"
+   <a class="github-button" href="https://github.com/sparks-baird/crabnet/issues"
    data-icon="octicon-issue-opened" data-size="large" data-show-count="true"
    aria-label="Issue sparks-baird/crabnet on GitHub">Issue</a>
    <a class="github-button" href="https://github.com/sparks-baird/crabnet/discussions" data-icon="octicon-comment-discussion" data-size="large" aria-label="Discuss sparks-baird/crabnet on GitHub">Discuss</a>
