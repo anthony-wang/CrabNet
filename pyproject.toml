@@ -5,11 +5,18 @@ build-backend = "flit_core.buildapi"
 [project]
 name = "crabnet"
 authors = [
-    {name = "Sterling G. Baird", email = "sterling.baird@utah.edu"},
-    {name = "Anthony Yu-Tung Wang", email = "aytwang@alumni.uwaterloo.ca"}
+    {name = "Anthony Yu-Tung Wang", email = "aytwang@alumni.uwaterloo.ca"},
+    {name = "Kaai Kauwe"}
+    {name = "Sterling G. Baird", email = "sterling.baird@utah.edu"}
 ]
 readme = "README.md"
-classifiers = ["License :: OSI Approved :: MIT License"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Operating System :: OS Independent",
+]
 dynamic = ["version", "description"]
 
 requires-python = ">=3.7,<3.10"
@@ -38,6 +45,7 @@ test = [
     "sphinx_rtd_theme",
     "nbformat >=4.2.0", # for Jupyter Notebook in VS Code
     "black >=22.1.0",
+    "conda-souschef"
 ]
 
 [project.urls]
