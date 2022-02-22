@@ -19,9 +19,9 @@ or
 ### Load Some Test Data
 
 ```python
-from crabnet.model import data
+from crabnet.model import get_data
 from crabnet.data.materials_data import elasticity
-train_df, val_df = data(elasticity, "train.csv")
+train_df, val_df = get_data(elasticity, "train.csv")
 ```
 
 ### Instantiate CrabNet Model
