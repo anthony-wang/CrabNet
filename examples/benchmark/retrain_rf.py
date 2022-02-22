@@ -1,4 +1,5 @@
 import os
+from os.path import join
 import numpy as np
 import pandas as pd
 
@@ -84,7 +85,7 @@ if __name__ == "__main__":
 
     bm_predictions_path = r"metrics/rf_benchmark__predictions/"
     mb_predictions_path = r"metrics/rf_matbench__predictions/"
-    clf_save_path = f"models/trained_rf/"
+    clf_save_path = join("models", "trained_rf")
     os.makedirs(clf_save_path, exist_ok=True)
     os.makedirs(metrics_path, exist_ok=True)
     os.makedirs(bm_predictions_path, exist_ok=True)
