@@ -1,4 +1,5 @@
 import os
+from os.path import join, dirname, abspath
 import numpy as np
 import pandas as pd
 
@@ -7,8 +8,9 @@ from crabnet.utils.composition import _element_composition
 
 
 # %%
-benchmark_data = os.listdir("data/benchmark_data")
-matbench_data = os.listdir("data/matbench_cv")
+current_dir = abspath(dirname(__file__))
+benchmark_data = os.listdir(join(current_dir, "benchmark_data"))
+matbench_data = os.listdir(join(current_dir, "matbench_cv"))
 
 
 # %%
@@ -26,13 +28,19 @@ df_benchmark = pd.DataFrame(columns=cols)
 
 for prop in tqdm(benchmark_data, desc="Processing benchmark_data"):
     df_train = pd.read_csv(
-        f"data/benchmark_data/{prop}/train.csv", keep_default_na=False, na_values=[""]
+        join(abspath(prop), "train.csv"),
+        keep_default_na=False,
+        na_values=[""],
     )
     df_val = pd.read_csv(
-        f"data/benchmark_data/{prop}/val.csv", keep_default_na=False, na_values=[""]
+        join(abspath(prop), "val.csv"),
+        keep_default_na=False,
+        na_values=[""],
     )
     df_test = pd.read_csv(
-        f"data/benchmark_data/{prop}/test.csv", keep_default_na=False, na_values=[""]
+        join(abspath(prop), "test.csv"),
+        keep_default_na=False,
+        na_values=[""],
     )
     n_train = df_train["formula"].apply(_element_composition).apply(len).max()
     n_val = df_val["formula"].apply(_element_composition).apply(len).max()
@@ -68,13 +76,19 @@ df_matbench_cv = pd.DataFrame(columns=cols)
 
 for prop in tqdm(matbench_data, desc="Processing matbench_data"):
     df_train = pd.read_csv(
-        f"data/matbench_cv/{prop}/train0.csv", keep_default_na=False, na_values=[""]
+        join(abspath(prop), "train0.csv"),
+        keep_default_na=False,
+        na_values=[""],
     )
     df_val = pd.read_csv(
-        f"data/matbench_cv/{prop}/val0.csv", keep_default_na=False, na_values=[""]
+        join(abspath(prop), "val0.csv"),
+        keep_default_na=False,
+        na_values=[""],
     )
     df_test = pd.read_csv(
-        f"data/matbench_cv/{prop}/test0.csv", keep_default_na=False, na_values=[""]
+        join(abspath(prop), "test0.csv"),
+        keep_default_na=False,
+        na_values=[""],
     )
     n_train = df_train["formula"].apply(_element_composition).apply(len).max()
     n_val = df_val["formula"].apply(_element_composition).apply(len).max()
