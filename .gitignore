@@ -161,3 +161,6 @@ results/predicted_hv.csv
 .DS_Store
 figures/lc_data/UnnamedModel_lc.csv
 figures/lc_data/UnnamedModel_lc.png
+
+crabnet/tests/figures/**
+crabnet/tests/models/**
