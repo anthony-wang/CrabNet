@@ -1,6 +1,8 @@
+"""Top-level module for instantiating a CrabNet model to predict properties."""
 import os
+from os import PathLike
 from os.path import dirname, join
-from typing import Callable, List, Tuple, Union
+from typing import Callable, List, Optional, Tuple, Union
 from warnings import warn
 
 import matplotlib.pyplot as plt
@@ -12,7 +14,7 @@ from sklearn.model_selection import train_test_split
 from torch import nn
 from torch.optim.lr_scheduler import CyclicLR
 
-from crabnet.kingcrab import ResidualNetwork, _CrabNet
+from crabnet.kingcrab import ResidualNetwork, SubCrab
 
 # for backwards compatibility of imports
 from crabnet.utils.data import get_data, groupby_formula  # noqa: F401
@@ -40,24 +42,24 @@ class CrabNet(nn.Module):
 
     def __init__(
         self,
-        model: Union[str, _CrabNet] = None,
+        model: Optional[Union[str, SubCrab]] = None,
         model_name: str = "UnnamedModel",
         n_elements: Union[str, int] = "infer",
         classification: bool = False,
         verbose: bool = True,
         force_cpu: bool = False,
         prefer_last: bool = True,
-        epochs: int = None,
+        epochs: Optional[int] = None,
         epochs_step: int = 10,
-        checkin: int = None,
+        checkin: Optional[int] = None,
         fudge: float = 0.02,
         out_dims: int = 3,
         d_model: int = 512,
-        extend_features: List[str] = None,
+        extend_features: Optional[List[str]] = None,
         N: int = 3,
         heads: int = 4,
         elem_prop: str = "mat2vec",
-        compute_device: Union[str, torch.device] = None,
+        compute_device: Optional[Union[str, torch.device]] = None,
         out_hidden: List[int] = [1024, 512, 256, 128],
         pe_resolution: int = 5000,
         ple_resolution: int = 5000,
@@ -68,22 +70,22 @@ class CrabNet(nn.Module):
         dim_feedforward: int = 2048,
         dropout: float = 0.1,
         val_size: float = 0.2,
-        criterion: Union[str, Callable] = None,
+        criterion: Optional[Union[str, Callable]] = None,
         lr: float = 1e-3,
-        betas: Tuple[float] = (0.9, 0.999),
+        betas: Tuple[float, float] = (0.9, 0.999),
         eps: float = 1e-6,
         weight_decay: float = 0,
         adam: bool = False,
-        min_trust: float = None,
+        min_trust: Optional[float] = None,
         alpha: float = 0.5,
         k: int = 6,
         base_lr: float = 1e-4,
         max_lr: float = 6e-3,
-        random_state: int = None,
-        mat_prop: str = None,
+        random_state: Optional[int] = None,
+        mat_prop: Optional[Union[str, PathLike]] = None,
     ):
         """
-        Method for instantiating a CrabNet model.
+        Instantiate a CrabNet model.
 
         Parameters
         ----------
@@ -315,7 +317,7 @@ class CrabNet(nn.Module):
         self.data_loader = data_loader
 
     def _train(self):
-        """Train the _CrabNet PyTorch model using backpropagation."""
+        """Train the SubCrab PyTorch model using backpropagation."""
         minima = []
         for data in self.train_loader:
             # separate into src and frac
@@ -371,7 +373,7 @@ class CrabNet(nn.Module):
                 )
 
     def _add_jitter(self, src, frac, type="normal"):
-        """ Add a small jitter to the input fractions.
+        """Add a small jitter to the input fractions.
         
         This improves model robustness and increases stability.
 
@@ -406,7 +408,9 @@ class CrabNet(nn.Module):
         train_df: pd.DataFrame = None,
         val_df: pd.DataFrame = None,
         extend_features: List[str] = None,
-        data_dir: str = join(dirname(__file__), "data", "materials_data"),
+        data_dir: Union[str, PathLike] = join(
+            dirname(__file__), "data", "materials_data"
+        ),
         transfer: str = None,
         save: bool = True,
     ):
@@ -435,7 +439,7 @@ class CrabNet(nn.Module):
         self.d_extend = 0 if extend_features is None else len(extend_features)
 
         if self.model is None:
-            self.model = _CrabNet(
+            self.model = SubCrab(
                 compute_device=self.compute_device,
                 out_dims=self.out_dims,
                 d_model=self.d_model,
@@ -467,7 +471,7 @@ class CrabNet(nn.Module):
             data_size,
             extra_train_data,
             extra_val_data,
-        ) = self._separate_extended_features(train_df, val_df, data_dir, self.mat_prop)
+        ) = self._separate_extended_features(train_df, val_df, data_dir)
 
         self.batch_size = self._default_batch_size(self.batch_size, data_size)
 
@@ -475,14 +479,18 @@ class CrabNet(nn.Module):
             self.batch_size, train_data, val_data, extra_train_data, extra_val_data
         )
 
+        assert isinstance(self.epochs, int)
+        assert isinstance(self.checkin, int)
         self.epochs, self.checkin, self.stepsize = self._get_epochs_checkin_stepsize(
             self.epochs, self.checkin
         )
 
         self.step_count = 0
 
+        assert self.criterion is not None
         self._select_criterion(self.criterion)
 
+        assert isinstance(self.model, SubCrab)
         base_optim = Lamb(
             params=self.model.parameters(),
             lr=self.lr,
@@ -507,6 +515,8 @@ class CrabNet(nn.Module):
         self.lr_list = []
         self.discard_n = 3
 
+        assert isinstance(self.epochs, int)
+        assert isinstance(self.checkin, int)
         for epoch in range(self.epochs):
             self.epoch = epoch
             self.epochs = self.epochs
@@ -563,6 +573,7 @@ class CrabNet(nn.Module):
             This is equal to `self.epochs_step * len(self.train_loader)`, or in other
             the number of batches that are processed within each set of `epochs_step`.
         """
+        assert self.train_loader is not None
         stepsize = self.epochs_step * len(self.train_loader)
         if self.verbose:
             print(
@@ -813,7 +824,10 @@ class CrabNet(nn.Module):
         return batch_size
 
     def _separate_extended_features(
-        self, train_df: pd.DataFrame, val_df: pd.DataFrame, data_dir: str
+        self,
+        train_df: pd.DataFrame,
+        val_df: pd.DataFrame,
+        data_dir: Union[str, PathLike],
     ):
         """Extract extra features specified by `extend_features` from data.
         
@@ -863,6 +877,7 @@ class CrabNet(nn.Module):
 
         if use_path:
             # Get the datafiles you will learn from
+            assert self.mat_prop is not None
             train_data = join(data_dir, self.mat_prop, "train.csv")
             try:
                 val_data = join(data_dir, self.mat_prop, "val.csv")
@@ -889,6 +904,7 @@ class CrabNet(nn.Module):
             else:
                 extra_train_data = None
                 extra_val_data = None
+            assert isinstance(train_data, pd.DataFrame)
             data_size = train_data.shape[0]
         return train_data, val_data, data_size, extra_train_data, extra_val_data
 
@@ -953,6 +969,8 @@ class CrabNet(nn.Module):
         formulae = np.empty(len_dataset, dtype=list)
         atoms = np.empty((len_dataset, n_atoms))
         fractions = np.empty((len_dataset, n_atoms))
+
+        assert isinstance(self.model, SubCrab)
         self.model.eval()
 
         with torch.no_grad():
@@ -1014,6 +1032,7 @@ class CrabNet(nn.Module):
         if self.verbose:
             print(f"Saving network ({model_name}) to {path}")
 
+        assert isinstance(self.model, SubCrab)
         self.network = {
             "weights": self.model.state_dict(),
             "scaler_state": self.scaler.state_dict(),
@@ -1041,6 +1060,7 @@ class CrabNet(nn.Module):
             network = torch.load(path, map_location=self.compute_device)
         else:
             network = model_data
+        assert isinstance(self.model, SubCrab)
         base_optim = Lamb(params=self.model.parameters())
         optimizer = Lookahead(base_optimizer=base_optim)
         self.optimizer = SWA(optimizer)
@@ -1051,7 +1071,7 @@ class CrabNet(nn.Module):
 
     def load_model(
         self,
-        model: Union[str, _CrabNet],
+        model: Union[str, SubCrab],
         data: Union[str, pd.DataFrame],
         classification: bool = False,
         verbose: bool = True,
@@ -1080,7 +1100,7 @@ class CrabNet(nn.Module):
             self.classification = True
 
         # data is reloaded to self.data_loader
-        self.load_data(data, batch_size=2 ** 9, train=False, verbose=verbose)
+        self.load_data(data, batch_size=2 ** 9, train=False)
 
 
 # %%
