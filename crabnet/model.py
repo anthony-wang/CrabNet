@@ -29,7 +29,7 @@ from .utils.utils import (
 )
 from crabnet.utils.optim import SWA
 
-from crabnet.kingcrab import CrabNet
+from crabnet.kingcrab import SubCrab
 
 # %%
 RNG_SEED = 42
@@ -38,7 +38,7 @@ np.random.seed(RNG_SEED)
 data_type_torch = torch.float32
 
 
-def groupby_formula(df, how="max"):
+def groupby_formula(df, how="max", mapper=None):
     """Group identical compositions together and preserve original indices.
 
     See https://stackoverflow.com/a/49216427/13697228
@@ -55,10 +55,12 @@ def groupby_formula(df, how="max"):
     DataFrame
         The grouped DataFrame such that the original indices are preserved.
     """
+    if mapper is not None:
+        df = df.rename(columns=mapper)
     grp_df = (
         df.reset_index()
         .groupby(by="formula")
-        .agg({"index": lambda x: tuple(x), "target": "max"})
+        .agg({"index": lambda x: tuple(x), "target": how})
         .reset_index()
     )
     return grp_df
@@ -67,6 +69,7 @@ def groupby_formula(df, how="max"):
 def data(
     module,
     fname="train.csv",
+    mapper=None,
     groupby=True,
     dummy=False,
     split=True,
@@ -79,10 +82,12 @@ def data(
     Parameters
     ----------
     module : Module
-        The module within mat_discover that contains e.g. "train.csv". For example,
-        from mat_discover.CrabNet.data.materials_data import elasticity
+        The module within CrabNet that contains e.g. "train.csv". For example,
+        `from crabnet.data.materials_data import elasticity`
     fname : str, optional
         Filename of text file to open.
+    mapper: dict, optional
+        Column renamer for pandas DataFrame (i.e. used in `df.rename(columns=mapper)` By default, None.
     dummy : bool, optional
         Whether to pare down the data to a small test set, by default False
     groupby : bool, optional
@@ -111,7 +116,7 @@ def data(
     df = pd.read_csv(train_csv)
 
     if groupby:
-        df = groupby_formula(df, how="max")
+        df = groupby_formula(df, how="max", mapper=mapper)
 
     if dummy:
         ntot = min(100, len(df))
@@ -148,18 +153,56 @@ class Model:
         fudge=0.02,
         out_dims=3,
         d_model=512,
+        extend_features=None,
+        d_extend=0,
         N=3,
         heads=4,
         elem_prop="mat2vec",
     ):
+        """
+        Model class for instantiating, training, and predicting with CrabNet models
+
+        Parameters
+        ----------
+        model : _CrabNet Model, optional
+            Specify existing CrabNet model to use, by default None
+        model_name : str, optional
+            The name of your model, by default "UnnamedModel"
+        n_elements : str, optional
+            The maximum number of elements to consider during featurization, by default "infer"
+        verbose : bool, optional
+            Whether model information and progress should be printed, by default True
+        force_cpu : bool, optional
+            Put all models on the cpu regardless of other available devices CPU, by default False
+        prefer_last : bool, optional
+            Whether to prefer last used compute_device, by default True
+        fudge : float, optional
+            The "fudge" (i.e. noise) applied to the fractional encodings, by default 0.02
+        out_dims : int, optional
+            Output dimensions for Residual Network, by default 3
+        d_model : int, optional
+            Size of the Model, see paper, by default 512
+        extend_features : _type_, optional
+            Whether extended features will be included, by default None
+        d_extend : int, optional
+            Number of extended features to include, by default 0
+        N : int, optional
+            Number of attention layers, by default 3
+        heads : int, optional
+            Number of attention heads to use, by default 4
+        elem_prop : str, optional
+            Which elemental feature vector to use. Possible values are "jarvis", "magpie",
+            "mat2vec", "oliynyk", "onehot", "ptable", and "random_200", by default "mat2vec"
+        """
         if model is None:
             compute_device = get_compute_device(
                 force_cpu=force_cpu, prefer_last=prefer_last
             )
-            model = CrabNet(
+            model = SubCrab(
                 compute_device=compute_device,
                 out_dims=out_dims,
                 d_model=d_model,
+                d_extend=d_extend,
                 N=N,
                 heads=heads,
             )
@@ -170,6 +213,7 @@ class Model:
         self.classification = False
         self.n_elements = n_elements
         self.compute_device = model.compute_device
+        self.extend_features = extend_features
         self.fudge = fudge  #  expected fractional tolerance (std. dev) ~= 2%
         self.verbose = verbose
         self.elem_prop = elem_prop
@@ -182,11 +226,12 @@ class Model:
             print(f"Running on compute device: {self.compute_device}")
             print(f"Model size: {count_parameters(self.model)} parameters\n")
 
-    def load_data(self, data, batch_size=2 ** 9, train=False):
+    def load_data(self, data, extra_features=None, batch_size=2 ** 9, train=False):
         self.batch_size = batch_size
         inference = not train
         data_loaders = EDM_CsvLoader(
             data=data,
+            extra_features=extra_features,
             batch_size=batch_size,
             n_elements=self.n_elements,
             inference=inference,
@@ -218,7 +263,7 @@ class Model:
         ti = time()
         minima = []
         for i, data in enumerate(self.train_loader):
-            X, y, formula = data
+            X, y, formula, extra_features = data
             y = self.scaler.scale(y)
             src, frac = X.squeeze(-1).chunk(2, dim=1)
             # add a small jitter to the input fractions to improve model
@@ -234,8 +279,10 @@ class Model:
                 self.compute_device, dtype=data_type_torch, non_blocking=True
             )
             y = y.to(self.compute_device, dtype=data_type_torch, non_blocking=True)
-
-            output = self.model.forward(src, frac)
+            extra_features = extra_features.to(
+                self.compute_device, dtype=data_type_torch, non_blocking=True
+            )
+            output = self.model.forward(src, frac, extra_features=extra_features)
             prediction, uncertainty = output.chunk(2, dim=-1)
             loss = self.criterion(prediction.view(-1), uncertainty.view(-1), y.view(-1))
 
@@ -498,7 +545,11 @@ class Model:
         if data is None and loader is None:
             raise SyntaxError("Specify either data *or* loader, not neither.")
         elif data is not None and loader is None:
-            self.load_data(data)
+            if self.extend_features is not None:
+                extra_features = data[self.extend_features]
+            else:
+                extra_features = None
+            self.load_data(data, extra_features=extra_features)
             loader = self.data_loader
         elif data is not None and loader is not None:
             raise SyntaxError("Specify either data *or* loader, not both.")
@@ -513,14 +564,17 @@ class Model:
         self.model.eval()
         with torch.no_grad():
             for i, data in enumerate(loader):
-                X, y, formula = data
+                X, y, formula, extra_features = data
                 src, frac = X.squeeze(-1).chunk(2, dim=1)
                 src = src.to(self.compute_device, dtype=torch.long, non_blocking=True)
                 frac = frac.to(
                     self.compute_device, dtype=data_type_torch, non_blocking=True
                 )
                 y = y.to(self.compute_device, dtype=data_type_torch, non_blocking=True)
-                output = self.model.forward(src, frac)
+                extra_features = extra_features.to(
+                    self.compute_device, dtype=data_type_torch, non_blocking=True
+                )
+                output = self.model.forward(src, frac, extra_features=extra_features)
                 prediction, uncertainty = output.chunk(2, dim=-1)
                 uncertainty = torch.exp(uncertainty) * self.scaler.std
                 prediction = self.scaler.unscale(prediction)

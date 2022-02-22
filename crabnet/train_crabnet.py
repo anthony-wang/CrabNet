@@ -1,3 +1,4 @@
+#%%
 """Train CrabNet using data for a given material property.
 
 Use the crabnet environment.
@@ -12,7 +13,7 @@ import torch
 
 from sklearn.metrics import roc_auc_score
 
-from crabnet.kingcrab import CrabNet  # type: ignore
+from crabnet.kingcrab import SubCrab  # type: ignore
 from crabnet.model import Model  # type: ignore
 
 from crabnet.utils.get_compute_device import get_compute_device
@@ -28,11 +29,13 @@ def get_model(
     train_df=None,
     val_df=None,
     test_df=None,
+    extend_features=None,
     data_dir=join(dirname(__file__), "data", "materials_data"),
     mat_prop=None,
     classification=False,
     batch_size=None,
     transfer=None,
+    extend_transfer=False,
     verbose=True,
     losscurve=False,
     learningcurve=True,
@@ -69,16 +72,12 @@ def get_model(
     save=True,
 ):
     """Get a CrabNet model with default parameters set.
-    
+
     #TODO: flesh out descriptions of parameters, as well as feasible min/max bounds
     where appropriate
 
     Parameters
     ----------
-    data_dir : str, optional
-        data directory, by default join(dirname(__file__), "data", "materials_data")
-    mat_prop : str, optional
-        name of material property (doesn't affect computation), by default None
     train_df : DataFrame, optional
         Training DataFrame with formula and target columns, by default None
     val_df : DataFrame, optional
@@ -87,6 +86,13 @@ def get_model(
     test_df : DataFrame, optional
         Test DataFrame with formula and target columns (OK if only train_df and val_df
         are specified), by default None
+    extend_features : list of str, optional
+        Additional features to grab from columns of the other DataFrames (e.g. state
+        variables such as temperature or applied load)
+    data_dir : str, optional
+        data directory, by default join(dirname(__file__), "data", "materials_data")
+    mat_prop : str, optional
+        name of material property (doesn't affect computation), by default None
     classification : bool, optional
         Whether to perform classification. If False, then use regression, by default False
     batch_size : int, optional
@@ -108,9 +114,9 @@ def get_model(
     d_model : int, optional
         Model size. See paper, by default 512
     out_dims : int, optional
-        [description], by default 3
+        Output dimensions for Residual Network, by default 3
     N : int, optional
-        [description], by default 3
+        Number of attention layers, by default 3
     heads : int, optional
         Number of attention heads to use, by default 4
     out_hidden : list, optional
@@ -180,12 +186,19 @@ def get_model(
             mat_prop = "DataFrame_property"
         use_path = False
 
+    if extend_features is None:
+        d_extend = 0
+    else:
+        d_extend = len(extend_features)
+
     # Get the TorchedCrabNet architecture loaded
     model = Model(
-        CrabNet(
+        SubCrab(
             compute_device=compute_device,
             out_dims=out_dims,
             d_model=d_model,
+            d_extend=d_extend,
+            extend_features=extend_features,
             N=N,
             heads=heads,
             out_hidden=out_hidden,
@@ -204,6 +217,7 @@ def get_model(
         fudge=fudge,
         out_dims=out_dims,
         d_model=d_model,
+        extend_features=extend_features,
         N=N,
         heads=heads,
         elem_prop=elem_prop,
@@ -213,6 +227,17 @@ def get_model(
     if transfer is not None:
         model.load_network(f"{transfer}.pth")
         model.model_name = f"{mat_prop}"
+
+    # if training freeze one layer
+    # if transfering unfreeze the layer to tune
+
+    # if extend_features is not None:
+    #     if not extend_transfer:
+    #         for param in model.layers.fc1.parameters():
+    #             param.requires_grad = False
+    #     else:
+    #         for param in model.layers.fc1.parameters():
+    #             param.requires_grad = True
 
     # Apply BCEWithLogitsLoss to model output if binary classification is True
     if classification:
@@ -228,10 +253,24 @@ def get_model(
                 "Please ensure you have train (train.csv) and validation data",
                 f'(val.csv) in folder "data/materials_data/{mat_prop}"',
             )
+        train_df_tmp = pd.read_csv(train_data)
+        val_df_tmp = pd.read_csv(val_data)
         data_size = pd.read_csv(train_data).shape[0]
+        if model.extend_features is not None:
+            extra_train_data = train_df_tmp[model.extend_features]
+            extra_val_data = val_df_tmp[model.extend_features]
+        else:
+            extra_train_data = None
+            extra_val_data = None
     else:
         train_data = train_df
         val_data = val_df
+        if model.extend_features is not None:
+            extra_train_data = train_df[model.extend_features]
+            extra_val_data = val_df[model.extend_features]
+        else:
+            extra_train_data = None
+            extra_val_data = None
         data_size = train_data.shape[0]
 
     # Load the train and validation data before fitting the network
@@ -241,15 +280,16 @@ def get_model(
             batch_size = 2 ** 7
         if batch_size > 2 ** 12:
             batch_size = 2 ** 12
-    model.load_data(train_data, batch_size=batch_size, train=True)
+    model.load_data(
+        train_data, batch_size=batch_size, train=True, extra_features=extra_train_data
+    )
     if verbose:
         print(
             f"training with batchsize {model.batch_size} "
             f"(2**{np.log2(model.batch_size):0.3f})"
         )
     if val_data is not None:
-        model.load_data(val_data, batch_size=batch_size)
-
+        model.load_data(val_data, batch_size=batch_size, extra_features=extra_val_data)
     # Set the number of epochs, decide if you want a loss curve to be plotted
     model.fit(
         epochs=epochs,
@@ -292,7 +332,7 @@ def load_model(model, mat_prop, classification, data, verbose=True):
     if type(model) is str:
         usepath = True
         model = Model(
-            CrabNet(compute_device=compute_device).to(compute_device),
+            SubCrab(compute_device=compute_device).to(compute_device),
             model_name=f"{mat_prop}",
             verbose=verbose,
         )

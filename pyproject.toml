@@ -25,6 +25,7 @@ dependencies = [
     "colorama",
     "joblib",
     "psutil",
+    "tcl",
 ]
 
 [project.urls]

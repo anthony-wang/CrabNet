@@ -157,3 +157,7 @@ model_predictions/example_materials_property_train_output.csv
 model_predictions/example_materials_property_val_output.csv
 figures/lc_data/DataFrame_property_lc.png
 scratch/
+results/predicted_hv.csv
+.DS_Store
+figures/lc_data/UnnamedModel_lc.csv
+figures/lc_data/UnnamedModel_lc.png

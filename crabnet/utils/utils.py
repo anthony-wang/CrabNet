@@ -400,15 +400,24 @@ class EDMDataset(Dataset):
     Get X and y from EDM dataset.
     """
 
-    def __init__(self, dataset, n_comp):
+    def __init__(self, dataset, n_comp, extra_features=None):
         self.data = dataset
         self.n_comp = n_comp
 
         self.X = np.array(self.data[0])
         self.y = np.array(self.data[1])
         self.formula = np.array(self.data[2])
+        if extra_features is None:
+            self.extra_features = np.zeros((self.X.shape[0], 0))
+        else:
+            self.extra_features = extra_features.values
 
-        self.shape = [(self.X.shape), (self.y.shape), (self.formula.shape)]
+        self.shape = [
+            (self.X.shape),
+            (self.y.shape),
+            (self.formula.shape),
+            (self.extra_features.shape),
+        ]
 
     def __str__(self):
         string = f"EDMDataset with X.shape {self.X.shape}"
@@ -421,16 +430,16 @@ class EDMDataset(Dataset):
         X = self.X[idx, :, :]
         y = self.y[idx]
         formula = self.formula[idx]
+        extra_features = self.extra_features[idx]
 
         X = torch.as_tensor(X, dtype=data_type_torch)
         y = torch.as_tensor(y, dtype=data_type_torch)
+        extra_features = torch.as_tensor(extra_features, dtype=data_type_torch)
 
-        return (X, y, formula)
+        return (X, y, formula, extra_features)
 
 
-def get_edm(
-    data, elem_prop="mat2vec", n_elements="infer", inference=False, verbose=True
-):
+def get_edm(data, n_elements="infer", inference=False, verbose=True, groupby=False):
     """
     Build a element descriptor matrix.
 
@@ -438,8 +447,6 @@ def get_edm(
     ----------
     data: str or DataFrame
         Filepath to data or DataFrame.
-    elem_prop : str, optional
-        DESCRIPTION. The default is 'oliynyk'.
 
     Returns
     -------
@@ -480,7 +487,7 @@ def get_edm(
         len(_element_composition(form)) for form in df.formula.values.tolist()
     ]
     # df = df[df["count"] != 1]  # drop pure elements
-    if not inference:
+    if not inference and groupby:
         df = df.groupby(by="formula").mean().reset_index()  # mean of duplicates
 
     list_ohm = [OrderedDict(_element_composition(form)) for form in df["formula"]]
@@ -530,29 +537,12 @@ def get_edm(
 
 # %%
 class EDM_CsvLoader:
-    """
-    Parameters
-    ----------
-    data: str or DataFrame
-        name of csv file containing cif and properties or DataFrame
-    csv_val: str
-        name of csv file containing cif and properties
-    val_frac: float, optional (default=0.75)
-        train/val ratio if val_file not given
-    batch_size: float, optional (default=64)
-        Step size for the Gaussian filter
-    random_state: int, optional (default=123)
-        Random seed for sampling the dataset. Only used if validation data is
-        not given.
-    shuffle: bool (default=True)
-        Whether to shuffle the datasets or not
-    """
-
     def __init__(
         self,
         data,
+        extra_features=None,
         batch_size=64,
-        num_workers=1,
+        groupby=False,
         random_state=0,
         shuffle=True,
         pin_memory=True,
@@ -561,16 +551,39 @@ class EDM_CsvLoader:
         verbose=True,
         elem_prop="mat2vec",
     ):
+        """
+        Parameters
+        ----------
+        data: str or DataFrame
+            name of csv file containing cif and properties or DataFrame
+        extra_features: str or None
+            names of extended features
+        csv_val: str
+            name of csv file containing cif and properties
+        val_frac: float, optional (default=0.75)
+            train/val ratio if val_file not given
+        batch_size: float, optional (default=64)
+            Step size for the Gaussian filter
+        groupby: bool, optional
+            Whether to reduce repeat formulas to a unique set, by default False.
+        random_state: int, optional (default=123)
+            Random seed for sampling the dataset. Only used if validation data is
+            not given.
+        shuffle: bool (default=True)
+            Whether to shuffle the datasets or not
+        """
         self.data = data
         self.main_data = list(
             get_edm(
                 self.data,
-                elem_prop=elem_prop,
                 n_elements=n_elements,
                 inference=inference,
                 verbose=verbose,
+                groupby=groupby,
             )
         )
+
+        self.extra_features = extra_features
         self.n_train = len(self.main_data[0])
         self.n_elements = self.main_data[0].shape[1] // 2
 
@@ -584,7 +597,7 @@ class EDM_CsvLoader:
         Input the dataset, get train test split
         """
         shuffle = not inference  # don't shuffle data when inferencing
-        pred_dataset = EDMDataset(self.main_data, self.n_elements)
+        pred_dataset = EDMDataset(self.main_data, self.n_elements, self.extra_features)
         pred_loader = DataLoader(
             pred_dataset,
             batch_size=self.batch_size,
