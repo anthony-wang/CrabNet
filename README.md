@@ -2,7 +2,8 @@
 
 The Compositionally-Restricted Attention-Based Network (`CrabNet`), inspired by natural language processing transformers, uses compositional information to predict material properties.
 
-<img src=https://user-images.githubusercontent.com/45469701/155030619-3a5f75e8-b28d-4801-a54c-58a800ee874c.png width=150>
+| <img src=https://user-images.githubusercontent.com/45469701/155030619-3a5f75e8-b28d-4801-a54c-58a800ee874c.png width=150> | [![DOI](https://img.shields.io/badge/Paper:_npjCM-10.1038%2Fs41524.021.00545.1-blue)](https://doi.org/10.1038/s41524-021-00545-1) <br /> ![PyPI](https://img.shields.io/pypi/v/crabnet) ![Lines of code](https://img.shields.io/tokei/lines/github/sgbaird/CrabNet) ![GitHub](https://img.shields.io/github/license/sgbaird/CrabNet) <br /> [![Conda](https://img.shields.io/conda/v/sgbaird/crabnet)](https://anaconda.org/sgbaird/crabnet) [![Conda](https://img.shields.io/conda/pn/sgbaird/crabnet)](https://anaconda.org/sgbaird/crabnet) [![Conda](https://img.shields.io/conda/dn/sgbaird/crabnet?label=conda%7Cdownloads)](https://anaconda.org/sgbaird/crabnet) [![Anaconda-Server Badge](https://anaconda.org/sgbaird/crabnet/badges/latest_release_relative_date.svg)](https://anaconda.org/sgbaird/crabnet) |
+| --- | :-- |
 
 > :warning: This is a fork of the [original CrabNet repository](https://github.com/anthony-wang/CrabNet) :warning:
 
