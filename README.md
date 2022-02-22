@@ -34,11 +34,7 @@ train_df, val_df = get_data(elasticity, "train.csv")
 ```python
 from crabnet.crabnet_ import CrabNet
 
-cb = CrabNet(
-    mat_prop="elasticity",
-    learningcurve=False,
-    force_cpu=False,
-)
+cb = CrabNet(mat_prop="elasticity")
 ```
 
 ### Training
@@ -70,9 +66,7 @@ cb = CrabNet(
     mat_prop="hardness",
     train_df=train_df, # contains "formula", "target", and "state_var0" columns
     extend_features=["state_var0"],
-    learningcurve=False,
-    force_cpu=False,
-)
+    )
 ```
 
 ## How to cite
