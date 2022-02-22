@@ -8,3 +8,5 @@ scikit_learn==1.0.1
 scipy==1.7.1
 seaborn==0.11.2
 torch==1.10.0
+myst-parser==0.17.0
+sphinx==4.4.0
