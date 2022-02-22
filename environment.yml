@@ -3,16 +3,19 @@ channels:
   - pytorch
   - conda-forge
 dependencies:
-  - python>=3.7
+  - python >=3.7,<3.10
   - numpy
   - pandas
   - scikit-learn
   - scipy
   - matplotlib
   - seaborn
-  - pytorch>=1.7
-  - cudatoolkit==11.3.*
+  - pytorch >=1.9.0
+  - cudatoolkit <11.4
   - tqdm
   - joblib
   - psutil
   - conda-souschef
+  - grayskull
+  - flit
+  - pytest
