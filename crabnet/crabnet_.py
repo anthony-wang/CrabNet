@@ -379,6 +379,8 @@ class CrabNet(nn.Module):
                     )
                     pred_v = np.nan_to_num(pred_v)
                 mae_v = mean_absolute_error(true_v, pred_v)
+                # https://github.com/pytorch/contrib/blob/master/torchcontrib/optim/swa.py
+                # https://pytorch.org/blog/pytorch-1.6-now-includes-stochastic-weight-averaging/
                 self.optimizer.update_swa(mae_v)
                 minima.append(self.optimizer.minimum_found)
 
