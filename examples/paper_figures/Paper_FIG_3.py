@@ -1,4 +1,5 @@
 import os
+from os.path import join
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -293,11 +294,11 @@ def plot(mat_prop, property_tracker):
     ax.axis("off")
 
     plt.draw()
-    save_dir = "figures/contributions"
+    save_dir = join("figures", " contributions")
     # save_dir = None
     if save_dir is not None:
         name = mat_prop
-        fig_name = f"{save_dir}/{mat_prop}/ptable.png"
+        fig_name = join(save_dir, mat_prop, "ptable.png")
         os.makedirs(save_dir, exist_ok=True)
         plt.savefig(fig_name, bbox_inches="tight", dpi=300)
 
@@ -306,7 +307,7 @@ def plot(mat_prop, property_tracker):
 
 
 # %%
-data_dir = "data/benchmark_data"
+data_dir = join("data", "benchmark_data")
 matbench_props = os.listdir(data_dir)[0:1]
 
 classification_list = []
