@@ -9,7 +9,8 @@ width=150>
 [![DOI](https://img.shields.io/badge/Paper:_npjCM-10.1038%2Fs41524.021.00545.1-blue)](https://doi.org/10.1038/s41524-021-00545-1)
 
 [![Open In Colab
-(PyPI)](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sparks-baird/CrabNet)
+(PyPI)](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sparks-baird/CrabNet/blob/main/examples/crabnet_basic_colab.ipynb)
+[![Read the Docs](https://img.shields.io/readthedocs/crabnet?label=Read%20the%20docs&logo=readthedocs)](https://crabnet.readthedocs.io/en/latest/)
 [![GitHub Workflow
 Status](https://img.shields.io/github/workflow/status/sparks-baird/mat_discover/Install%20with%20flit%20and%20test%20via%20Pytest?label=main)](https://github.com/sparks-baird/mat_discover/actions/workflows/flit-install-test.yml)
 
