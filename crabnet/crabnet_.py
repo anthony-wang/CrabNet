@@ -2,7 +2,7 @@
 import os
 from os import PathLike
 from os.path import dirname, join
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, List, Optional, Tuple, TypedDict, Union
 from warnings import warn
 
 import matplotlib.pyplot as plt
@@ -49,6 +49,7 @@ class CrabNet(nn.Module):
         verbose: bool = True,
         force_cpu: bool = False,
         prefer_last: bool = True,
+        batch_size: Optional[int] = None,
         epochs: Optional[int] = None,
         epochs_step: int = 10,
         checkin: Optional[int] = None,
@@ -83,6 +84,8 @@ class CrabNet(nn.Module):
         max_lr: float = 6e-3,
         random_state: Optional[int] = None,
         mat_prop: Optional[Union[str, PathLike]] = None,
+        losscurve: bool = True,
+        learningcurve: bool = True,
     ):
         """
         Instantiate a CrabNet model.
@@ -105,6 +108,10 @@ class CrabNet(nn.Module):
             Put all models on the cpu regardless of other available devices CPU, by default False
         prefer_last : bool, optional
             Whether to prefer last used compute_device, by default True
+        batch_size : int
+            The batch size to use during training. If not None, then used as-is. If
+            specified, then it is assigned either 2 ** 7 == 128 or 2 ** 12 == 4096
+            based on the value of `data_size`.
         epochs : int, optional
             How many epochs (# of passes through entire dataset). If None, then this is
             automatically assigned based on the dataset size using
@@ -185,6 +192,10 @@ class CrabNet(nn.Module):
             None, then this has no effect. By default None.
         mat_prop : str, optional
             name of material property (doesn't affect computation), by default None
+        losscurve : bool, optional
+            Whether to plot a loss curve, by default False
+        learningcurve : bool, optional
+            Whether to plot a learning curve, by default True
         """
         super().__init__()
         if compute_device is None:
@@ -204,6 +215,8 @@ class CrabNet(nn.Module):
         self.compute_device = compute_device
         self.bias = bias
         self.out_hidden = out_hidden
+
+        self.batch_size = batch_size
         self.epochs = epochs
         self.epochs_step = epochs_step
         self.checkin = checkin
@@ -242,6 +255,11 @@ class CrabNet(nn.Module):
         self.fudge = fudge  #  expected fractional tolerance (std. dev) ~= 2%
         self.verbose = verbose
         self.elem_prop = elem_prop
+
+        self.losscurve = losscurve
+        self.learningcurve = learningcurve
+        self.losscurve_fig = None
+        self.learningcurve_fig = None
 
         self.val_size = val_size
 
@@ -286,12 +304,13 @@ class CrabNet(nn.Module):
         train : bool, optional
             Whether this is the training data, by default False
         """
-        self.batch_size = batch_size
+        if self.batch_size is None:
+            self.batch_size = batch_size
         inference = not train
         data_loaders = EDM_CsvLoader(
             data=data,
             extra_features=extra_features,
-            batch_size=batch_size,
+            batch_size=self.batch_size,
             n_elements=self.n_elements,
             inference=inference,
             verbose=self.verbose,
@@ -475,20 +494,21 @@ class CrabNet(nn.Module):
 
         self.batch_size = self._default_batch_size(self.batch_size, data_size)
 
+        assert isinstance(self.batch_size, int)
         self._load_trainval_data(
             self.batch_size, train_data, val_data, extra_train_data, extra_val_data
         )
 
-        assert isinstance(self.epochs, int)
-        assert isinstance(self.checkin, int)
         self.epochs, self.checkin, self.stepsize = self._get_epochs_checkin_stepsize(
             self.epochs, self.checkin
         )
+        assert isinstance(self.epochs, int)
+        assert isinstance(self.checkin, int)
 
         self.step_count = 0
 
-        assert self.criterion is not None
         self._select_criterion(self.criterion)
+        assert self.criterion is not None
 
         assert isinstance(self.model, SubCrab)
         base_optim = Lamb(
@@ -512,7 +532,18 @@ class CrabNet(nn.Module):
         )
         self.lr_scheduler = lr_scheduler
 
-        self.lr_list = []
+        class LossCurveDict(TypedDict):
+            train: List[float]
+            val: List[float]
+
+        self.loss_curve: LossCurveDict = {"train": [], "val": []}
+
+        self.stepping = True
+        self.swa_start = 2  # start at (n/2) cycle (lr minimum)
+        self.xswa: List[int] = []
+        self.yswa: List[float] = []
+
+        self.lr_list: List[float] = []
         self.discard_n = 3
 
         assert isinstance(self.epochs, int)
@@ -549,7 +580,9 @@ class CrabNet(nn.Module):
         if save:
             self.save_network()
 
-    def _get_epochs_checkin_stepsize(self, epochs: int, checkin: int):
+    def _get_epochs_checkin_stepsize(
+        self, epochs: Optional[int], checkin: Optional[int]
+    ):
         """Automatically assign epochs, checkin point, and stepsize.
 
         Parameters
@@ -577,7 +610,7 @@ class CrabNet(nn.Module):
         stepsize = self.epochs_step * len(self.train_loader)
         if self.verbose:
             print(
-                f"stepping every {self.stepsize} training passes, cycling lr every {self.epochs_step} epochs"
+                f"stepping every {stepsize} training passes, cycling lr every {self.epochs_step} epochs"
             )
         if epochs is None:
             n_iterations = 1e4
@@ -611,14 +644,6 @@ class CrabNet(nn.Module):
         epoch : int
             The current epoch.
         """
-        if epoch == 0:
-            self.loss_curve = {}
-            self.loss_curve["train"] = []
-            self.loss_curve["val"] = []
-            self.swa_start = 2  # start at (n/2) cycle (lr minimum)
-            self.stepping = True
-            self.xswa = []
-            self.yswa = []
         pred_t, true_t = self.predict(loader=self.train_loader, return_true=True,)
         mae_t = mean_absolute_error(true_t, pred_t)
         self.loss_curve["train"].append(mae_t)
@@ -680,7 +705,10 @@ class CrabNet(nn.Module):
             When to do the checkin step. If None, then automatically assigned as half
             the number of epochs, by default None
         """
-        plt.figure(figsize=(8, 5))
+        if self.learningcurve_fig is None:
+            self.learningcurve_fig = plt.figure(figsize=(8, 5))
+        else:
+            plt.cla()
         xval = np.arange(len(self.loss_curve["val"])) * checkin - 1
         xval[0] = 0
         plt.plot(
@@ -705,7 +733,11 @@ class CrabNet(nn.Module):
         plt.ylabel("MAE")
         plt.legend()
         plt.savefig(f"figures/lc_data/{self.model_name}_lc.png")
-        plt.show()
+        # plt.show()
+        # https://stackoverflow.com/a/56119926/13697228
+        assert self.learningcurve_fig is not None
+        self.learningcurve_fig.canvas.draw()
+        plt.pause(0.01)
 
     def _plot_losscurve(self, checkin):
         """Plot the loss curve periodically (beginning, checkin, end).
@@ -716,7 +748,10 @@ class CrabNet(nn.Module):
             When to do the checkin step. If None, then automatically assigned as half
             the number of epochs, by default None
         """
-        plt.figure(figsize=(8, 5))
+        if self.losscurve_fig is None:
+            self.losscurve_fig = plt.figure(figsize=(8, 5))
+        else:
+            plt.cla()
         xval = np.arange(len(self.loss_curve["val"])) * checkin - 1
         xval[0] = 0
         plt.plot(xval, self.loss_curve["train"], "o-", label="train_mae")
@@ -727,9 +762,12 @@ class CrabNet(nn.Module):
         plt.xlabel("epochs")
         plt.ylabel("MAE")
         plt.legend()
-        plt.show()
+        # https://stackoverflow.com/a/56119926/13697228
+        assert self.losscurve_fig is not None
+        self.losscurve_fig.canvas.draw()
+        plt.pause(0.01)
 
-    def _select_criterion(self, criterion: Union[str, Callable]):
+    def _select_criterion(self, criterion: Optional[Union[str, Callable]]):
         """Automatically select a criterion if None was specified.
 
         Parameters
@@ -782,8 +820,8 @@ class CrabNet(nn.Module):
         )
         if self.verbose:
             print(
-                f"training with batchsize {self.batch_size} "
-                f"(2**{np.log2(self.batch_size):0.3f})"
+                f"training with batchsize {batch_size} "
+                f"(2**{np.log2(batch_size):0.3f})"
             )
         if val_data is not None:
             self.load_data(
@@ -795,7 +833,7 @@ class CrabNet(nn.Module):
         assert self.train_loader is not None, assert_train_str
         assert self.data_loader is not None, assert_val_str
 
-    def _default_batch_size(self, batch_size: int, data_size: int):
+    def _default_batch_size(self, batch_size: Optional[int], data_size: int):
         """Assign a default batch size based on the size of the dataset.
 
         Parameters
@@ -999,6 +1037,7 @@ class CrabNet(nn.Module):
                 if self.classification:
                     prediction = torch.sigmoid(prediction)
 
+                assert self.batch_size is not None
                 data_loc = slice(i * self.batch_size, i * self.batch_size + len(y), 1)
 
                 atoms[data_loc, :] = src.cpu().numpy()
