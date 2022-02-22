@@ -8,7 +8,9 @@ train_df, val_df = data(elasticity, dummy=True)
 
 
 def test_crabnet():
-    cb = CrabNet(compute_device="cpu", verbose=True)
+    cb = CrabNet(
+        compute_device="cpu", verbose=True, losscurve=False, learningcurve=False
+    )
     cb.fit(train_df)
     train_pred, train_sigma = cb.predict(val_df, return_uncertainty=True)
     return train_pred, train_sigma
