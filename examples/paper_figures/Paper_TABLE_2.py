@@ -1,4 +1,5 @@
 import os
+from os.path import join
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -20,7 +21,7 @@ for benchmark in [True, False]:
 
     if benchmark:
         convert = cons.benchmark_names_dict
-        data_dir = "data/benchmark_data/"
+        data_dir = join("data" , "benchmark_data")
         properties = os.listdir(data_dir)
 
     else:
