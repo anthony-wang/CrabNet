@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+from os.path import join
 from crabnet.utils.composition import _fractional_composition
 
 
@@ -30,7 +31,7 @@ if __name__ == "__main__":
 
     # %%
     results_path = "publication_predictions"
-    benchmark_path = "data/benchmark_data"
+    benchmark_path = join("data", "benchmark_data")
     test_directories = os.listdir(results_path)
     benchmark_props = os.listdir(benchmark_path)
 
