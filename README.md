@@ -24,17 +24,22 @@ from crabnet.data.materials_data import elasticity
 train_df, val_df = data(elasticity, "train.csv")
 ```
 
-### Instantiate and Train a CrabNet Model
+### Instantiate CrabNet Model
 
 ```python
-from crabnet.train_crabnet import get_model
+from crabnet.crabnet_ import CrabNet
 
-crabnet_model = get_model(
+cb = CrabNet(
     mat_prop="elasticity",
-    train_df=train_df,
     learningcurve=False,
     force_cpu=False,
 )
+```
+
+### Training
+
+```python
+cb.fit(train_df)
 ```
 
 ### Predictions
@@ -42,21 +47,13 @@ crabnet_model = get_model(
 Predict on the training data:
 
 ```python
-train_true, train_pred, formulas, train_sigma = crabnet_model.predict(train_df)
-```
-
-Determine the mean-squared error:
-
-```python
-from sklearn.metrics import mean_squared_error
-
-mse = mean_squared_error(train_true, train_pred)
+train_pred, train_sigma = cb.predict(train_df, return_uncertainty=True)
 ```
 
 Predict on the validation data:
 
 ```python
-val_true, val_pred, formulas, val_sigma = crabnet_model.predict(val_df)
+val_pred, val_sigma = cb.predict(val_df)
 ```
 
 ### Extend Features
@@ -64,7 +61,7 @@ val_true, val_pred, formulas, val_sigma = crabnet_model.predict(val_df)
 To include additional features that get added after the transformer architecture, but before a recurrent neural network, include the additional features in your DataFrames and pass the name(s) of these additional features (i.e. columns) as a list into `extend_features`.
 
 ```python
-crabnet_model = get_model(
+cb = CrabNet(
     mat_prop="hardness",
     train_df=train_df, # contains "formula", "target", and "state_var0" columns
     extend_features=["state_var0"],
