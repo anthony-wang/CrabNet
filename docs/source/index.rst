@@ -1,4 +1,4 @@
-.. mat_discover documentation master file, created by
+.. crabnet documentation master file, created by
    sphinx-quickstart on Fri Nov  5 01:44:19 2021.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
@@ -39,7 +39,7 @@ properties in just a few lines of code! `Get started learning about CrabNet <htt
    readme
    examples
    figures
-   modules
+   crabnet
 
 Indices and tables
 ==================
