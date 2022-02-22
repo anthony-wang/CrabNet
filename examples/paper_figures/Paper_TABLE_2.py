@@ -21,7 +21,7 @@ for benchmark in [True, False]:
 
     if benchmark:
         convert = cons.benchmark_names_dict
-        data_dir = join("data" , "benchmark_data")
+        data_dir = join("data", "benchmark_data")
         properties = os.listdir(data_dir)
 
     else:

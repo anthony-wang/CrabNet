@@ -38,8 +38,8 @@ except ImportError:
 # -- Project information -----------------------------------------------------
 
 project = "crabnet"
-copyright = '2022, Anthony Wang, Steven Kauwe, Sterling Baird, Andrew Falkowski'
-author = 'Anthony Wang, Steven Kauwe, Sterling Baird, Andrew Falkowski'
+copyright = "2022, Anthony Wang, Steven Kauwe, Sterling Baird, Andrew Falkowski"
+author = "Anthony Wang, Steven Kauwe, Sterling Baird, Andrew Falkowski"
 
 # The full version, including alpha/beta/rc tags
 version = ".".join(crabnet.__version__.split(".")[:2])
