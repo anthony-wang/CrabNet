@@ -2,7 +2,7 @@
 import os
 from os import PathLike
 from os.path import dirname, join
-from typing import Callable, List, Optional, Tuple, TypedDict, Union
+from typing import Callable, List, Optional, Tuple, Union
 from warnings import warn
 
 import matplotlib.pyplot as plt
@@ -535,11 +535,7 @@ class CrabNet(nn.Module):
         )
         self.lr_scheduler = lr_scheduler
 
-        class LossCurveDict(TypedDict):
-            train: List[float]
-            val: List[float]
-
-        self.loss_curve: LossCurveDict = {"train": [], "val": []}
+        self.loss_curve: dict = {"train": [], "val": []}
 
         self.stepping = True
         self.swa_start = 2  # start at (n/2) cycle (lr minimum)
