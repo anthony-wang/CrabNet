@@ -28,8 +28,8 @@ jobs:
         - name: Install dependencies
           shell: bash -l {0}
           run: |   
-            conda install git conda-build conda-verify anaconda-client pytest conda-souschef
-            conda install  -c conda-forge grayskull flit coveralls
+            conda install git conda-build conda-verify anaconda-client pytest
+            conda install  -c conda-forge grayskull flit coveralls conda-souschef
             pip install -U pip
             
         - name: Pytest
