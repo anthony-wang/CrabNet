@@ -4,7 +4,7 @@ from crabnet.data.materials_data import elasticity
 from crabnet.train_crabnet import get_model
 
 
-def test_crabnet():
+def test_hyperparameters():
     train_df, val_df = data(elasticity, dummy=True)
     mdl = get_model(
         train_df=train_df,
@@ -45,4 +45,4 @@ def test_crabnet():
 
 
 if __name__ == "__main__":
-    train_true, train_pred, formulas, train_sigma = test_crabnet()
+    train_true, train_pred, formulas, train_sigma = test_hyperparameters()
