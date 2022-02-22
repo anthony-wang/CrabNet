@@ -28,7 +28,7 @@ class ResidualNetwork(nn.Module):
         Parameters
         ----------
         input_dim : int
-            Input dimensions for the Residual Network, specified in CrabNet() model class, by default 512
+            Input dimensions for the Residual Network, specified in SubCrab() model class, by default 512
         output_dim : int
             Output dimensions for Residual Network, by default 3
         hidden_layer_dims : list(int)
@@ -486,9 +486,9 @@ class SubCrab(nn.Module):
             dropout=dropout,
         )
         self.out_hidden = out_hidden
-        self.transfer_nn = TransferNetwork(
-            self.d_model + self.d_extend, self.d_model + self.d_extend
-        )
+        # self.transfer_nn = TransferNetwork(
+        #     self.d_model + self.d_extend, self.d_model + self.d_extend
+        # )
         self.output_nn = ResidualNetwork(
             self.d_model + self.d_extend,
             self.out_dims,
