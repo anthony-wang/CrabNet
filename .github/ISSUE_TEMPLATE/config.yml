@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discussion
+    url: https://github.com/sparks-baird/mat_discover/discussions
+    about: For general questions, discussing potential PRs, and other topics, please open a discussion. PRs welcome/encouraged!

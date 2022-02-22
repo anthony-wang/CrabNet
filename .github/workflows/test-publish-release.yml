@@ -1,0 +1,111 @@
+name: Test, Publish, and Release
+
+on: 
+  push:
+    tags:
+    - "*.*.*"
+  workflow_dispatch:
+
+# on:
+#   release:
+#     types: [published]
+
+jobs:
+  flit-publish-gh-release:
+    name: Test, Publish to PyPI, and Release on GitHub
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 9
+      fail-fast: true
+      matrix:
+         os: [ubuntu-latest] # much slower on Mac and Win, but can use [ubuntu-latest, macos-latest, windows-latest]
+         python-version: ['3.7', '3.8', '3.9']
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Check Black code style
+      uses: psf/black@stable #https://black.readthedocs.io/en/stable/integrations/github_actions.html
+        
+    - name: Install dependencies
+      shell: bash {0}
+      run: |
+        pip install --upgrade pip
+        pip install flit torch coveralls pytest # torch is CPU version
+        flit install
+
+    - name: Pytest
+      shell: bash {0}
+      run: |
+        coverage run --source=crabnet -m pytest
+        
+    - name: Publish to PyPI
+      shell: bash {0}
+      run: |
+        git clean -f # remove untracked files
+        flit publish
+        # wait to ensure that the package is available on PyPI (for run_grayskull.py)
+        sleep 60s # https://stackoverflow.com/questions/21620406/how-do-i-pause-my-shell-script-for-a-second-before-continuing
+      env:
+        FLIT_USERNAME: __token__
+        FLIT_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+
+    - name: "Build Changelog" # https://github.com/marketplace/actions/release-changelog-builder
+      id: build_changelog
+      uses: mikepenz/release-changelog-builder-action@v2.4.3
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: ${{steps.build_changelog.outputs.changelog}}
+          
+        draft: false
+        prerelease: false
+
+    - name: Setup Miniconda
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        miniconda-version: "latest"
+        auto-update-conda: true
+        activate-environment: crabnet
+    
+    - name: Install dependencies
+      shell: bash {0}
+      run: |    
+        conda install git conda-build conda-verify anaconda-client
+        conda install  -c conda-forge grayskull flit coveralls conda-souschef
+        
+    - name: Build and publish
+      shell: bash {0}
+      env:
+        ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
+      run: |
+        mkdir scratch
+        cp LICENSE scratch/
+        python run_grayskull.py
+        conda config --append channels conda-forge
+        conda config --append channels sgbaird
+        conda config --set anaconda_upload yes
+        cd scratch
+        conda build .
+        cd ..
+        
+    - name: Upload to coveralls
+      shell: bash {0}
+      run: coveralls --service=github
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

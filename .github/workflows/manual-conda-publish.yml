@@ -1,0 +1,75 @@
+name: Publish to Anaconda Manually
+
+on: workflow_dispatch
+
+jobs:
+    manual-conda-publish:
+        runs-on: ubuntu-latest
+        strategy:
+          max-parallel: 5
+      
+        steps:
+        - uses: actions/checkout@v2
+          with:
+            submodules: recursive
+
+        - name: Set up Python 3.8
+          uses: actions/setup-python@v2
+          with:
+            python-version: '3.8'
+
+        - name: Setup Miniconda
+          uses: conda-incubator/setup-miniconda@v2
+          with:
+            miniconda-version: "latest"
+            auto-update-conda: true
+            activate-environment: crabnet
+
+        - name: Install dependencies
+          shell: bash -l {0}
+          run: |   
+            conda install git conda-build conda-verify anaconda-client pytest conda-souschef
+            conda install  -c conda-forge grayskull flit coveralls
+            pip install -U pip
+            
+        - name: Pytest
+          shell: bash -l {0}
+          run: |
+            coverage run --source=crabnet -m pytest # python -m pytest
+
+        - name: Build and publish
+          shell: bash -l {0}
+          env:
+            ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
+          run: |
+            mkdir scratch
+            cp LICENSE scratch/
+            python run_grayskull.py
+            conda config --append channels conda-forge
+            conda config --append channels sgbaird
+            conda config --set anaconda_upload yes
+            cd scratch
+            conda build .
+            conda install --use-local crabnet
+            cd ..
+
+        - name: Commit and push meta.yaml
+          shell: bash -l {0}
+          run: |
+            git config --global user.name 'sgbaird'
+            git config --global user.email 'sgbaird@users.noreply.github.com'
+            git commit -am "update meta.yaml via grayskull and conda-souschef" meta.yaml
+            git push
+
+        - name: Upload to coveralls
+          shell: bash {0}
+          run: coveralls --service=github
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+#        grayskull pypi mat_discover
+
+#     - name: Create Release # https://github.com/softprops/action-gh-release
+#       uses: softprops/action-gh-release@v1
+#       with:
+#         body: ${{steps.build_changelog.outputs.changelog}}

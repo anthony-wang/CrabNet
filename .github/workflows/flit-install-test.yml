@@ -1,0 +1,54 @@
+name: Install with flit and test via Pytest
+
+on:
+  push:
+    paths:
+    - '**.py' # only run workflow when source files changed 
+    - '**.yml'
+    - 'requirements.txt'
+    - 'pyproject.toml'
+    branches:
+    - "**"
+    tags-ignore:
+    - "*.*.*"
+
+jobs:
+  pytest:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      max-parallel: 9
+      fail-fast: true
+      matrix:
+         os: [ubuntu-latest] # much slower on Mac and Win, but can use [ubuntu-latest, macos-latest, windows-latest]
+         python-version: ['3.7', '3.8', '3.9']
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+      
+    - name: Check Black code style
+      uses: psf/black@stable #https://black.readthedocs.io/en/stable/integrations/github_actions.html
+    
+    - name: Upgrade pip, install dependencies
+      shell: bash {0}
+      run: |
+        pip install --upgrade pip
+        pip install flit torch
+        flit install
+    - name: Test with Pytest on MacOS or Ubuntu
+      shell: bash {0}
+      if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu')
+      run: |
+        python -m pytest
+    - name: Test with Pytest on Windows
+      shell: bash {0}
+      if: startsWith(matrix.os, 'windows')
+      run: |
+        python -m pytest
+
+# NOTES:
+# needed to use python instead of python3 for Windows https://stackoverflow.com/questions/61558780/python-testing-with-github-actions-on-windows
+# also needed to remove the -l from the shell so it didn't interfere with MacOS PATH calling Python 2.7
