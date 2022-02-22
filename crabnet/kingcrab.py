@@ -316,11 +316,7 @@ class Encoder(nn.Module):
         self.pe_resolution = pe_resolution
         self.ple_resolution = ple_resolution
         self.elem_prop = elem_prop
-        self.embed = Embedder(
-            d_model=self.d_model,
-            compute_device=self.compute_device,
-            elem_prop=self.elem_prop,
-        )
+        self.embed = Embedder(d_model=self.d_model, compute_device=self.compute_device)
         self.pe = FractionalEncoder(self.d_model, resolution=pe_resolution, log10=False)
         self.ple = FractionalEncoder(
             self.d_model, resolution=ple_resolution, log10=True
