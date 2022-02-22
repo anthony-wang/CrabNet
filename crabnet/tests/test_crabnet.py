@@ -26,29 +26,29 @@ def test_extend_features():
     return train_true, train_pred, formulas, train_sigma
 
 
-def test_extend_transfer():
+# def test_extend_transfer():
 
-    train_df["state_var0"] = np.random.rand(train_df.shape[0])
-    val_df["state_var0"] = np.random.rand(val_df.shape[0])
+#     train_df["state_var0"] = np.random.rand(train_df.shape[0])
+#     val_df["state_var0"] = np.random.rand(val_df.shape[0])
 
-    mdl = get_model(
-        train_df=train_df,
-        val_df=val_df,
-        extend_transfer=False,
-        extend_features=["state_var0"],
-        verbose=True,
-    )
+#     mdl = get_model(
+#         train_df=train_df,
+#         val_df=val_df,
+#         extend_transfer=False,
+#         extend_features=["state_var0"],
+#         verbose=True,
+#     )
 
-    mdl.fit(extend_transfer=True)
+#     mdl.fit(extend_transfer=True)
 
-    train_true, train_pred, formulas, train_sigma = mdl.predict(val_df)
-    return train_true, train_pred, formulas, train_sigma
+#     train_true, train_pred, formulas, train_sigma = mdl.predict(val_df)
+#     return train_true, train_pred, formulas, train_sigma
 
 
 if __name__ == "__main__":
     train_true, train_pred, formulas, train_sigma = test_crabnet()
     train_true, train_pred, formulas, train_sigma = test_extend_features()
-    train_true, train_pred, formulas, train_sigma = test_extend_transfer()
+    # train_true, train_pred, formulas, train_sigma = test_extend_transfer()
     1 + 1
 
 # %%
