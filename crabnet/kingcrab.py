@@ -355,7 +355,7 @@ class Encoder(nn.Module):
             Tensor containing flattened transformer representations of compounds
             concatenated with extended features.
         """
-        x = self.embed(src, extra_features) * self.emb_scaler  # * 2 ** self.emb_scaler
+        x = self.embed(src) * self.emb_scaler  # * 2 ** self.emb_scaler
         mask = frac.unsqueeze(dim=-1)
         mask = torch.matmul(mask, mask.transpose(-2, -1))
         mask[mask != 0] = 1
