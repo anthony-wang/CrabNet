@@ -31,11 +31,9 @@ the model parameters at the top-level via `get_model`. An `extend_features` is
 implemented which allows utilization of data other than the elemental compositions (e.g.
 state variables such as temperature or applied load). These changes make CrabNet
 portable and extensible, and will be incorporated into the parent repository at a later
-date. Please refer to the CrabNet documentation for details on installation and usage.
-If you find CrabNet useful, please consider citing the [following publication in Nature
-Partner Journals (npj) Computational Materials](https://doi.org/10.1038/s41524-021-00545-1):
+date. Please refer to the [CrabNet documentation](https://crabnet.readthedocs.io) for details on installation and usage. If you find CrabNet useful, please consider citing the [following publication](https://doi.org/10.1038/s41524-021-00545-1) in npj Computational Materials:
 
-## How to cite
+## Citing
 
 ```bibtex
 @article{Wang2021crabnet,
