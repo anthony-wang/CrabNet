@@ -20,8 +20,8 @@ from crabnet.kingcrab import ResidualNetwork, SubCrab
 from crabnet.utils.data import get_data, groupby_formula  # noqa: F401
 from crabnet.utils.optim import SWA
 
-from .utils.get_compute_device import get_compute_device
-from .utils.utils import (
+from crabnet.utils.get_compute_device import get_compute_device
+from crabnet.utils.utils import (
     BCEWithLogitsLoss,
     DummyScaler,
     EDM_CsvLoader,
