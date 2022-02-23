@@ -512,7 +512,7 @@ class SubCrab(nn.Module):
         Returns
         -------
         torch.tensor
-            Model output containing predicted value and undcertainty for that value
+            Model output containing predicted value and uncertainty for that value
         """
         output = self.encoder(src, frac, extra_features)
         # output = self.transfer_nn(output)
