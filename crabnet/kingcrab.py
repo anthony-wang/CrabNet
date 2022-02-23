@@ -295,8 +295,9 @@ class Encoder(nn.Module):
         ple_resolution : int, optional
             Number of discretizations for the prevalence log encoding, by default 5000
         elem_prop : str, optional
-            Which elemental feature vector to use. Possible values are "jarvis", "magpie",
-            "mat2vec", "oliynyk", "onehot", "ptable", and "random_200", by default "mat2vec"
+            Which elemental feature vector to use. Possible values are "jarvis",
+            "magpie", "mat2vec", "oliynyk", "onehot", "ptable", and "random_200", by
+            default "mat2vec"
         emb_scaler : float, optional
             _description_, by default 1.0
         pos_scaler : float, optional
