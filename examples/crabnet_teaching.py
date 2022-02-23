@@ -1,27 +1,16 @@
 """Top-level module for instantiating a CrabNet model to predict properties."""
-import os
 from os import PathLike
-from os.path import dirname, join
 from typing import Callable, List, Optional, Tuple, Union
-from warnings import warn
 
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import torch
-from sklearn.metrics import mean_absolute_error, roc_auc_score
-from sklearn.model_selection import train_test_split
-from torch import nn
-from torch.optim.lr_scheduler import CyclicLR
+from sklearn.metrics import mean_absolute_error
 
 from crabnet.kingcrab import ResidualNetwork, SubCrab
 
-# for backwards compatibility of imports
 from crabnet.data.materials_data import elasticity
-from crabnet.utils.data import get_data, groupby_formula  # noqa: F401
-from crabnet.utils.optim import SWA
+from crabnet.utils.data import get_data
 
-from crabnet.utils.get_compute_device import get_compute_device
 from crabnet.utils.utils import (
     BCEWithLogitsLoss,
     DummyScaler,
@@ -29,9 +18,7 @@ from crabnet.utils.utils import (
     Lamb,
     Lookahead,
     RobustL1,
-    RobustL2,
     Scaler,
-    count_parameters,
 )
 
 dummy = True
@@ -43,8 +30,6 @@ else:
 
 train_df, val_df = get_data(elasticity, dummy=dummy)
 
-# retrieve static file from package: https://stackoverflow.com/a/20885799/13697228
-
 # %% parameters
 model_name: str = "elasticity"
 n_elements: Union[str, int] = "infer"
@@ -53,24 +38,19 @@ batch_size = 128
 epochs: Optional[int] = 4
 epochs_step: int = 1
 checkin: Optional[int] = 2
-fudge: float = 0.02
 out_dims: int = 3
 d_model: int = 512
-extend_features: Optional[List[str]] = None
-N: int = 3
 heads: int = 4
 elem_prop: str = "mat2vec"
-out_hidden: List[int] = [1024, 512, 256, 128]
-pe_resolution: int = 5000
-ple_resolution: int = 5000
 bias = False
-emb_scaler: float = 1.0
-pos_scaler: float = 1.0
-pos_scaler_log: float = 1.0
-dim_feedforward: int = 2048
 dropout: float = 0.1
-val_size: float = 0.2
-criterion: Callable = RobustL1
+out_hidden: List[int] = [1024, 512, 256, 128]
+
+criterion: Callable
+if classification:
+    criterion = BCEWithLogitsLoss
+else:
+    criterion = RobustL1
 lr: float = 1e-3
 betas: Tuple[float, float] = (0.9, 0.999)
 eps: float = 1e-6
@@ -122,14 +102,7 @@ model = SubCrab(
     compute_device=compute_device,
     out_dims=out_dims,
     d_model=d_model,
-    N=N,
     heads=heads,
-    pe_resolution=pe_resolution,
-    ple_resolution=ple_resolution,
-    emb_scaler=emb_scaler,
-    pos_scaler=pos_scaler,
-    pos_scaler_log=pos_scaler_log,
-    dim_feedforward=dim_feedforward,
     dropout=dropout,
 ).to(compute_device)
 
@@ -154,10 +127,7 @@ optimizer = Lookahead(base_optimizer=base_optim, alpha=alpha, k=k)
 
 # removed: stochastic weight averaging and learning rate scheduler
 
-assert isinstance(epochs, int)
-assert isinstance(checkin, int)
 for epoch in range(epochs):
-
     # %% training
     for data in train_loader:
         # separate into src and frac
