@@ -56,10 +56,12 @@ autodoc_default_options = {"special-members": "__init__"}
 # ones.
 extensions = [
     "myst_parser",
-    "sphinx.ext.napoleon",
+    "sphinx.ext.napoleon", # both NumPy and Google docstring support
     "sphinx.ext.autodoc",
     "sphinx.ext.githubpages",
     "sphinx_rtd_theme",
+    "sphinx.ext.viewcode",
+    "sphinx_copybutton",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
