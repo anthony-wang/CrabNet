@@ -56,7 +56,7 @@ autodoc_default_options = {"special-members": "__init__"}
 # ones.
 extensions = [
     "myst_parser",
-    "sphinx.ext.napoleon", # both NumPy and Google docstring support
+    "sphinx.ext.napoleon",  # both NumPy and Google docstring support
     "sphinx.ext.autodoc",
     "sphinx.ext.githubpages",
     "sphinx_rtd_theme",
