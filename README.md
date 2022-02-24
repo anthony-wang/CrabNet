@@ -27,10 +27,10 @@ This is a refactored version of CrabNet, published to PyPI (`pip`) and Anaconda
 (`conda`). In addition to using `.csv` files, it allows direct passing of Pandas
 DataFrames as training and validation datasets, similar to
 [automatminer](https://hackingmaterials.lbl.gov/automatminer/). It also exposes many of
-the model parameters at the top-level via `get_model`. An `extend_features` is
+the model parameters at the top-level via `CrabNet` and uses the `sklearn`-like "instantiate, fit, predict" workflow. An `extend_features` is
 implemented which allows utilization of data other than the elemental compositions (e.g.
 state variables such as temperature or applied load). These changes make CrabNet
-portable and extensible, and will be incorporated into the parent repository at a later
+portable, extensible, and more broadly applicable, and will be incorporated into the parent repository at a later
 date. Please refer to the [CrabNet documentation](https://crabnet.readthedocs.io) for details on installation and usage. If you find CrabNet useful, please consider citing the [following publication](https://doi.org/10.1038/s41524-021-00545-1) in npj Computational Materials:
 
 ## Citing
