@@ -65,7 +65,7 @@ jobs:
         activate-environment: crabnet
     - name: Install dependencies
       run: |
-        conda install git conda-build conda-verify anaconda-client
+        conda install git conda-build conda-verify anaconda-client pytest
         conda install  -c conda-forge grayskull flit coveralls conda-souschef
     - name: Build and Publish
       env:
