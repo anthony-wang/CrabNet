@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split
 from torch import nn
 from torch.optim.lr_scheduler import CyclicLR
 
-from crabnet.kingcrab import ResidualNetwork, SubCrab
+from crabnet.kingcrab import SubCrab
 
 # for backwards compatibility of imports
 from crabnet.utils.data import get_data, groupby_formula  # noqa: F401
@@ -477,12 +477,6 @@ class CrabNet(nn.Module):
             ).to(self.compute_device)
 
         # self.transfer_nn = TransferNetwork(512, 512)
-        self.output_nn = ResidualNetwork(
-            self.d_model + self.d_extend,
-            self.out_dims,
-            self.out_hidden,
-            self.bias,
-        )
 
         # Train network starting at pretrained weights
         if transfer is not None:
