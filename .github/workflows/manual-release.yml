@@ -1,4 +1,4 @@
-name: Test, Publish, and Release
+name: Manual Release
 
 on: 
   workflow_dispatch:
