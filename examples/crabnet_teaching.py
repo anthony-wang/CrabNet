@@ -106,13 +106,6 @@ model = SubCrab(
     dropout=dropout,
 ).to(compute_device)
 
-output_nn = ResidualNetwork(
-    d_model,
-    out_dims,
-    out_hidden,
-    bias,
-)
-
 step_count = 0
 
 base_optim = Lamb(params=model.parameters())
@@ -193,5 +186,5 @@ print(uncert)
 
 dummy_mae = mean_absolute_error(act, np.mean(train_df["target"]) * np.ones_like(act))
 mae = mean_absolute_error(act, pred)
-print(f"MAE: {dummy_mae :.3f}")
+print(f"Dummy MAE: {dummy_mae :.3f}")
 print(f"MAE: {mae :.3f}")
