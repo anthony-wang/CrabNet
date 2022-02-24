@@ -71,6 +71,7 @@ jobs:
       env:
         ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
       run: |
+        conda env list
         mkdir scratch
         cp LICENSE scratch/
         python run_grayskull.py
@@ -79,13 +80,20 @@ jobs:
         conda config --set anaconda_upload yes
         cd scratch
         conda build .
-        cd ..
         conda install --use-local crabnet
+        cd ..
         
     - name: Conda PyTest
       run: |
         python -m pytest
         conda deactivate
+        
+    - name: Commit and push meta.yaml
+      run: |
+        git config --global user.name 'sgbaird'
+        git config --global user.email 'sgbaird@users.noreply.github.com'
+        git commit -am "update meta.yaml via grayskull and conda-souschef" meta.yaml
+        git push
 
     - name: "Build Changelog" # https://github.com/marketplace/actions/release-changelog-builder
       id: build_changelog
