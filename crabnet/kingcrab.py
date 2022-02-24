@@ -445,7 +445,6 @@ class SubCrab(nn.Module):
             d_model=self.d_model,
             N=self.N,
             heads=self.heads,
-            extend_features=self.extend_features,
             attention=self.attention,
             compute_device=self.compute_device,
             pe_resolution=pe_resolution,
