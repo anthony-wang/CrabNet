@@ -1,4 +1,4 @@
-"""Top-level module for instantiating a CrabNet model to predict properties."""
+"""Simplified teaching example for CrabNet. Use for real problems is discouraged."""
 from os import PathLike
 from typing import Callable, List, Optional, Tuple, Union
 
@@ -45,12 +45,6 @@ elem_prop: str = "mat2vec"
 bias = False
 dropout: float = 0.1
 out_hidden: List[int] = [1024, 512, 256, 128]
-
-criterion: Callable
-if classification:
-    criterion = BCEWithLogitsLoss
-else:
-    criterion = RobustL1
 lr: float = 1e-3
 betas: Tuple[float, float] = (0.9, 0.999)
 eps: float = 1e-6
@@ -62,6 +56,12 @@ base_lr: float = 1e-4
 max_lr: float = 6e-3
 random_state: Optional[int] = 42
 mat_prop: Optional[Union[str, PathLike]] = "elasticity"
+
+criterion: Callable
+if classification:
+    criterion = BCEWithLogitsLoss
+else:
+    criterion = RobustL1
 
 data_type_torch = torch.float32
 
@@ -115,14 +115,7 @@ output_nn = ResidualNetwork(
 
 step_count = 0
 
-base_optim = Lamb(
-    params=model.parameters(),
-    lr=lr,
-    betas=betas,
-    eps=eps,
-    weight_decay=weight_decay,
-    adam=adam,
-)
+base_optim = Lamb(params=model.parameters())
 optimizer = Lookahead(base_optimizer=base_optim, alpha=alpha, k=k)
 
 # removed: stochastic weight averaging and learning rate scheduler
