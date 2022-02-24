@@ -1,14 +1,13 @@
 """Test CrabNet's fit and predict via `get_model()` and `predict()`."""
-from crabnet.model import data
+from crabnet.utils.data import get_data
 from crabnet.data.materials_data import elasticity
-from crabnet.train_crabnet import get_model
+from crabnet.crabnet_ import CrabNet
+
+train_df, val_df = get_data(elasticity, dummy=True)
 
 
 def test_hyperparameters():
-    train_df, val_df = data(elasticity, dummy=True)
-    mdl = get_model(
-        train_df=train_df,
-        val_df=val_df,
+    cb = CrabNet(
         batch_size=None,
         fudge=0.02,
         d_model=512,
@@ -39,8 +38,8 @@ def test_hyperparameters():
         base_lr=1e-4,
         max_lr=6e-3,
     )
-
-    train_true, train_pred, formulas, train_sigma = mdl.predict(val_df)
+    cb.fit(train_df)
+    train_pred, train_sigma = cb.predict(val_df, return_uncertainty=True)
     return train_true, train_pred, formulas, train_sigma
 
 
