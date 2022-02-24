@@ -8,8 +8,8 @@ on:
 #     types: [published]
 
 jobs:
-  flit-publish-gh-release:
-    name: Test, Publish to PyPI, and Release on GitHub
+  manual-release:
+    name: Release on GitHub
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -20,6 +20,12 @@ jobs:
       matrix:
          os: [ubuntu-latest] # much slower on Mac and Win, but can use [ubuntu-latest, macos-latest, windows-latest]
          python-version: ['3.9']
+    
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
 
     - name: "Build Changelog" # https://github.com/marketplace/actions/release-changelog-builder
       id: build_changelog
