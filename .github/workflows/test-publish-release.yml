@@ -28,14 +28,44 @@ jobs:
       uses: actions/checkout@v2
       with:
         submodules: recursive
+        
+    - name: Check Black code style
+      uses: psf/black@stable #https://black.readthedocs.io/en/stable/integrations/github_actions.html
+
+    - name: Setup Miniconda
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        miniconda-version: "latest"
+        auto-update-conda: true
+        activate-environment: crabnet
+    - name: Install dependencies
+      run: |
+        conda install git conda-build conda-verify anaconda-client
+        conda install  -c conda-forge grayskull flit coveralls conda-souschef
+    - name: Build and Publish
+      env:
+        ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
+      run: |
+        mkdir scratch
+        cp LICENSE scratch/
+        python run_grayskull.py
+        conda config --append channels conda-forge
+        conda config --append channels sgbaird
+        conda config --set anaconda_upload yes
+        cd scratch
+        conda build .
+        cd ..
+        conda install --use-local crabnet
+        
+    - name: Conda PyTest
+      run: |
+        python -m pytest
+        conda deactivate
 
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-        
-    - name: Check Black code style
-      uses: psf/black@stable #https://black.readthedocs.io/en/stable/integrations/github_actions.html
         
     - name: Install dependencies
       run: |
@@ -75,30 +105,6 @@ jobs:
           
         draft: false
         prerelease: false
-
-    - name: Setup Miniconda
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        miniconda-version: "latest"
-        auto-update-conda: true
-        activate-environment: crabnet
-    - name: Install dependencies
-      run: |
-        conda install git conda-build conda-verify anaconda-client
-        conda install  -c conda-forge grayskull flit coveralls conda-souschef
-    - name: Build and Publish
-      env:
-        ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
-      run: |
-        mkdir scratch
-        cp LICENSE scratch/
-        python run_grayskull.py
-        conda config --append channels conda-forge
-        conda config --append channels sgbaird
-        conda config --set anaconda_upload yes
-        cd scratch
-        conda build .
-        cd ..
         
     - name: Upload to coveralls
       shell: bash -l {0}
