@@ -10,9 +10,9 @@ from typing import List
 
 import numpy as np
 import pandas as pd
-from crabnet.model import data
+from crabnet.utils.data import get_data
+from crabnet.crabnet_ import CrabNet
 import vickers_hardness.data as vh_data
-from crabnet.train_crabnet import get_model
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.model_selection import (
     GroupKFold,
@@ -46,10 +46,10 @@ for path in [crabnet_figures, crabnet_results, xgboost_figures, xgboost_results]
     Path(path).mkdir(parents=True, exist_ok=True)
 
 # %% load dataset
-X = data(vh_data, "hv_des.csv", groupby=False, split=False).rename(
+X = get_data(vh_data, "hv_des.csv", groupby=False, split=False).rename(
     columns={"composition": "formula"}
 )
-prediction = data(vh_data, "hv_comp_load.csv", groupby=False, split=False)
+prediction = get_data(vh_data, "hv_comp_load.csv", groupby=False, split=False)
 y = prediction["hardness"]
 # X, X_test, y, y_test = train_test_split(X, y, test_size=0.1)
 
@@ -95,14 +95,13 @@ for train_index, test_index in cv.split(X, y, subgroups):
     val_df = pd.DataFrame(
         {"formula": X_val["formula"], "load": X_val["load"], "target": y_val}
     )
-    mdl = get_model(
-        train_df=train_df,
-        val_df=val_df,
+    cb = CrabNet(
         extend_features=["load"],
         verbose=True,
         learningcurve=False,
     )
-    y_true, y_pred, formulas, y_std = mdl.predict(val_df)
+    cb.fit(train_df)
+    y_true, y_pred, formulas, y_std = cb.predict(val_df)
     crabnet_dfs.append(
         pd.DataFrame(
             {
