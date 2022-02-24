@@ -1,3 +1,4 @@
+"""Deprecated. See CrabNet 1.3.1 or earlier."""
 import os
 import numpy as np
 import pandas as pd

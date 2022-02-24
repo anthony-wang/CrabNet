@@ -1,3 +1,4 @@
+"""Deprecated. See CrabNet 1.3.1 or earlier."""
 import os
 from os.path import join
 import numpy as np
