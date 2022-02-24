@@ -60,7 +60,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.githubpages",
     "sphinx_rtd_theme",
-    "sphinx.ext.viewcode",
+    "sphinx.ext.linkcode",
     "sphinx_copybutton",
 ]
 
