@@ -32,6 +32,26 @@ jobs:
     - name: Check Black code style
       uses: psf/black@stable #https://black.readthedocs.io/en/stable/integrations/github_actions.html
 
+    - name: Pytest
+      run: |
+        coverage run --source=crabnet -m pytest
+        
+    - name: Publish to PyPI
+      run: |
+        git clean -f # remove untracked files
+        flit publish
+        # wait to ensure that the package is available on PyPI (for run_grayskull.py)
+        sleep 60s # https://stackoverflow.com/questions/21620406/how-do-i-pause-my-shell-script-for-a-second-before-continuing
+      env:
+        FLIT_USERNAME: __token__
+        FLIT_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+
+    - name: "Build Changelog" # https://github.com/marketplace/actions/release-changelog-builder
+      id: build_changelog
+      uses: mikepenz/release-changelog-builder-action@v2.4.3
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Setup Miniconda
       uses: conda-incubator/setup-miniconda@v2
       with:
@@ -73,26 +93,6 @@ jobs:
         pip install flit torch coveralls pytest # torch is CPU version
         flit install
 
-    - name: Pytest
-      run: |
-        coverage run --source=crabnet -m pytest
-        
-    - name: Publish to PyPI
-      run: |
-        git clean -f # remove untracked files
-        flit publish
-        # wait to ensure that the package is available on PyPI (for run_grayskull.py)
-        sleep 60s # https://stackoverflow.com/questions/21620406/how-do-i-pause-my-shell-script-for-a-second-before-continuing
-      env:
-        FLIT_USERNAME: __token__
-        FLIT_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-
-    - name: "Build Changelog" # https://github.com/marketplace/actions/release-changelog-builder
-      id: build_changelog
-      uses: mikepenz/release-changelog-builder-action@v2.4.3
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
