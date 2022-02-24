@@ -32,7 +32,7 @@ dependencies = [
     "colorama",
     "joblib",
     "psutil",
-    "tcl",
+    # "tcl", # not on conda
 ]
 
 [project.optional-dependencies]
