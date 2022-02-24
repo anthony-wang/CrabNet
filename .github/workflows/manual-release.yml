@@ -1,0 +1,47 @@
+name: Test, Publish, and Release
+
+on: 
+  workflow_dispatch:
+
+# on:
+#   release:
+#     types: [published]
+
+jobs:
+  flit-publish-gh-release:
+    name: Test, Publish to PyPI, and Release on GitHub
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      max-parallel: 9
+      fail-fast: true
+      matrix:
+         os: [ubuntu-latest] # much slower on Mac and Win, but can use [ubuntu-latest, macos-latest, windows-latest]
+         python-version: ['3.9']
+
+    - name: "Build Changelog" # https://github.com/marketplace/actions/release-changelog-builder
+      id: build_changelog
+      uses: mikepenz/release-changelog-builder-action@v2.4.3
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: ${{steps.build_changelog.outputs.changelog}}
+          
+        draft: false
+        prerelease: false
+        
+    - name: Upload to coveralls
+      shell: bash -l {0}
+      run: coveralls --service=github
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
