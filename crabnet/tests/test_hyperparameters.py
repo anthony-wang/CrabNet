@@ -40,8 +40,8 @@ def test_hyperparameters():
     )
     cb.fit(train_df)
     train_pred, train_sigma = cb.predict(val_df, return_uncertainty=True)
-    return train_true, train_pred, formulas, train_sigma
+    return train_pred, train_sigma
 
 
 if __name__ == "__main__":
-    train_true, train_pred, formulas, train_sigma = test_hyperparameters()
+    train_pred, train_sigma = test_hyperparameters()
