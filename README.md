@@ -6,7 +6,7 @@ The Compositionally-Restricted Attention-Based Network (`CrabNet`), inspired by 
 src=https://user-images.githubusercontent.com/45469701/155030619-3a5f75e8-b28d-4801-a54c-58a800ee874c.png
 width=150>
 
-[![DOI](https://img.shields.io/badge/Paper:_npjCM-10.1038%2Fs41524.021.00545.1-blue)](https://doi.org/10.1038/s41524-021-00545-1)
+[![DOI](https://img.shields.io/badge/Paper:_npjCompuMat-10.1038%2Fs41524.021.00545.1-blue)](https://doi.org/10.1038/s41524-021-00545-1)
 
 [![Open In Colab
 (PyPI)](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sparks-baird/CrabNet/blob/main/examples/crabnet_basic_colab.ipynb)
