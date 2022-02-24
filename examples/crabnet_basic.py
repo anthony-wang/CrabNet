@@ -7,4 +7,4 @@ train_df, val_df = get_data(elasticity, "train.csv", dummy=True)
 
 cb = CrabNet(mat_prop="elasticity")
 cb.fit(train_df)
-val_pred, val_sigma = cb.predict(val_df)
+val_pred, val_sigma = cb.predict(val_df, return_uncertainty=True)
