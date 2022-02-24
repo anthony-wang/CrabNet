@@ -32,10 +32,21 @@ jobs:
     - name: Check Black code style
       uses: psf/black@stable #https://black.readthedocs.io/en/stable/integrations/github_actions.html
 
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install flit torch coveralls pytest # torch is CPU version
+        flit install
+        
     - name: Pytest
       run: |
         coverage run --source=crabnet -m pytest
-        
+
     - name: Publish to PyPI
       run: |
         git clean -f # remove untracked files
@@ -45,12 +56,6 @@ jobs:
       env:
         FLIT_USERNAME: __token__
         FLIT_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-
-    - name: "Build Changelog" # https://github.com/marketplace/actions/release-changelog-builder
-      id: build_changelog
-      uses: mikepenz/release-changelog-builder-action@v2.4.3
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Setup Miniconda
       uses: conda-incubator/setup-miniconda@v2
@@ -82,16 +87,11 @@ jobs:
         python -m pytest
         conda deactivate
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-        
-    - name: Install dependencies
-      run: |
-        pip install --upgrade pip
-        pip install flit torch coveralls pytest # torch is CPU version
-        flit install
+    - name: "Build Changelog" # https://github.com/marketplace/actions/release-changelog-builder
+      id: build_changelog
+      uses: mikepenz/release-changelog-builder-action@v2.4.3
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Create Release
       id: create_release
