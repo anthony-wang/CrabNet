@@ -261,9 +261,7 @@ class Encoder(nn.Module):
         d_model,
         N,
         heads,
-        extend_features=None,
-        frac=False,
-        attn=True,
+        attention=True,
         compute_device=None,
         pe_resolution=5000,
         ple_resolution=5000,
@@ -271,8 +269,6 @@ class Encoder(nn.Module):
         emb_scaler=1.0,
         pos_scaler=1.0,
         pos_scaler_log=1.0,
-        dim_feedforward=2048,
-        dropout=0.1,
     ):
         """Instantiate the Encoder class to create elemental descriptor matrix (EDM).
 
@@ -284,11 +280,7 @@ class Encoder(nn.Module):
             Number of encoder layers, by default 3
         heads : int, optional
             Number of attention heads to use, by default 4
-        extend_features : bool, optional
-            Specify whether extended features are being used, by default None
-        frac : bool, optional
-            Tensor containing fractional amounts of each element in compound, by default False
-        attn : bool, optional
+        attention : bool, optional
             Whether to perform self attention, by default True
         pe_resolution : int, optional
             Number of discretizations for the prevalence encoding, by default 5000
@@ -304,18 +296,12 @@ class Encoder(nn.Module):
             Scaling factor applied to fractional encoder, by default 1.0
         pos_scaler_log : float, optional
             Scaling factor applied to log fractional encoder, by default 1.0
-        dim_feedforward : int, optional
-            Dimensions of the feed forward network appied after attention mechanism, by default 2048
-        dropout : float, optional
-            Percent dropout for feedforward attention heads, by default 0.1
         """
         super().__init__()
         self.d_model = d_model
         self.N = N
         self.heads = heads
-        self.extend_features = extend_features
-        self.fractional = frac
-        self.attention = attn
+        self.attention = attention
         self.compute_device = compute_device
         self.pe_resolution = pe_resolution
         self.ple_resolution = ple_resolution
@@ -329,17 +315,6 @@ class Encoder(nn.Module):
         self.emb_scaler = nn.parameter.Parameter(torch.tensor([emb_scaler]))
         self.pos_scaler = nn.parameter.Parameter(torch.tensor([pos_scaler]))
         self.pos_scaler_log = nn.parameter.Parameter(torch.tensor([pos_scaler_log]))
-
-        if self.attention:
-            encoder_layer = nn.TransformerEncoderLayer(
-                self.d_model,
-                nhead=self.heads,
-                dim_feedforward=dim_feedforward,
-                dropout=dropout,
-            )
-            self.transformer_encoder = nn.TransformerEncoder(
-                encoder_layer, num_layers=self.N
-            )
 
     def forward(self, src, frac, extra_features=None):
         """Compute the forward pass for encoding the elemental descriptor matrix.
@@ -367,9 +342,6 @@ class Encoder(nn.Module):
 
         pe = torch.zeros_like(x)
         ple = torch.zeros_like(x)
-        # NOTE: why was this 2 ** ... ?
-        # pe_scaler = 2 ** (1 - self.pos_scaler) ** 2
-        # ple_scaler = 2 ** (1 - self.pos_scaler_log) ** 2
         pe_scaler = self.pos_scaler
         ple_scaler = self.pos_scaler_log
         pe[:, :, : self.d_model // 2] = self.pe(frac) * pe_scaler
@@ -378,20 +350,10 @@ class Encoder(nn.Module):
         if self.attention:
             x_src = x + pe + ple
             x_src = x_src.transpose(0, 1)
-            x = self.transformer_encoder(x_src, src_key_padding_mask=src_mask)
-            x = x.transpose(0, 1)
 
-        if self.fractional:
-            x = x * frac.unsqueeze(2).repeat(1, 1, self.d_model)
-
-        hmask = mask[:, :, 0:1].repeat(1, 1, self.d_model)
-        if mask is not None:
-            x = x.masked_fill(hmask == 0, 0)
-
-        if self.extend_features is not None:
-            n_elements = x.shape[1]
-            X_extra = extra_features.repeat(1, 1, n_elements).permute([1, 2, 0])
-            x = torch.concat((x, X_extra), axis=2)
+        self.src_mask = src_mask
+        self.x_src = x_src
+        self.mask = mask
 
         return x
 
@@ -408,6 +370,8 @@ class SubCrab(nn.Module):
         d_extend=0,
         N=3,
         heads=4,
+        fractional=False,
+        attention=True,
         compute_device=None,
         out_hidden=[1024, 512, 256, 128],
         pe_resolution=5000,
@@ -437,6 +401,10 @@ class SubCrab(nn.Module):
             Number of attention layers, by default 3
         heads : int, optional
             Number of attention heads, by default 4
+        frac : bool, optional
+            Whether to multiply `x` by the fractional amounts for each element, by default False
+        attn : bool, optional
+            Whether to perform self attention, by default True
         compute_device : _type_, optional
             Computing device to run model on, by default None
         out_hidden : list(int), optional
@@ -469,13 +437,16 @@ class SubCrab(nn.Module):
         self.d_extend = d_extend
         self.N = N
         self.heads = heads
+        self.fractional = fractional
+        self.attention = attention
         self.compute_device = compute_device
         self.bias = bias
         self.encoder = Encoder(
             d_model=self.d_model,
             N=self.N,
             heads=self.heads,
-            extend_features=extend_features,
+            extend_features=self.extend_features,
+            attention=self.attention,
             compute_device=self.compute_device,
             pe_resolution=pe_resolution,
             ple_resolution=ple_resolution,
@@ -483,13 +454,23 @@ class SubCrab(nn.Module):
             emb_scaler=emb_scaler,
             pos_scaler=pos_scaler,
             pos_scaler_log=pos_scaler_log,
-            dim_feedforward=dim_feedforward,
-            dropout=dropout,
         )
-        self.out_hidden = out_hidden
+
+        if self.attention:
+            encoder_layer = nn.TransformerEncoderLayer(
+                self.d_model,
+                nhead=self.heads,
+                dim_feedforward=dim_feedforward,
+                dropout=dropout,
+            )
+            self.transformer_encoder = nn.TransformerEncoder(
+                encoder_layer, num_layers=self.N
+            )
         # self.transfer_nn = TransferNetwork(
         #     self.d_model + self.d_extend, self.d_model + self.d_extend
         # )
+
+        self.out_hidden = out_hidden
         self.output_nn = ResidualNetwork(
             self.d_model + self.d_extend,
             self.out_dims,
@@ -515,6 +496,24 @@ class SubCrab(nn.Module):
             Model output containing predicted value and uncertainty for that value
         """
         output = self.encoder(src, frac, extra_features)
+
+        if self.attention:
+            x = self.transformer_encoder(
+                self.encoder.x_src, src_key_padding_mask=self.encoder.src_mask
+            )
+            x = x.transpose(0, 1)
+
+        if self.fractional:
+            x = x * frac.unsqueeze(2).repeat(1, 1, self.d_model)
+
+        hmask = self.encoder.mask[:, :, 0:1].repeat(1, 1, self.d_model)
+        if self.encoder.mask is not None:
+            x = x.masked_fill(hmask == 0, 0)
+
+        if self.extend_features is not None:
+            n_elements = x.shape[1]
+            X_extra = extra_features.repeat(1, 1, n_elements).permute([1, 2, 0])
+            x = torch.concat((x, X_extra), axis=2)
         # output = self.transfer_nn(output)
 
         # average the "element contribution" at the end
