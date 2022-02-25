@@ -7,11 +7,7 @@ import pandas as pd
 import torch
 from torch import nn
 
-RNG_SEED = 42
-torch.manual_seed(RNG_SEED)
-np.random.seed(RNG_SEED)
 data_type_torch = torch.float32
-
 
 # %%
 class ResidualNetwork(nn.Module):
@@ -21,7 +17,7 @@ class ResidualNetwork(nn.Module):
     https://doi.org/10.1038/s41467-020-19964-7
     """
 
-    def __init__(self, input_dim, output_dim, hidden_layer_dims, bias):
+    def __init__(self, input_dim, output_dim, hidden_layer_dims):
         """Instantiate a ResidualNetwork model.
 
         Parameters
@@ -32,8 +28,6 @@ class ResidualNetwork(nn.Module):
             Output dimensions for Residual Network, by default 3
         hidden_layer_dims : list(int)
             Hidden layer architecture for the Residual Network, by default [1024, 512, 256, 128]
-        bias : bool
-            Whether to bias the linear network, by default False
         """
         super(ResidualNetwork, self).__init__()
         dims = [input_dim] + hidden_layer_dims
@@ -42,7 +36,7 @@ class ResidualNetwork(nn.Module):
         )
         self.res_fcs = nn.ModuleList(
             [
-                nn.Linear(dims[i], dims[i + 1], bias=bias)
+                nn.Linear(dims[i], dims[i + 1], bias=False)
                 if (dims[i] != dims[i + 1])
                 else nn.Identity()
                 for i in range(len(dims) - 1)
@@ -205,19 +199,9 @@ class SubCrab(nn.Module):
         self,
         out_dims=3,
         d_model=512,
-        extend_features=None,
-        d_extend=0,
-        N=3,
         heads=4,
         compute_device=None,
-        out_hidden=[1024, 512, 256, 128],
         elem_prop="mat2vec",
-        bias=False,
-        emb_scaler=1.0,
-        pos_scaler=1.0,
-        pos_scaler_log=1.0,
-        dim_feedforward=2048,
-        dropout=0.1,
     ):
         """Instantiate a SubCrab class to be used within CrabNet.
 
@@ -227,45 +211,16 @@ class SubCrab(nn.Module):
             Output dimensions for Residual Network, by default 3
         d_model : int, optional
             Model size. See paper, by default 512
-        extend_features : _type_, optional
-            Additional features to grab from columns of the other DataFrames (e.g. state
-            variables such as temperature or applied load), by default None
-        d_extend : int, optional
-            Number of extended features, by default 0
-        N : int, optional
-            Number of attention layers, by default 3
-        heads : int, optional
-            Number of attention heads, by default 4
         compute_device : _type_, optional
             Computing device to run model on, by default None
-        out_hidden : list(int), optional
-            Architecture of hidden layers in the Residual Network, by default [1024, 512, 256, 128]
         elem_prop : str, optional
             Which elemental feature vector to use. Possible values are "jarvis", "magpie",
             "mat2vec", "oliynyk", "onehot", "ptable", and "random_200", by default "mat2vec"
-        bias : bool, optional
-            Whether to bias the Residual Network, by default False
-        emb_scaler : float, optional
-            Float value by which to scale the elemental embeddings, by default 1.0
-        pos_scaler : float, optional
-            Float value by which to scale the fractional encodings, by default 1.0
-        pos_scaler_log : float, optional
-            Float value by which to scale the log fractional encodings, by default 1.0
-        dim_feedforward : int, optional
-            Dimenions of the feed forward network following transformer, by default 2048
-        dropout : float, optional
-            Percent dropout in the feed forward network following the transformer, by default 0.1
         """
         super().__init__()
         self.avg = True
         self.out_dims = 3
-        self.d_model = d_model
-        self.extend_features = extend_features
-        self.d_extend = d_extend
-        self.N = N
-        self.heads = heads
         self.compute_device = compute_device
-        self.bias = bias
 
         # %% Encoder
         self.fractional = False
@@ -276,30 +231,19 @@ class SubCrab(nn.Module):
         self.pe = FractionalEncoder(self.d_model, log10=False)
         self.ple = FractionalEncoder(self.d_model, log10=True)
 
-        self.emb_scaler = nn.parameter.Parameter(torch.tensor([emb_scaler]))
-        self.pos_scaler = nn.parameter.Parameter(torch.tensor([pos_scaler]))
-        self.pos_scaler_log = nn.parameter.Parameter(torch.tensor([pos_scaler_log]))
+        self.emb_scaler = nn.parameter.Parameter(torch.tensor([1.0]))
+        self.pos_scaler = nn.parameter.Parameter(torch.tensor([1.0]))
+        self.pos_scaler_log = nn.parameter.Parameter(torch.tensor([1.0]))
 
         if self.attention:
-            encoder_layer = nn.TransformerEncoderLayer(
-                self.d_model,
-                nhead=self.heads,
-                dim_feedforward=dim_feedforward,
-                dropout=dropout,
-            )
+            encoder_layer = nn.TransformerEncoderLayer(d_model, nhead=heads)
             self.transformer_encoder = nn.TransformerEncoder(
-                encoder_layer, num_layers=self.N
+                encoder_layer, num_layers=3
             )
 
-        self.out_hidden = out_hidden
-        self.output_nn = ResidualNetwork(
-            self.d_model + self.d_extend,
-            self.out_dims,
-            self.out_hidden,
-            self.bias,
-        )
+        self.output_nn = ResidualNetwork(d_model, out_dims, [1024, 512, 256, 128])
 
-    def forward(self, src, frac, extra_features=None):
+    def forward(self, src, frac):
         """Compute forward pass of the SubCrab model class (i.e. transformer).
 
         Parameters
@@ -308,8 +252,6 @@ class SubCrab(nn.Module):
             Tensor containing element numbers corresponding to elements in compound
         frac : torch.tensor
             Tensor containing fractional amounts of each element in compound
-        extra_features : bool, optional
-            Whether to append extra features after encoding, by default None
 
         Returns
         -------
@@ -359,21 +301,16 @@ class SubCrab(nn.Module):
             # set values of x which correspond to an element not being present to 0
             x = x.masked_fill(hmask == 0, 0)
 
-        if self.extend_features is not None:
-            # append extra features to x (not used in transformer, only in residual network)
-            n_elements = x.shape[1]
-            X_extra = extra_features.repeat(1, 1, n_elements).permute([1, 2, 0])
-            x = torch.concat((x, X_extra), axis=2)
-
         # average the "element contribution" at the end, mask so you only average "elements"
         mask = (src == 0).unsqueeze(-1).repeat(1, 1, self.out_dims)
         x = self.output_nn(x)  # simple linear
-        if self.avg:
-            x = x.masked_fill(mask, 0)
-            x = x.sum(dim=1) / (~mask).sum(dim=1)
-            x, logits = x.chunk(2, dim=-1)
-            probability = torch.ones_like(x)
-            probability[:, : logits.shape[-1]] = torch.sigmoid(logits)
-            x = x * probability
+
+        # average the attention heads
+        x = x.masked_fill(mask, 0)
+        x = x.sum(dim=1) / (~mask).sum(dim=1)
+        x, logits = x.chunk(2, dim=-1)
+        probability = torch.ones_like(x)
+        probability[:, : logits.shape[-1]] = torch.sigmoid(logits)
+        x = x * probability
 
         return x
