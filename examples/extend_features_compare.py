@@ -162,7 +162,7 @@ for name in names:
     tmp_df.sort_index().to_csv(join(result_dir, name, f"{cvtype}-results.csv"))
 
 
-# %% append column (e.g. 512 features --> 513 features)
+# %% results
 ## with applied load
 # crabnet MAE: 3.06177
 # crabnet RMSE: 5.12390
@@ -174,17 +174,3 @@ for name in names:
 # crabnet RMSE: 6.24093
 # xgboost MAE: 3.96865
 # xgboost RMSE: 5.22576
-
-1 + 1
-
-# %% Code Graveyard
-
-# results = cross_validate(
-#     VickersHardness(hyperopt=hyperopt),
-#     X,
-#     y,
-#     groups=groups,
-#     cv=cv,
-#     scoring="neg_mean_absolute_error",
-#     return_estimator=True,
-# )
