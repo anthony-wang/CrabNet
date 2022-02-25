@@ -22,7 +22,7 @@ class ResidualNetwork(nn.Module):
     https://doi.org/10.1038/s41467-020-19964-7
     """
 
-    def __init__(self, input_dim, output_dim, hidden_layer_dims, bias):
+    def __init__(self, input_dim, output_dim, hidden_layer_dims, bias=False):
         """Instantiate a ResidualNetwork model.
 
         Parameters
@@ -307,8 +307,10 @@ class Encoder(nn.Module):
         self.ple_resolution = ple_resolution
         self.elem_prop = elem_prop
         self.embed = Embedder(d_model=self.d_model, compute_device=self.compute_device)
-        self.pe = FractionalEncoder(self.d_model, resolution=pe_resolution, log10=False)
-        self.ple = FractionalEncoder(
+        self.prevalence_encoder = FractionalEncoder(
+            self.d_model, resolution=pe_resolution, log10=False
+        )
+        self.prevalence_log_encoder = FractionalEncoder(
             self.d_model, resolution=ple_resolution, log10=True
         )
 
@@ -335,25 +337,17 @@ class Encoder(nn.Module):
             concatenated with extended features.
         """
         x = self.embed(src) * self.emb_scaler  # * 2 ** self.emb_scaler
-        mask = frac.unsqueeze(dim=-1)
-        mask = torch.matmul(mask, mask.transpose(-2, -1))
-        mask[mask != 0] = 1
-        src_mask = mask[:, 0] != 1
 
         pe = torch.zeros_like(x)
         ple = torch.zeros_like(x)
         pe_scaler = self.pos_scaler
         ple_scaler = self.pos_scaler_log
-        pe[:, :, : self.d_model // 2] = self.pe(frac) * pe_scaler
-        ple[:, :, self.d_model // 2 :] = self.ple(frac) * ple_scaler
+        pe[:, :, : self.d_model // 2] = self.prevalence_encoder(frac) * pe_scaler
+        ple[:, :, self.d_model // 2 :] = self.prevalence_log_encoder(frac) * ple_scaler
 
-        if self.attention:
-            x_src = x + pe + ple
-            x_src = x_src.transpose(0, 1)
-
-        self.src_mask = src_mask
-        self.x_src = x_src
-        self.mask = mask
+        self.x = x
+        self.pe = pe
+        self.ple = ple
 
         return x
 
@@ -465,9 +459,6 @@ class SubCrab(nn.Module):
             self.transformer_encoder = nn.TransformerEncoder(
                 encoder_layer, num_layers=self.N
             )
-        # self.transfer_nn = TransferNetwork(
-        #     self.d_model + self.d_extend, self.d_model + self.d_extend
-        # )
 
         self.out_hidden = out_hidden
         self.output_nn = ResidualNetwork(
@@ -496,17 +487,22 @@ class SubCrab(nn.Module):
         """
         output = self.encoder(src, frac, extra_features)
 
+        mask = frac.unsqueeze(dim=-1)
+        mask = torch.matmul(mask, mask.transpose(-2, -1))
+        mask[mask != 0] = 1
+        src_mask = mask[:, 0] != 1
+
         if self.attention:
-            x = self.transformer_encoder(
-                self.encoder.x_src, src_key_padding_mask=self.encoder.src_mask
-            )
+            x_src = self.encoder.x + self.encoder.pe + self.encoder.ple
+            x_src = x_src.transpose(0, 1)
+            x = self.transformer_encoder(x_src, src_key_padding_mask=src_mask)
             x = x.transpose(0, 1)
 
         if self.fractional:
             x = x * frac.unsqueeze(2).repeat(1, 1, self.d_model)
 
-        hmask = self.encoder.mask[:, :, 0:1].repeat(1, 1, self.d_model)
-        if self.encoder.mask is not None:
+        hmask = mask[:, :, 0:1].repeat(1, 1, self.d_model)
+        if mask is not None:
             x = x.masked_fill(hmask == 0, 0)
 
         if self.extend_features is not None:
@@ -515,13 +511,13 @@ class SubCrab(nn.Module):
             x = torch.concat((x, X_extra), axis=2)
         # output = self.transfer_nn(output)
 
-        # average the "element contribution" at the end
-        # mask so you only average "elements"
-        mask = (src == 0).unsqueeze(-1).repeat(1, 1, self.out_dims)
+        # average the "element contribution", mask so you only average "elements" (i.e.
+        # not padded zero values)
+        elem_pad_mask = (src == 0).unsqueeze(-1).repeat(1, 1, self.out_dims)
         output = self.output_nn(output)  # simple linear
         if self.avg:
-            output = output.masked_fill(mask, 0)
-            output = output.sum(dim=1) / (~mask).sum(dim=1)
+            output = output.masked_fill(elem_pad_mask, 0)
+            output = output.sum(dim=1) / (~elem_pad_mask).sum(dim=1)
             output, logits = output.chunk(2, dim=-1)
             probability = torch.ones_like(output)
             probability[:, : logits.shape[-1]] = torch.sigmoid(logits)
