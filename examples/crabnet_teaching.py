@@ -1,13 +1,11 @@
 """Simplified teaching example for CrabNet. Use for real problems is discouraged."""
-from os import PathLike
-from typing import Callable, List, Optional, Tuple, Union
-
 import numpy as np
 import torch
 from sklearn.metrics import mean_absolute_error
 
-from crabnet.kingcrab import ResidualNetwork, SubCrab
+from torch import nn
 
+from crabnet.kingcrab import ResidualNetwork, Embedder, FractionalEncoder
 from crabnet.data.materials_data import elasticity
 from crabnet.utils.data import get_data
 
@@ -21,98 +19,152 @@ from crabnet.utils.utils import (
     Scaler,
 )
 
-dummy = True
+train_df, val_df = get_data(elasticity, dummy=True)
 
-if dummy:
-    compute_device = torch.device("cpu")
-else:
-    compute_device = torch.device("cuda")
+compute_device = torch.device("cuda")
+batch_size = 32
+classification = False
 
-train_df, val_df = get_data(elasticity, dummy=dummy)
-
-# %% parameters
-model_name: str = "elasticity"
-n_elements: Union[str, int] = "infer"
-classification: bool = False
-batch_size = 128
-epochs: Optional[int] = 4
-epochs_step: int = 1
-checkin: Optional[int] = 2
-out_dims: int = 3
-d_model: int = 512
-heads: int = 4
-elem_prop: str = "mat2vec"
-bias = False
-dropout: float = 0.1
-out_hidden: List[int] = [1024, 512, 256, 128]
-lr: float = 1e-3
-betas: Tuple[float, float] = (0.9, 0.999)
-eps: float = 1e-6
-weight_decay: float = 0
-adam: bool = False
-alpha: float = 0.5
-k: int = 6
-base_lr: float = 1e-4
-max_lr: float = 6e-3
-random_state: Optional[int] = 42
-mat_prop: Optional[Union[str, PathLike]] = "elasticity"
-
-criterion: Callable
 if classification:
     criterion = BCEWithLogitsLoss
 else:
     criterion = RobustL1
 
-data_type_torch = torch.float32
-
 # %% load training and validation data into PyTorch Dataloader
-# training
-train = True
-inference = not train
-data_loaders = EDM_CsvLoader(
-    data=train_df,
-    batch_size=batch_size,
-    n_elements=n_elements,
-    inference=inference,
-    elem_prop=elem_prop,
-)
+data_loaders = EDM_CsvLoader(data=train_df, batch_size=batch_size)
+train_loader = data_loaders.get_data_loaders()
 
-train_loader = data_loaders.get_data_loaders(inference=inference)
 y = train_loader.dataset.data[1]
 if classification:
-    scaler: Union[Scaler, DummyScaler] = DummyScaler(y)
+    scaler = DummyScaler(y)
 else:
     scaler = Scaler(y)
 
-# validation
-train = False
-inference = not train
-data_loaders = EDM_CsvLoader(
-    data=val_df,
-    batch_size=batch_size,
-    n_elements=n_elements,
-    inference=inference,
-    elem_prop=elem_prop,
-)
+data_loaders = EDM_CsvLoader(data=val_df, inference=True, batch_size=batch_size)
+val_loader = data_loaders.get_data_loaders(inference=True)
 
-val_loader = data_loaders.get_data_loaders(inference=inference)
-y = val_loader.dataset.data[1]
 
-model = SubCrab(
-    compute_device=compute_device,
-    out_dims=out_dims,
-    d_model=d_model,
-    heads=heads,
-    dropout=dropout,
-).to(compute_device)
+class SubCrab(nn.Module):
+    """SubCrab model class which implements the transformer architecture."""
 
-step_count = 0
+    def __init__(
+        self,
+        out_dims=3,
+        d_model=512,
+        heads=4,
+        compute_device=None,
+        elem_prop="mat2vec",
+    ):
+        """Instantiate a SubCrab class to be used within CrabNet.
+
+        Parameters
+        ----------
+        out_dims : int, optional
+            Output dimensions for Residual Network, by default 3
+        d_model : int, optional
+            Model size. See paper, by default 512
+        compute_device : _type_, optional
+            Computing device to run model on, by default None
+        elem_prop : str, optional
+            Which elemental feature vector to use. Possible values are "jarvis", "magpie",
+            "mat2vec", "oliynyk", "onehot", "ptable", and "random_200", by default "mat2vec"
+        """
+        super().__init__()
+
+        self.out_dims = out_dims
+        self.d_model = d_model
+
+        # embed the elemental features
+        self.embed = Embedder(
+            d_model=d_model, compute_device=compute_device, elem_prop=elem_prop
+        )
+
+        # encode "positions" of fractional contributions
+        self.pe = FractionalEncoder(d_model, log10=False)
+        self.ple = FractionalEncoder(d_model, log10=True)
+
+        # transformer
+        encoder_layer = nn.TransformerEncoderLayer(d_model, nhead=heads)
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=3)
+
+        # residual network
+        self.output_nn = ResidualNetwork(d_model, out_dims, [1024, 512, 256, 128])
+
+    def forward(self, src, frac):
+        """Compute forward pass of the SubCrab model class (i.e. transformer).
+
+        Parameters
+        ----------
+        src : torch.tensor
+            Tensor containing element numbers corresponding to elements in compound
+        frac : torch.tensor
+            Tensor containing fractional amounts of each element in compound
+
+        Returns
+        -------
+        torch.tensor
+            Model output containing predicted value and uncertainty for that value
+        """
+        # %% Encoder
+        fc_elem_emb = self.embed(src)
+        # # mask has 1 if n-th element is present, 0 if not. E.g. single element compound has mostly mask of 0's
+        mask = frac.unsqueeze(dim=-1)
+        mask = torch.matmul(mask, mask.transpose(-2, -1))
+        mask[mask != 0] = 1
+        src_mask = mask[:, 0] != 1
+
+        prevalence_encodings = torch.zeros_like(fc_elem_emb)
+        prevalence_log_encodings = torch.zeros_like(fc_elem_emb)
+
+        # fractional encoding, see Fig 6 of 10.1038/s41524-021-00545-1
+        # first half of features are prevalence encoded (i.e. 512//2==256)
+        prevalence_encodings[:, :, : self.d_model // 2] = self.pe(frac)
+        # second half of features are prevalence log encoded
+        prevalence_log_encodings[:, :, self.d_model // 2 :] = self.ple(frac)
+
+        # sum of fc_mat2vec embedding (x), prevalence encoding (pe), and prevalence log
+        # encoding (ple), see Fig 6 of 10.1038/s41524-021-00545-1 (ple not shown)
+        x_src = fc_elem_emb + prevalence_encodings + prevalence_log_encodings
+        x_src = x_src.transpose(0, 1)
+
+        # transformer encoding
+        # True (1) values in `src_mask` mean ignore the corresponding value in the
+        # attention layer. Source:
+        # https://pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html
+        # See also
+        # https://pytorch.org/docs/stable/generated/torch.nn.TransformerEncoder.html
+        x = self.transformer_encoder(x_src, src_key_padding_mask=src_mask)
+        x = x.transpose(0, 1)
+
+        # 0:1 index eliminates the repeated values (down to 1 colummn) repeat() fills it back up (to e.g. d_model == 512 values)
+        hmask = mask[:, :, 0:1].repeat(1, 1, self.d_model)
+        if mask is not None:
+            # set values of x which correspond to an element not being present to 0
+            x = x.masked_fill(hmask == 0, 0)
+
+        # average the "element contribution" at the end, mask so you only average "elements"
+        mask = (src == 0).unsqueeze(-1).repeat(1, 1, self.out_dims)
+        x = self.output_nn(x)  # simple linear
+
+        # average the attention heads
+        x = x.masked_fill(mask, 0)
+        x = x.sum(dim=1) / (~mask).sum(dim=1)
+        x, logits = x.chunk(2, dim=-1)
+        probability = torch.ones_like(x)
+        probability[:, : logits.shape[-1]] = torch.sigmoid(logits)
+        x = x * probability
+
+        return x
+
+
+# %% model setup
+model = SubCrab().to(compute_device)
 
 base_optim = Lamb(params=model.parameters())
-optimizer = Lookahead(base_optimizer=base_optim, alpha=alpha, k=k)
+optimizer = Lookahead(base_optimizer=base_optim)
 
-# removed: stochastic weight averaging and learning rate scheduler
-
+data_type_torch = torch.float32
+epochs = 10
 for epoch in range(epochs):
     # %% training
     for data in train_loader:
@@ -137,16 +189,13 @@ for epoch in range(epochs):
         optimizer.zero_grad()
 
 # %% predict
-
 len_dataset = len(val_loader.dataset)
-n_atoms = int(len(val_loader.dataset[0][0]) / 2)
+
 act = np.zeros(len_dataset)
 pred = np.zeros(len_dataset)
 uncert = np.zeros(len_dataset)
-formulae = np.empty(len_dataset, dtype=list)
-atoms = np.empty((len_dataset, n_atoms))
-fractions = np.empty((len_dataset, n_atoms))
 
+# set the model to evaluation mode (as opposed to training mode)
 model.eval()
 
 with torch.no_grad():
@@ -159,32 +208,25 @@ with torch.no_grad():
         src = src.to(compute_device, dtype=torch.long, non_blocking=True)
         frac = frac.to(compute_device, dtype=data_type_torch, non_blocking=True)
         y = y.to(compute_device, dtype=data_type_torch, non_blocking=True)
-        extra_features = extra_features.to(
-            compute_device, dtype=data_type_torch, non_blocking=True
-        )
 
         # predict
-        output = model.forward(src, frac, extra_features=extra_features)
+        output = model.forward(src, frac)
         prediction, uncertainty = output.chunk(2, dim=-1)
         uncertainty = torch.exp(uncertainty) * scaler.std
         prediction = scaler.unscale(prediction)
         if classification:
             prediction = torch.sigmoid(prediction)
 
+        # splice batch results into main data
         data_loc = slice(i * batch_size, i * batch_size + len(y), 1)
-
-        atoms[data_loc, :] = src.cpu().numpy()
-        fractions[data_loc, :] = frac.cpu().numpy()
         act[data_loc] = y.view(-1).cpu().numpy()
         pred[data_loc] = prediction.view(-1).cpu().detach().numpy()
         uncert[data_loc] = uncertainty.view(-1).cpu().detach().numpy()
-        formulae[data_loc] = formula
 
-print(act)
 print(pred)
 print(uncert)
 
 dummy_mae = mean_absolute_error(act, np.mean(train_df["target"]) * np.ones_like(act))
-mae = mean_absolute_error(act, pred)
 print(f"Dummy MAE: {dummy_mae :.3f}")
+mae = mean_absolute_error(act, pred)
 print(f"MAE: {mae :.3f}")
