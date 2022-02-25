@@ -24,8 +24,14 @@ Bare-bones teaching example
 If you're interested in learning more about the CrabNet architecture, but with fewer enhancements, see the following example.
 
 ``crabnet_teaching.py`` takes care of the top-level PyTorch model architecture (i.e.
-``fit`` and ``predict``) and also defines a minimal ``SubCrab`` transformer model.
+``fit`` and ``predict``). A minimal ``SubCrab`` transformer model is defined in
+``subcrab_teaching.py``. You may find it useful to use an IDE with a debugger (e.g. VS
+Code, PyCharm, or Spyder) to step through the code.
 
 .. literalinclude:: ../../examples/crabnet_teaching.py
     :caption: `/examples/crabnet_teaching.py <https://github.com/sparks-baird/crabnet/blob/main/examples/crabnet_teaching.py>`_
+    :language: python
+
+.. literalinclude:: ../../examples/subcrab_teaching.py
+    :caption: `/examples/subcrab_teaching.py <https://github.com/sparks-baird/crabnet/blob/main/examples/subcrab_teaching.py>`_
     :language: python
