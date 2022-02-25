@@ -21,14 +21,11 @@ compositions across 1000 entries.
     
 Bare-bones teaching example
 ---------------------------
-If you're interested in learning more about the CrabNet architecture, but with fewer enhancements, see the following examples.
+If you're interested in learning more about the CrabNet architecture, but with fewer enhancements, see the following example.
 
-``crabnet_teaching.py`` takes care of the top-level PyTorch model architecture (i.e. `fit` and `predict`), which also uses the ``SubCrab`` model (see ``subcrab_teaching.py`` which is also included after ``crabnet_teaching.py`` in this section).
+``crabnet_teaching.py`` takes care of the top-level PyTorch model architecture (i.e.
+``fit`` and ``predict``) and also defines a minimal ``SubCrab`` transformer model.
 
 .. literalinclude:: ../../examples/crabnet_teaching.py
     :caption: `/examples/crabnet_teaching.py <https://github.com/sparks-baird/crabnet/blob/main/examples/crabnet_teaching.py>`_
-    :language: python
-    
-.. literalinclude:: ../../examples/subcrab_teaching.py
-    :caption: `/examples/subcrab_teaching.py <https://github.com/sparks-baird/crabnet/blob/main/examples/subcrab_teaching.py>`_
     :language: python
