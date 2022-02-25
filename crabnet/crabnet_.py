@@ -86,6 +86,7 @@ class CrabNet(nn.Module):
         mat_prop: Optional[Union[str, PathLike]] = None,
         losscurve: bool = True,
         learningcurve: bool = True,
+        save: bool = True,
     ):
         """
         Instantiate a CrabNet model.
@@ -196,6 +197,8 @@ class CrabNet(nn.Module):
             Whether to plot a loss curve, by default False
         learningcurve : bool, optional
             Whether to plot a learning curve, by default True
+        save : bool, optional
+            Whether to save the weights of the model, by default True
         """
         super().__init__()
         if compute_device is None:
@@ -262,8 +265,8 @@ class CrabNet(nn.Module):
         self.learningcurve_fig = None
 
         self.val_size = val_size
-
         self.model = model
+        self.save = save
 
         self.criterion_lookup = {
             "RobustL1": RobustL1,
@@ -433,7 +436,6 @@ class CrabNet(nn.Module):
             dirname(__file__), "data", "materials_data"
         ),
         transfer: str = None,
-        save: bool = True,
     ):
         """Fit CrabNet to training data and update hyperparams with validation data.
 
@@ -454,8 +456,6 @@ class CrabNet(nn.Module):
         transfer : str, optional
             Path to the saved weights to use for transfer learning. If None, then no
             transfer learning is performed. By default None
-        save : bool, optional
-            Whether to save the weights of the model, by default True
         """
         self.d_extend = 0 if extend_features is None else len(extend_features)
 
@@ -572,7 +572,7 @@ class CrabNet(nn.Module):
         if not (self.optimizer.discard_count >= self.discard_n):
             self.optimizer.swap_swa_sgd()
 
-        if save:
+        if self.save:
             self.save_network()
 
     def _get_epochs_checkin_stepsize(
