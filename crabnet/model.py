@@ -118,7 +118,7 @@ class Model():
             # here we are using the train_loader, but we can also use
             # general data_loader
             if self.capture_every == 'step':
-                print('capturing every step!')
+                # print('capturing every step!')
                 # print(f'data_loader size: {len(self.data_loader.dataset)}')
                 self.capture_flag = True
                 # (act, pred, formulae, uncert)
@@ -225,7 +225,7 @@ class Model():
             # here we are using the train_loader, but we can also use
             # general data_loader
             if self.capture_every == 'epoch':
-                print('capturing every epoch!')
+                # print('capturing every epoch!')
                 # print(f'data_loader size: {len(self.data_loader.dataset)}')
                 self.capture_flag = True
                 # (act, pred, formulae, uncert)

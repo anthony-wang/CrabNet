@@ -42,13 +42,15 @@ The references in bibtex form:
  year = {2022},
  title = {CrabNet for Explainable Deep Learning in Materials Science: Bridging the Gap Between Academia and Industry},
  url = {https://doi.org/10.1007/s40192-021-00247-y},
+ pages = {41--56},
+ volume = {11},
+ number = {1},
  shortjournal = {Integr. Mater. Manuf. Innov.},
  journal = {Integrating Materials and Manufacturing Innovation},
  doi = {10.1007/s40192-021-00247-y},
  publisher = {{Springer International Publishing AG}}
 }
 ```
-
 
 ## Installation and basic use of `CrabNet`
 For the steps, please see the readme located at [README_CrabNet.md](README_CrabNet.md).
