@@ -66,5 +66,5 @@ For the steps, please see the readme located at [README_ExplainableGap.md](READM
 
 
 ## Maintainers
-* @sgbaird, Sterling Baird (main maintainer)
-* @anthony-wang, Anthony Wang
+* [`sgbaird`](https://github.com/sgbaird), Sterling Baird (main maintainer)
+* [`anthony-wang`](https://github.com/anthony-wang), Anthony Wang
