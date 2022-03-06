@@ -47,6 +47,7 @@ class ResidualNetwork(nn.Module):
         return f'{self.__class__.__name__}'
 
 
+# %%
 class Embedder(nn.Module):
     def __init__(self,
                  d_model,
@@ -114,9 +115,11 @@ class FractionalEncoder(nn.Module):
         x = x.clone()
         if self.log10:
             x = 0.0025 * (torch.log2(x))**2
-            x[x > 1] = 1
+            # clamp x[x > 1] = 1
+            x = torch.clamp(x, max=1)
             # x = 1 - x  # for sinusoidal encoding at x=0
-        x[x < 1/self.resolution] = 1/self.resolution
+        # clamp x[x < 1/self.resolution] = 1/self.resolution
+        x = torch.clamp(x, min=1/self.resolution)
         frac_idx = torch.round(x * (self.resolution)).to(dtype=torch.long) - 1
         out = self.pe[frac_idx]
 
@@ -194,7 +197,8 @@ class CrabNet(nn.Module):
                  d_model=512,
                  N=3,
                  heads=4,
-                 compute_device=None):
+                 compute_device=None,
+                 residual_nn='roost'):
         super().__init__()
         self.avg = True
         self.out_dims = out_dims
@@ -206,10 +210,18 @@ class CrabNet(nn.Module):
                                N=self.N,
                                heads=self.heads,
                                compute_device=self.compute_device)
-        self.out_hidden = [1024, 512, 256, 128]
-        self.output_nn = ResidualNetwork(self.d_model,
-                                         self.out_dims,
-                                         self.out_hidden)
+        if residual_nn == 'roost':
+            # use the Roost residual network
+            self.out_hidden = [1024, 512, 256, 128]
+            self.output_nn = ResidualNetwork(self.d_model,
+                                             self.out_dims,
+                                             self.out_hidden)
+        else:
+            # use a simpler residual network
+            self.out_hidden = [256, 128]
+            self.output_nn = ResidualNetwork(self.d_model,
+                                             self.out_dims,
+                                             self.out_hidden)
 
     def forward(self, src, frac):
         output = self.encoder(src, frac)

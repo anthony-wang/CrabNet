@@ -4,10 +4,12 @@ models/trained_models/*.pth
 models/*.zip
 models/*.7z
 
-
 # figures/lc_data/*.png
 figures/*.eps
 *.npz
+
+# Automatic backup files
+*.bak
 
 # Pylint code analysis stuff
 .pylint.d/

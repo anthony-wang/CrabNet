@@ -1,4 +1,5 @@
 import os
+import gc
 
 import pandas as pd
 import numpy as np
@@ -28,6 +29,68 @@ np.random.seed(RNG_SEED)
 fig_dir = r'figures/Classics/'
 data_type_torch = torch.float32
 data_type_np = np.float32
+
+
+# %%
+def get_obj_size(obj):
+    size = None
+    # int32 is 32 bits = 4 bytes
+    # float32 is 4 bytes
+    if obj is None:
+        size = 0
+    if isinstance(obj, np.ndarray):
+        # size = obj.itemsize * obj.size
+        size = obj.nbytes
+    if isinstance(obj, torch.Tensor):
+        size = obj.element_size() * obj.nelement()
+    if size is not None:
+        # return size in Megabytes (MB)
+        size = size / (1024)**2
+    if isinstance(obj, list):
+        size = np.sum([get_obj_size(subobj) for subobj in obj])
+    return size
+
+
+def clear_cache(obj=None):
+    if (isinstance(obj, torch.Tensor)
+        or isinstance(obj, np.ndarray)
+        or isinstance(obj, list)):
+        obj = 0
+    elif isinstance(obj, tuple):
+        for item in obj:
+            clear_cache(item)
+    elif obj is None:
+        pass
+    else:
+        obj.clear()
+    if obj is not None:
+        del obj
+    gc.collect()
+    torch.cuda.empty_cache()
+    torch.cuda.synchronize()
+    gc.collect()
+
+
+def torch_memory_debug():
+    memory_allocated = torch.cuda.memory_allocated() / 1024**2
+    memory_reserved = torch.cuda.memory_reserved() / 1024**2
+    max_memory_allocated = torch.cuda.max_memory_allocated() / 1024**2
+    print(f'\n{memory_allocated = :0.2f}')
+    print(f'{memory_reserved = :0.2f}')
+    print(f'{max_memory_allocated = :0.2f}')
+
+
+# %%
+def linear(input, weight, bias=None):
+    r"""
+    Applies a linear transformation to the incoming data: :math:`y = xA^T + b`.
+    Adapted from PyTorch source code.
+    """
+    output = input.matmul(weight.t())
+    if bias is not None:
+        output += bias
+    ret = output
+    return ret
 
 
 # %%
@@ -196,7 +259,7 @@ class CONSTANTS():
         self.atomic_symbols = ['None', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N',
                                'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si', 'P',
                                'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V',
-                               'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga'
+                               'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga',
                                'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr', 'Y',
                                'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag',
                                'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs',

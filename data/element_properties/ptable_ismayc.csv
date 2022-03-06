@@ -1,0 +1,119 @@
+atomic_number,symbol,name,name_origin,group,period,block,state_at_stp,occurrence,description,atomic_weight,aw_uncertainty,any_stable_nuclides,density,density_predicted,melting_point,mp_predicted,boiling_point,bp_predicted,heat_capacity,electronegativity,abundance
+1,H,Hydrogen,composed of the Greek elements hydro- and -gen meaning 'water-forming',1,1,s,Gas,Primordial,Non-metal,1.0082349,NA,Yes,8.988e-5,FALSE,14.01,FALSE,20.28,FALSE,14.304,2.2,1400.0
+2,He,Helium,"the Greek helios, 'sun'",18,1,s,Gas,Primordial,Noble gas,4.002602,2,Yes,1.785e-4,FALSE,0.956,FALSE,4.22,FALSE,5.193,NA,0.008
+3,Li,Lithium,"the Greek lithos, 'stone'",1,2,s,Solid,Primordial,Alkali metal,6.94,NA,Yes,0.534,FALSE,453.69,FALSE,1560.0,FALSE,3.582,0.98,20.0
+4,Be,Beryllium,"beryl, a mineral",2,2,s,Solid,Primordial,Alkaline earth metal,9.0121831,5,Yes,1.85,FALSE,1560.0,FALSE,2742.0,FALSE,1.825,1.57,2.8
+5,B,Boron,"borax, a mineral",13,2,p,Solid,Primordial,Metalloid,10.81,NA,Yes,2.34,FALSE,2349.0,FALSE,4200.0,FALSE,1.026,2.04,10.0
+6,C,Carbon,"the Latin carbo, 'coal'",14,2,p,Solid,Primordial,Non-metal,12.011,NA,Yes,2.267,FALSE,3800.0,FALSE,4300.0,FALSE,0.709,2.55,200.0
+7,N,Nitrogen,the Greek nitron and '-gen' meaning 'niter-forming',15,2,p,Gas,Primordial,Non-metal,14.007,NA,Yes,0.0012506,FALSE,63.15,FALSE,77.36,FALSE,1.04,3.04,19.0
+8,O,Oxygen,"from the Greek oxy-, both 'sharp' and 'acid', and -gen, meaning 'acid-forming'",16,2,p,Gas,Primordial,Non-metal,15.999,NA,Yes,0.001429,FALSE,54.36,FALSE,90.2,FALSE,0.918,3.44,461e3
+9,F,Fluorine,"the Latin fluere, 'to flow'",17,2,p,Gas,Primordial,Halogen,18.99840316,6,Yes,0.001696,FALSE,53.53,FALSE,85.03,FALSE,0.824,3.98,585.0
+10,Ne,Neon,"the Greek neos, meaning 'new'",18,2,p,Gas,Primordial,Noble gas,20.1797,6,Yes,8.999e-4,FALSE,24.56,FALSE,27.07,FALSE,1.03,NA,0.005
+11,Na,Sodium,the English word soda (natrium in Latin),1,3,s,Solid,Primordial,Alkali metal,22.98976928,2,Yes,0.971,FALSE,370.87,FALSE,1156.0,FALSE,1.228,0.93,23600.0
+12,Mg,Magnesium,"Magnesia, a district of Eastern Thessaly in Greece",2,3,s,Solid,Primordial,Alkaline earth metal,24.305,NA,Yes,1.738,FALSE,923.0,FALSE,1363.0,FALSE,1.023,1.31,23300.0
+13,Al,Aluminium,"from alumina, a compound (originally aluminum)",13,3,p,Solid,Primordial,Metal,26.9815385,7,Yes,2.698,FALSE,933.47,FALSE,2792.0,FALSE,0.897,1.61,82300.0
+14,Si,Silicon,"from the Latin silex, 'flint' (originally silicium)",14,3,p,Solid,Primordial,Metalloid,28.085,NA,Yes,2.3296,FALSE,1687.0,FALSE,3538.0,FALSE,0.705,1.9,282e3
+15,P,Phosphorus,"the Greek phoosphoros, 'carrying light'",15,3,p,Solid,Primordial,Non-metal,30.973762,5,Yes,1.82,FALSE,317.3,FALSE,550.0,FALSE,0.769,2.19,1050.0
+16,S,Sulfur,"the Latin sulphur, 'fire and brimstone'",16,3,p,Solid,Primordial,Non-metal,32.06,NA,Yes,2.067,FALSE,388.36,FALSE,717.87,FALSE,0.71,2.58,350.0
+17,Cl,Chlorine,"the Greek chloros, 'greenish yellow'",17,3,p,Gas,Primordial,Halogen,35.45,NA,Yes,0.003214,FALSE,171.6,FALSE,239.11,FALSE,0.479,3.16,145.0
+18,Ar,Argon,"the Greek argos, 'idle'",18,3,p,Gas,Primordial,Noble gas,39.948,1,Yes,0.0017837,FALSE,83.8,FALSE,87.3,FALSE,0.52,NA,3.5
+19,K,Potassium,"New Latin potassa, 'potash' (kalium in Latin)",1,4,s,Solid,Primordial,Alkali metal,39.0983,1,Yes,0.862,FALSE,336.53,FALSE,1032.0,FALSE,0.757,0.82,20900.0
+20,Ca,Calcium,"the Latin calx, 'lime'",2,4,s,Solid,Primordial,Alkaline earth metal,40.078,4,Yes,1.54,FALSE,1115.0,FALSE,1757.0,FALSE,0.647,1.0,41500.0
+21,Sc,Scandium,"Scandia, the Latin name for Scandinavia",3,4,d,Solid,Primordial,Transition metal,44.955908,5,Yes,2.989,FALSE,1814.0,FALSE,3109.0,FALSE,0.568,1.36,22.0
+22,Ti,Titanium,"Titans, the sons of the Earth goddess of Greek mythology",4,4,d,Solid,Primordial,Transition metal,47.867,1,Yes,4.54,FALSE,1941.0,FALSE,3560.0,FALSE,0.523,1.54,5650.0
+23,V,Vanadium,"Vanadis, an Old Norse name for the Scandinavian goddess Freyja",5,4,d,Solid,Primordial,Transition metal,50.9415,1,Yes,6.11,FALSE,2183.0,FALSE,3680.0,FALSE,0.489,1.63,120.0
+24,Cr,Chromium,"the Greek chroma, 'color'",6,4,d,Solid,Primordial,Transition metal,51.9961,6,Yes,7.15,FALSE,2180.0,FALSE,2944.0,FALSE,0.449,1.66,102.0
+25,Mn,Manganese,"corrupted from magnesia negra, see Magnesium",7,4,d,Solid,Primordial,Transition metal,54.938044,3,Yes,7.44,FALSE,1519.0,FALSE,2334.0,FALSE,0.479,1.55,950.0
+26,Fe,Iron,English word (ferrum in Latin),8,4,d,Solid,Primordial,Transition metal,55.845,2,Yes,7.874,FALSE,1811.0,FALSE,3134.0,FALSE,0.449,1.83,56300.0
+27,Co,Cobalt,"the German word Kobold, 'goblin'",9,4,d,Solid,Primordial,Transition metal,58.933194,4,Yes,8.86,FALSE,1768.0,FALSE,3200.0,FALSE,0.421,1.88,25.0
+28,Ni,Nickel,"from Swedish kopparnickel, containing the German word Nickel, 'goblin'",10,4,d,Solid,Primordial,Transition metal,58.6934,4,Yes,8.912,FALSE,1728.0,FALSE,3186.0,FALSE,0.444,1.91,84.0
+29,Cu,Copper,English word (Latin cuprum),11,4,d,Solid,Primordial,Transition metal,63.546,3,Yes,8.96,FALSE,1357.77,FALSE,2835.0,FALSE,0.385,1.9,60.0
+30,Zn,Zinc,the German Zink,12,4,d,Solid,Primordial,Transition metal,65.38,2,Yes,7.134,FALSE,692.88,FALSE,1180.0,FALSE,0.388,1.65,70.0
+31,Ga,Gallium,"Gallia, the Latin name for France",13,4,p,Solid,Primordial,Metal,69.723,1,Yes,5.907,FALSE,302.9146,FALSE,2477.0,FALSE,0.371,1.81,19.0
+32,Ge,Germanium,"Germania, the Latin name for Germany",14,4,p,Solid,Primordial,Metalloid,72.63,8,Yes,5.323,FALSE,1211.4,FALSE,3106.0,FALSE,0.32,2.01,1.5
+33,As,Arsenic,English word (Latin arsenicum),15,4,p,Solid,Primordial,Metalloid,74.921595,6,Yes,5.776,FALSE,1090.0,FALSE,887.0,FALSE,0.329,2.18,1.8
+34,Se,Selenium,"the Greek selene, 'moon'",16,4,p,Solid,Primordial,Non-metal,78.971,8,Yes,4.809,FALSE,453.0,FALSE,958.0,FALSE,0.321,2.55,0.05
+35,Br,Bromine,"the Greek bromos, 'stench'",17,4,p,Liquid,Primordial,Halogen,79.904,NA,Yes,3.122,FALSE,265.8,FALSE,332.0,FALSE,0.474,2.96,2.4
+36,Kr,Krypton,"the Greek kryptos, 'hidden'",18,4,p,Gas,Primordial,Noble gas,83.798,2,Yes,0.003733,FALSE,115.79,FALSE,119.93,FALSE,0.248,3.0,1e-4
+37,Rb,Rubidium,"the Latin rubidus, 'deep red'",1,5,s,Solid,Primordial,Alkali metal,85.4678,3,Yes,1.532,FALSE,312.46,FALSE,961.0,FALSE,0.363,0.82,90.0
+38,Sr,Strontium,"Strontian, a small town in Scotland",2,5,s,Solid,Primordial,Alkaline earth metal,87.62,1,Yes,2.64,FALSE,1050.0,FALSE,1655.0,FALSE,0.301,0.95,370.0
+39,Y,Yttrium,"Ytterby, Sweden",3,5,d,Solid,Primordial,Transition metal,88.90584,2,Yes,4.469,FALSE,1799.0,FALSE,3609.0,FALSE,0.298,1.22,33.0
+40,Zr,Zirconium,"Persian Zargun, 'gold-colored'; German Zirkoon, 'jargoon'",4,5,d,Solid,Primordial,Transition metal,91.224,2,Yes,6.506,FALSE,2128.0,FALSE,4682.0,FALSE,0.278,1.33,165.0
+41,Nb,Niobium,"Niobe, daughter of king Tantalus from Greek mythology",5,5,d,Solid,Primordial,Transition metal,92.90637,2,Yes,8.57,FALSE,2750.0,FALSE,5017.0,FALSE,0.265,1.6,20.0
+42,Mo,Molybdenum,the Greek molybdos meaning 'lead',6,5,d,Solid,Primordial,Transition metal,95.95,1,Yes,10.22,FALSE,2896.0,FALSE,4912.0,FALSE,0.251,2.16,1.2
+43,Tc,Technetium,the Greek tekhn??tos meaning 'artificial',7,5,d,Solid,Transient,Transition metal,98.0,NA,No,11.5,FALSE,2430.0,FALSE,4538.0,FALSE,NA,1.9,3e-9
+44,Ru,Ruthenium,"Ruthenia, the New Latin name for Russia",8,5,d,Solid,Primordial,Transition metal,101.07,2,Yes,12.37,FALSE,2607.0,FALSE,4423.0,FALSE,0.238,2.2,0.001
+45,Rh,Rhodium,"the Greek rhodos, meaning 'rose coloured'",9,5,d,Solid,Primordial,Transition metal,102.9055,2,Yes,12.41,FALSE,2237.0,FALSE,3968.0,FALSE,0.243,2.28,0.001
+46,Pd,Palladium,"the then recently discovered asteroid Pallas, considered a planet at the time",10,5,d,Solid,Primordial,Transition metal,106.42,1,Yes,12.02,FALSE,1828.05,FALSE,3236.0,FALSE,0.244,2.2,0.015
+47,Ag,Silver,English word (argentum in Latin),11,5,d,Solid,Primordial,Transition metal,107.8682,2,Yes,10.501,FALSE,1234.93,FALSE,2435.0,FALSE,0.235,1.93,0.075
+48,Cd,Cadmium,"the New Latin cadmia, from King Kadmos",12,5,d,Solid,Primordial,Transition metal,112.414,4,Yes,8.69,FALSE,594.22,FALSE,1040.0,FALSE,0.232,1.69,0.159
+49,In,Indium,indigo,13,5,p,Solid,Primordial,Metal,114.818,1,Yes,7.31,FALSE,429.75,FALSE,2345.0,FALSE,0.233,1.78,0.25
+50,Sn,Tin,English word (stannum in Latin),14,5,p,Solid,Primordial,Metal,118.71,7,Yes,7.287,FALSE,505.08,FALSE,2875.0,FALSE,0.228,1.96,2.3
+51,Sb,Antimony,"composed from the Greek anti, 'against', and monos, 'alone' (stibium in Latin)",15,5,p,Solid,Primordial,Metalloid,121.76,1,Yes,6.685,FALSE,903.78,FALSE,1860.0,FALSE,0.207,2.05,0.2
+52,Te,Tellurium,"Latin tellus, 'earth'",16,5,p,Solid,Primordial,Metalloid,127.6,3,Yes,6.232,FALSE,722.66,FALSE,1261.0,FALSE,0.202,2.1,0.001
+53,I,Iodine,"French iode (after the Greek ioeides, 'violet')",17,5,p,Solid,Primordial,Halogen,126.90447,3,Yes,4.93,FALSE,386.85,FALSE,457.4,FALSE,0.214,2.66,0.45
+54,Xe,Xenon,"the Greek xenos, 'strange'",18,5,p,Gas,Primordial,Noble gas,131.293,6,Yes,0.005887,FALSE,161.4,FALSE,165.03,FALSE,0.158,2.6,3e-5
+55,Cs,Caesium,"the Latin caesius, 'sky blue'",1,6,s,Solid,Primordial,Alkali metal,132.905452,6,Yes,1.873,FALSE,301.59,FALSE,944.0,FALSE,0.242,0.79,3.0
+56,Ba,Barium,"the Greek barys, 'heavy'",2,6,s,Solid,Primordial,Alkaline earth metal,137.327,7,Yes,3.594,FALSE,1e3,FALSE,2170.0,FALSE,0.204,0.89,425.0
+57,La,Lanthanum,"the Greek lanthanein, 'to lie hidden'",NA,6,f,Solid,Primordial,Lanthanide,138.90547,7,Yes,6.145,FALSE,1193.0,FALSE,3737.0,FALSE,0.195,1.1,39.0
+58,Ce,Cerium,"the then recently discovered asteroid Ceres, considered a planet at the time",NA,6,f,Solid,Primordial,Lanthanide,140.116,1,Yes,6.77,FALSE,1068.0,FALSE,3716.0,FALSE,0.192,1.12,66.5
+59,Pr,Praseodymium,the Greek praseios didymos meaning 'green twin',NA,6,f,Solid,Primordial,Lanthanide,140.90766,2,Yes,6.773,FALSE,1208.0,FALSE,3793.0,FALSE,0.193,1.13,9.2
+60,Nd,Neodymium,the Greek neos didymos meaning 'new twin',NA,6,f,Solid,Primordial,Lanthanide,144.242,3,Yes,7.007,FALSE,1297.0,FALSE,3347.0,FALSE,0.19,1.14,41.5
+61,Pm,Promethium,Prometheus of Greek mythology who stole fire from the Gods and gave it to humans,NA,6,f,Solid,Transient,Lanthanide,145.0,NA,No,7.26,FALSE,1315.0,FALSE,3273.0,FALSE,NA,1.13,2e-19
+62,Sm,Samarium,"Samarskite, the name of the mineral from which it was first isolated",NA,6,f,Solid,Primordial,Lanthanide,150.36,2,Yes,7.52,FALSE,1345.0,FALSE,2067.0,FALSE,0.197,1.17,7.05
+63,Eu,Europium,Europe,NA,6,f,Solid,Primordial,Lanthanide,151.964,1,Yes,5.243,FALSE,1099.0,FALSE,1802.0,FALSE,0.182,1.2,2.0
+64,Gd,Gadolinium,"Johan Gadolin, chemist, physicist and mineralogist",NA,6,f,Solid,Primordial,Lanthanide,157.25,3,Yes,7.895,FALSE,1585.0,FALSE,3546.0,FALSE,0.236,1.2,6.2
+65,Tb,Terbium,"Ytterby, Sweden",NA,6,f,Solid,Primordial,Lanthanide,158.92535,2,Yes,8.229,FALSE,1629.0,FALSE,3503.0,FALSE,0.182,1.2,1.2
+66,Dy,Dysprosium,"the Greek dysprositos, 'hard to get'",NA,6,f,Solid,Primordial,Lanthanide,162.5,1,Yes,8.55,FALSE,1680.0,FALSE,2840.0,FALSE,0.17,1.22,5.2
+67,Ho,Holmium,"Holmia, the New Latin name for Stockholm",NA,6,f,Solid,Primordial,Lanthanide,164.93033,2,Yes,8.795,FALSE,1734.0,FALSE,2993.0,FALSE,0.165,1.23,1.3
+68,Er,Erbium,"Ytterby, Sweden",NA,6,f,Solid,Primordial,Lanthanide,167.259,3,Yes,9.066,FALSE,1802.0,FALSE,3141.0,FALSE,0.168,1.24,3.5
+69,Tm,Thulium,"Thule, the ancient name for Scandinavia",NA,6,f,Solid,Primordial,Lanthanide,168.93422,2,Yes,9.321,FALSE,1818.0,FALSE,2223.0,FALSE,0.16,1.25,0.52
+70,Yb,Ytterbium,"Ytterby, Sweden",NA,6,f,Solid,Primordial,Lanthanide,173.045,10,Yes,6.965,FALSE,1097.0,FALSE,1469.0,FALSE,0.155,1.1,3.2
+71,Lu,Lutetium,"Lutetia, the Latin name for Paris",3,6,d,Solid,Primordial,Lanthanide,174.9668,1,Yes,9.84,FALSE,1925.0,FALSE,3675.0,FALSE,0.154,1.27,0.8
+72,Hf,Hafnium,"Hafnia, the New Latin name for Copenhagen",4,6,d,Solid,Primordial,Transition metal,178.49,2,Yes,13.31,FALSE,2506.0,FALSE,4876.0,FALSE,0.144,1.3,3.0
+73,Ta,Tantalum,"King Tantalus, father of Niobe from Greek mythology",5,6,d,Solid,Primordial,Transition metal,180.94788,2,Yes,16.654,FALSE,3290.0,FALSE,5731.0,FALSE,0.14,1.5,2.0
+74,W,Tungsten,"the Swedish tung sten, 'heavy stone' (W is wolfram, the old name of the tungsten mineral wolframite)",6,6,d,Solid,Primordial,Transition metal,183.84,1,Yes,19.25,FALSE,3695.0,FALSE,5828.0,FALSE,0.132,2.36,1.3
+75,Re,Rhenium,"Rhenus, the Latin name for the river Rhine",7,6,d,Solid,Primordial,Transition metal,186.207,1,Yes,21.02,FALSE,3459.0,FALSE,5869.0,FALSE,0.137,1.9,7e-4
+76,Os,Osmium,"the Greek osm??, meaning 'smell'",8,6,d,Solid,Primordial,Transition metal,190.23,3,Yes,22.61,FALSE,3306.0,FALSE,5285.0,FALSE,0.13,2.2,0.002
+77,Ir,Iridium,"Iris, the Greek goddess of the rainbow",9,6,d,Solid,Primordial,Transition metal,192.217,3,Yes,22.56,FALSE,2719.0,FALSE,4701.0,FALSE,0.131,2.2,0.001
+78,Pt,Platinum,"the Spanish platina, meaning 'little silver'",10,6,d,Solid,Primordial,Transition metal,195.084,9,Yes,21.46,FALSE,2041.4,FALSE,4098.0,FALSE,0.133,2.28,0.005
+79,Au,Gold,English word (aurum in Latin),11,6,d,Solid,Primordial,Transition metal,196.966569,5,Yes,19.282,FALSE,1337.33,FALSE,3129.0,FALSE,0.129,2.54,0.004
+80,Hg,Mercury,"the New Latin name mercurius, named after the Roman god (Hg from former name hydrargyrum, from Greek hydr-, 'water', and argyros, 'silver')",12,6,d,Liquid,Primordial,Transition metal,200.592,3,Yes,13.5336,FALSE,234.43,FALSE,629.88,FALSE,0.14,2.0,0.085
+81,Tl,Thallium,"the Greek thallos, 'green twig'",13,6,p,Solid,Primordial,Metal,204.389,NA,Yes,11.85,FALSE,577.0,FALSE,1746.0,FALSE,0.129,1.62,0.85
+82,Pb,Lead,English word (plumbum in Latin),14,6,p,Solid,Primordial,Metal,207.2,1,Yes,11.342,FALSE,600.61,FALSE,2022.0,FALSE,0.129,1.87,14.0
+83,Bi,Bismuth,"German word, now obsolete",15,6,p,Solid,Primordial,Metal,208.9804,1,Yes,9.807,FALSE,544.7,FALSE,1837.0,FALSE,0.122,2.02,0.009
+84,Po,Polonium,"Polonia, the New Latin name for Poland",16,6,p,Solid,Transient,Metalloid,209.0,NA,No,9.32,FALSE,527.0,FALSE,1235.0,FALSE,NA,2.0,2e-10
+85,At,Astatine,"the Greek astatos, 'unstable'",17,6,p,Solid,Transient,Halogen,210.0,NA,No,7.0,FALSE,575.0,FALSE,610.0,FALSE,NA,2.2,3e-21
+86,Rn,Radon,"From radium, as it was first detected as an emission from radium during radioactive decay",18,6,p,Gas,Transient,Noble gas,222.0,NA,No,0.00973,FALSE,202.0,FALSE,211.3,FALSE,0.094,2.2,4e-13
+87,Fr,Francium,"Francia, the New Latin name for France",1,7,s,Solid,Transient,Alkali metal,223.0,NA,No,1.87,FALSE,300.0,FALSE,950.0,FALSE,NA,0.7,1e-18
+88,Ra,Radium,"the Latin radius, 'ray'",2,7,s,Solid,Transient,Alkaline earth metal,226.0,NA,No,5.5,FALSE,973.0,FALSE,2010.0,FALSE,0.094,0.9,9e-7
+89,Ac,Actinium,"the Greek aktis, 'ray'",NA,7,f,Solid,Transient,Actinide,227.0,NA,No,10.07,FALSE,1323.0,FALSE,3471.0,FALSE,0.12,1.1,5.5e-10
+90,Th,Thorium,"Thor, the Scandinavian god of thunder",NA,7,f,Solid,Primordial,Actinide,232.0377,4,Yes,11.72,FALSE,2115.0,FALSE,5061.0,FALSE,0.113,1.3,9.6
+91,Pa,Protactinium,"the Greek protos, 'first', and actinium, which is produced through the radioactive decay of protactinium",NA,7,f,Solid,Transient,Actinide,231.03588,2,Yes,15.37,FALSE,1841.0,FALSE,4300.0,FALSE,NA,1.5,1.4e-6
+92,U,Uranium,"Uranus, the seventh planet in the Solar System",NA,7,f,Solid,Primordial,Actinide,238.02891,3,Yes,18.95,FALSE,1405.3,FALSE,4404.0,FALSE,0.116,1.38,2.7
+93,Np,Neptunium,"Neptune, the eighth planet in the Solar System",NA,7,f,Solid,Transient,Actinide,237.0,NA,No,20.45,FALSE,917.0,FALSE,4273.0,FALSE,NA,1.36,3e-12
+94,Pu,Plutonium,"Pluto, a dwarf planet in the Solar System",NA,7,f,Solid,Primordial,Actinide,244.0,NA,No,19.84,FALSE,912.5,FALSE,3501.0,FALSE,NA,1.28,3e-11
+95,Am,Americium,"The Americas, as the element was first synthesized on the continent, by analogy with europium",NA,7,f,Solid,Synthetic,Actinide,243.0,NA,No,13.69,FALSE,1449.0,FALSE,2880.0,FALSE,NA,1.13,0.0
+96,Cm,Curium,"Pierre Curie, a physicist, and Marie Curie, a physicist and chemist, named after great scientists by analogy with gadolinium",NA,7,f,Solid,Synthetic,Actinide,247.0,NA,No,13.51,FALSE,1613.0,FALSE,3383.0,FALSE,NA,1.28,0.0
+97,Bk,Berkelium,"Berkeley, California, where the element was first synthesized, by analogy with terbium",NA,7,f,Solid,Synthetic,Actinide,247.0,NA,No,14.79,FALSE,1259.0,FALSE,2900.0,FALSE,NA,1.3,0.0
+98,Cf,Californium,"California, where the element was first synthesized",NA,7,f,Solid,Synthetic,Actinide,251.0,NA,No,15.1,FALSE,1173.0,FALSE,1743.0,TRUE,NA,1.3,0.0
+99,Es,Einsteinium,"Albert Einstein, physicist",NA,7,f,Solid,Synthetic,Actinide,252.0,NA,No,8.84,FALSE,1133.0,FALSE,1269.0,TRUE,NA,1.3,0.0
+100,Fm,Fermium,"Enrico Fermi, physicist",NA,7,f,Solid,Synthetic,Actinide,257.0,NA,No,9.7,TRUE,1125.0,TRUE,NA,FALSE,NA,1.3,0.0
+101,Md,Mendelevium,"Dmitri Mendeleev, chemist and inventor",NA,7,f,Solid,Synthetic,Actinide,258.0,NA,No,10.3,TRUE,1100.0,TRUE,NA,FALSE,NA,1.3,0.0
+102,No,Nobelium,"Alfred Nobel, chemist, engineer, innovator, and armaments manufacturer",NA,7,f,Solid,Synthetic,Actinide,259.0,NA,No,9.9,TRUE,1100.0,TRUE,NA,FALSE,NA,1.3,0.0
+103,Lr,Lawrencium,"Ernest O. Lawrence, physicist",3,7,d,Solid,Synthetic,Actinide,266.0,NA,No,15.6,TRUE,1900.0,TRUE,NA,FALSE,NA,1.3,0.0
+104,Rf,Rutherfordium,"Ernest Rutherford, chemist and physicist",4,7,d,NA,Synthetic,Transition metal,267.0,NA,No,23.2,TRUE,2400.0,TRUE,5800.0,TRUE,NA,NA,0.0
+105,Db,Dubnium,"Dubna, Russia",5,7,d,NA,Synthetic,Transition metal,268.0,NA,No,29.3,TRUE,NA,FALSE,NA,FALSE,NA,NA,0.0
+106,Sg,Seaborgium,"Glenn T. Seaborg, scientist",6,7,d,NA,Synthetic,Transition metal,269.0,NA,No,35.0,TRUE,NA,FALSE,NA,FALSE,NA,NA,0.0
+107,Bh,Bohrium,"Niels Bohr, physicist",7,7,d,NA,Synthetic,Transition metal,270.0,NA,No,37.1,TRUE,NA,FALSE,NA,FALSE,NA,NA,0.0
+108,Hs,Hassium,"Hesse, Germany, where the element was first synthesized",8,7,d,NA,Synthetic,Transition metal,269.0,NA,No,40.7,TRUE,NA,FALSE,NA,FALSE,NA,NA,0.0
+109,Mt,Meitnerium,"Lise Meitner, physicist",9,7,d,NA,Synthetic,NA,278.0,NA,No,37.4,TRUE,NA,FALSE,NA,FALSE,NA,NA,0.0
+110,Ds,Darmstadtium,"Darmstadt, Germany, where the element was first synthesized",10,7,d,NA,Synthetic,NA,281.0,NA,No,34.8,TRUE,NA,FALSE,NA,FALSE,NA,NA,0.0
+111,Rg,Roentgenium,"Wilhelm Conrad R?_ntgen, physicist",11,7,d,NA,Synthetic,NA,282.0,NA,No,28.7,TRUE,NA,FALSE,NA,FALSE,NA,NA,0.0
+112,Cn,Copernicium,"Nicolaus Copernicus, astronomer",12,7,d,NA,Synthetic,Transition metal,285.0,NA,No,23.7,TRUE,NA,FALSE,357.0,TRUE,NA,NA,0.0
+113,Nh,Nihonium,IUPAC systematic element name,13,7,p,NA,Synthetic,NA,286.0,NA,No,16.0,TRUE,700.0,TRUE,1400.0,TRUE,NA,NA,0.0
+114,Fl,Flerovium,"Georgy Flyorov, physicist",14,7,p,NA,Synthetic,NA,289.0,NA,No,14.0,TRUE,340.0,TRUE,420.0,TRUE,NA,NA,0.0
+115,Mc,Moscovium,IUPAC systematic element name,15,7,p,NA,Synthetic,NA,289.0,NA,No,13.5,TRUE,700.0,TRUE,1400.0,TRUE,NA,NA,0.0
+116,Lv,Livermorium,"Lawrence Livermore National Laboratory (in Livermore, California) which collaborated with JINR on its synthesis",16,7,p,NA,Synthetic,NA,293.0,NA,No,12.9,TRUE,709.0,TRUE,1085.0,TRUE,NA,NA,0.0
+117,Ts,Tennessine,IUPAC systematic element name,17,7,p,NA,Synthetic,NA,294.0,NA,No,7.2,TRUE,723.0,TRUE,883.0,TRUE,NA,NA,0.0
+118,Og,Ogannessine,IUPAC systematic element name,18,7,p,NA,Synthetic,NA,294.0,NA,No,5.0,TRUE,258.0,TRUE,263.0,TRUE,NA,NA,0.0

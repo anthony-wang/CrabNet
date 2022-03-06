@@ -8,17 +8,12 @@ import warnings
 # %%
 def get_core_count():
     """ Get the number of available virtual or physical CPUs on this system"""
-
-    # cpuset
-    # cpuset may restrict the number of *available* processors
+    # https://github.com/giampaolo/psutil
     try:
-        m = re.search(r'(?m)^Cpus_allowed:\s*(.*)$',
-                      open('/proc/self/status').read())
-        if m:
-            res = bin(int(m.group(1).replace(',', ''), 16)).count('1')
-            if res > 0:
-                return res
-    except IOError:
+        import psutil
+        # NOTE: use psutil.NUM_CPUS on old versions
+        return psutil.cpu_count(logical=False)
+    except (ImportError, AttributeError, ModuleNotFoundError):
         pass
 
     # Python 2.6+
@@ -28,17 +23,9 @@ def get_core_count():
     except (ImportError, NotImplementedError):
         pass
 
-    # https://github.com/giampaolo/psutil
-    try:
-        import psutil
-        return psutil.cpu_count()   # psutil.NUM_CPUS on old versions
-    except (ImportError, AttributeError):
-        pass
-
     # POSIX
     try:
         res = int(os.sysconf('SC_NPROCESSORS_ONLN'))
-
         if res > 0:
             return res
     except (AttributeError, ValueError):
@@ -47,7 +34,6 @@ def get_core_count():
     # Windows
     try:
         res = int(os.environ['NUMBER_OF_PROCESSORS'])
-
         if res > 0:
             return res
     except (KeyError, ValueError):
@@ -78,9 +64,20 @@ def get_core_count():
     # Linux
     try:
         res = open('/proc/cpuinfo').read().count('processor\t:')
-
         if res > 0:
             return res
+    except IOError:
+        pass
+
+    # cpuset
+    # cpuset may restrict the number of *available* processors
+    try:
+        m = re.search(r'(?m)^Cpus_allowed:\s*(.*)$',
+                      open('/proc/self/status').read())
+        if m:
+            res = bin(int(m.group(1).replace(',', ''), 16)).count('1')
+            if res > 0:
+                return res
     except IOError:
         pass
 
