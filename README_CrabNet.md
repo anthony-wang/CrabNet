@@ -55,6 +55,8 @@ We recommend that you create a separate Python environment for this project.
 ### Alternative installation
 There is [another version of CrabNet](https://github.com/sgbaird/CrabNet) for which changes may be incorporated into (this) the parent repository at a future date. Similar to [automatminer](https://hackingmaterials.lbl.gov/automatminer/), this version facilitates passing of DataFrames for training and validation data, is `conda` and `pip` installable, and exposes many of the model hyperparameters at the top-level. Additional instructions can be found at [the fork](https://github.com/sgbaird/CrabNet).
 
+
+
 ## Reproduction of publication results
 To reproduce the publication results, please follow the below steps.
 Results will slightly vary.
@@ -89,6 +91,7 @@ If you want to predict with this model, you must use the same `mat_prop`.
 1. Inference outputs using the provided saved weights are in the `predictions` folder.
 1. Data are in the folder `publication_predictions`
 1. Run `Paper_{FIG|TABLE}_{X}.py` to produce the tables and figures shown in the manuscript.
+
 
 
 ## IMPORTANT - if you want to reproduce the publication Figures 1 and 2:
