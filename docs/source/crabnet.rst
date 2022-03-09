@@ -29,22 +29,6 @@ crabnet.kingcrab module
    :undoc-members:
    :show-inheritance:
 
-crabnet.model module
---------------------
-
-.. automodule:: crabnet.model
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-crabnet.train\_crabnet module
------------------------------
-
-.. automodule:: crabnet.train_crabnet
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Module contents
 ---------------
 

@@ -608,18 +608,21 @@ class CrabNet(nn.Module):
                 f"stepping every {stepsize} training passes, cycling lr every {self.epochs_step} epochs"
             )
         if epochs is None:
-            n_iterations = 1e4
-            epochs = int(n_iterations / len(self.data_loader))
+            # n_iterations = 1e4
+            # epochs = max(int(n_iterations / len(self.data_loader)), 40)
+            epochs = 300
             if self.verbose:
-                print(f"running for {epochs} epochs")
+                print(f"running for {epochs} epochs, unless early stopping occurs")
         if checkin is None:
             checkin = self.epochs_step * 2
             if self.verbose:
                 print(
                     f"checkin at {self.epochs_step*2} " f"epochs to match lr scheduler"
                 )
-        if epochs % (self.epochs_step * 2) != 0:
-            updated_epochs = epochs - epochs % (self.epochs_step * 2)
+        assert isinstance(epochs, int)
+        mod = epochs % (self.epochs_step * 2)
+        if mod != 0:
+            updated_epochs = epochs - mod
             if self.verbose:
                 print(
                     f"epochs not divisible by {self.epochs_step * 2}, "

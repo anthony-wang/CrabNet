@@ -20,6 +20,19 @@ def test_crabnet():
     return train_pred, train_sigma
 
 
+def test_crabnet_300_epochs():
+    cb = CrabNet(
+        compute_device="cpu",
+        verbose=True,
+        losscurve=False,
+        learningcurve=False,
+        epochs=300,
+    )
+    cb.fit(train_df)
+    train_pred, train_sigma = cb.predict(val_df, return_uncertainty=True)
+    return train_pred, train_sigma
+
+
 def test_extend_features():
     train_df["state_var0"] = np.random.rand(train_df.shape[0])
     val_df["state_var0"] = np.random.rand(val_df.shape[0])
@@ -48,6 +61,7 @@ def test_extend_features():
 #     return train_true, train_pred, formulas, train_sigma
 
 if __name__ == "__main__":
+    train_pred, train_sigma = test_crabnet_300_epochs()
     train_pred, train_sigma = test_crabnet()
     train_pred, train_sigma = test_extend_features()
     1 + 1
