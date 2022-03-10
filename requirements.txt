@@ -1,5 +1,5 @@
 tqdm==4.62.3
-psutil==5.8.0
+psutil==5.9.0
 joblib==1.1.0
 matplotlib==3.4.3
 numpy==1.22.3
