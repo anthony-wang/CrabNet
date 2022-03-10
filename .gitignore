@@ -166,3 +166,4 @@ crabnet/tests/figures/**
 crabnet/tests/models/**
 
 docs/source/_build/*
+matbench_expt_gap.json.gz
