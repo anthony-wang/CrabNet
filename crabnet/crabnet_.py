@@ -625,7 +625,7 @@ class CrabNet(nn.Module):
             updated_epochs = epochs - mod
             if self.verbose:
                 print(
-                    f"epochs not divisible by {self.epochs_step * 2}, "
+                    f"{epochs} epochs not divisible by {self.epochs_step * 2}, "
                     f"updating epochs to {updated_epochs} for learning"
                 )
             epochs = updated_epochs
