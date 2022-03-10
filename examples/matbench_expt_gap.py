@@ -22,7 +22,7 @@ for task in mb.tasks:
             {"formula": test_inputs, "target": np.zeros(test_inputs.shape[0])}
         )
 
-        crab = CrabNet(epochs=300)
+        crab = CrabNet(epochs=40)
         crab.fit(train_df)
         predictions = crab.predict(test_df)
 
