@@ -283,7 +283,6 @@ class CrabNet(nn.Module):
             print("\nModel architecture: out_dims, d_model, N, heads")
             print(f"{self.out_dims}, {self.d_model}, " f"{self.N}, {self.heads}")
             print(f"Running on compute device: {self.compute_device}")
-            print(f"Model size: {count_parameters(self)} parameters\n")
 
     def fit(
         self,
@@ -333,6 +332,9 @@ class CrabNet(nn.Module):
                 dim_feedforward=self.dim_feedforward,
                 dropout=self.dropout,
             ).to(self.compute_device)
+
+        if self.verbose:
+            print(f"Model size: {count_parameters(self.model)} parameters\n")
 
         # self.transfer_nn = TransferNetwork(512, 512)
 
@@ -432,7 +434,6 @@ class CrabNet(nn.Module):
 
         if self.save:
             self.save_network()
-
 
     def predict(
         self,
@@ -543,7 +544,6 @@ class CrabNet(nn.Module):
             return pred, act
         else:
             return pred
-
 
     def load_data(
         self,
@@ -734,10 +734,10 @@ class CrabNet(nn.Module):
         assert isinstance(epochs, int)
         mod = epochs % (self.epochs_step * 2)
         if mod != 0:
-            updated_epochs = epochs - mod
+            updated_epochs = epochs + (self.epochs_step * 2) - mod
             if self.verbose:
                 print(
-                    f"{epochs} epochs not divisible by {self.epochs_step * 2}, "
+                    f"{epochs} epochs not divisible by {self.epochs_step * 2} (2*epochs_step), "
                     f"updating epochs to {updated_epochs} for learning"
                 )
             epochs = updated_epochs
