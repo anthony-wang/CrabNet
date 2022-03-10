@@ -46,6 +46,7 @@ test = [
     "nbformat >=4.2.0", # for Jupyter Notebook in VS Code
     "black >=22.1.0",
     "conda-souschef",
+    "matbench",
 ]
 
 [project.urls]
