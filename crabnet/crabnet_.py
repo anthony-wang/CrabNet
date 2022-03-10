@@ -285,148 +285,6 @@ class CrabNet(nn.Module):
             print(f"Running on compute device: {self.compute_device}")
             print(f"Model size: {count_parameters(self)} parameters\n")
 
-    def load_data(
-        self,
-        data: Union[str, pd.DataFrame],
-        extra_features: pd.DataFrame = None,
-        batch_size: int = 2**9,
-        train: bool = False,
-    ):
-        """Load data using PyTorch Dataloader.
-
-        Parameters
-        ----------
-        data : Union[str, pd.DataFrame]
-            The data to load, which can be the folder in which the ``.csv`` file resides
-            or a pandas DataFrame.
-        extra_features : pd.DataFrame, optional
-            DataFrame containing the extra features that will be used for training (e.g.
-            state variables) that were extracted based on the column names in `CrabNet().extend_features`, by default None
-        batch_size : int, optional
-            The batch size to use during training. By default 2 ** 9
-        train : bool, optional
-            Whether this is the training data, by default False
-        """
-        if self.batch_size is None:
-            self.batch_size = batch_size
-        inference = not train
-        data_loaders = EDM_CsvLoader(
-            data=data,
-            extra_features=extra_features,
-            batch_size=self.batch_size,
-            n_elements=self.n_elements,
-            inference=inference,
-            verbose=self.verbose,
-            elem_prop=self.elem_prop,
-        )
-        if self.verbose:
-            print(
-                f"loading data with up to {data_loaders.n_elements:0.0f} elements in the formula"
-            )
-
-        # update n_elements after loading dataset
-        self.n_elements = data_loaders.n_elements
-
-        data_loader = data_loaders.get_data_loaders(inference=inference)
-        y = data_loader.dataset.data[1]
-        if train:
-            self.train_len = len(y)
-            if self.classification:
-                self.scaler: Union[Scaler, DummyScaler] = DummyScaler(y)
-            else:
-                self.scaler = Scaler(y)
-            self.train_loader = data_loader
-        self.data_loader = data_loader
-
-    def _train(self):
-        """Train the SubCrab PyTorch model using backpropagation."""
-        minima = []
-        for data in self.train_loader:
-            # separate into src and frac
-            X, y, _, extra_features = data
-            y = self.scaler.scale(y)
-            src, frac = X.squeeze(-1).chunk(2, dim=1)
-            frac = self._add_jitter(src, frac)
-
-            # send to PyTorch device
-            src = src.to(self.compute_device, dtype=torch.long, non_blocking=True)
-            frac = frac.to(
-                self.compute_device, dtype=self.data_type_torch, non_blocking=True
-            )
-            y = y.to(self.compute_device, dtype=self.data_type_torch, non_blocking=True)
-            extra_features = extra_features.to(
-                self.compute_device, dtype=self.data_type_torch, non_blocking=True
-            )
-
-            # train
-            output = self.model.forward(src, frac, extra_features=extra_features)
-            prediction, uncertainty = output.chunk(2, dim=-1)
-            loss = self.criterion(prediction.view(-1), uncertainty.view(-1), y.view(-1))
-
-            # backpropagation
-            loss.backward()
-            self.optimizer.step()
-            self.optimizer.zero_grad()
-            if self.stepping:
-                self.lr_scheduler.step()
-
-            # hyperparameter updates
-            swa_check = self.epochs_step * self.swa_start - 1
-            epoch_check = (self.epoch + 1) % (2 * self.epochs_step) == 0
-            learning_time = epoch_check and self.epoch >= swa_check
-            if learning_time:
-                pred_v, true_v = self.predict(loader=self.data_loader, return_true=True)
-                if np.any(np.isnan(pred_v)):
-                    warn(
-                        "NaN values found in `pred_v`. Replacing with DummyRegressor() values (i.e. mean of training targets)."
-                    )
-                    pred_v = np.nan_to_num(pred_v)
-                mae_v = mean_absolute_error(true_v, pred_v)
-                # https://github.com/pytorch/contrib/blob/master/torchcontrib/optim/swa.py
-                # https://pytorch.org/blog/pytorch-1.6-now-includes-stochastic-weight-averaging/
-                self.optimizer.update_swa(mae_v)
-                minima.append(self.optimizer.minimum_found)
-
-        if learning_time and not any(minima):
-            self.optimizer.discard_count += 1
-            if self.verbose:
-                print(f"Epoch {self.epoch} failed to improve.")
-                print(
-                    f"Discarded: {self.optimizer.discard_count}/"
-                    f"{self.discard_n} weight updates"
-                )
-
-    def _add_jitter(self, src, frac, type="normal"):
-        """Add a small jitter to the input fractions.
-
-        This improves model robustness and increases stability.
-
-        Parameters
-        ----------
-        src : torch.tensor
-            Tensor containing integers corresponding to elements in compound
-        frac : torch.tensor
-            Tensor containing the fractions of each element in compound
-        type : str, optional
-            How to add the jitter. Possible options are "normal" and "uniform". By
-            default, "normal"
-
-        Returns
-        -------
-        frac : torch.tensor
-            Tensor containing the fractions of each element in compound with added jitter.
-        """
-        if type == "normal":
-            frac = frac * (1 + (torch.randn_like(frac)) * self.fudge)  # normal
-        elif type == "uniform":
-            frac = frac * (1 + (torch.rand_like(frac) - 0.5) * self.fudge)  # uniform
-        else:
-            raise NotImplementedError(f"{type} not supported as jitter type.")
-        frac = torch.clamp(frac, 0, 1)
-        frac[src == 0] = 0
-        frac = frac / frac.sum(dim=1).unsqueeze(1).repeat(1, frac.shape[-1])
-        return frac
-
     def fit(
         self,
         train_df: pd.DataFrame = None,
@@ -574,6 +432,260 @@ class CrabNet(nn.Module):
 
         if self.save:
             self.save_network()
+
+
+    def predict(
+        self,
+        test_df: pd.DataFrame = None,
+        loader=None,
+        return_uncertainty=False,
+        return_true=False,
+    ):
+        """Predict on new data using a fitted CrabNet model.
+
+        Parameters
+        ----------
+        test_df : pd.DataFrame, optional
+            _description_, by default None
+        loader : torch.Dataloader, optional
+            The Dataloader corresponding to the test data, by default None
+        return_uncertainty : bool, optional
+            Whether to return standard deviation uncertainties. If `return_true`, then
+            `return_uncertainty` takes precendence and is returned as the second output. By default False
+        return_true : bool, optional
+            Whether to return the true values (used for comparison with the predicted
+            values). If `return_uncertainty` is also specified, then the uncertainties
+            appear before the true values (i.e. pred, std, true), by default False
+
+        Returns
+        -------
+        pred : np.array
+            Predicted values. Always returned.
+        uncert : np.array
+            Standard deviation uncertainty. Returned if `return_uncertainty`. Precedes
+            `act` if `act` is also returned.
+        act : np.array
+            True values. Returned if `return_true`. `uncert` precedes `act` if both
+            `uncert` and `act` are returned.
+
+        Raises
+        ------
+        SyntaxError
+            "Specify either data *or* loader, not neither."
+        SyntaxError
+            "Specify either data *or* loader, not both."
+        """
+        if test_df is None and loader is None:
+            raise SyntaxError("Specify either data *or* loader, not neither.")
+        elif test_df is not None and loader is None:
+            if self.extend_features is not None:
+                extra_features = test_df[self.extend_features]
+            else:
+                extra_features = None
+            self.load_data(test_df, extra_features=extra_features)
+            loader = self.data_loader
+        elif test_df is not None and loader is not None:
+            raise SyntaxError("Specify either data *or* loader, not both.")
+
+        len_dataset = len(loader.dataset)
+        n_atoms = int(len(loader.dataset[0][0]) / 2)
+        act = np.zeros(len_dataset)
+        pred = np.zeros(len_dataset)
+        uncert = np.zeros(len_dataset)
+        formulae = np.empty(len_dataset, dtype=list)
+        atoms = np.empty((len_dataset, n_atoms))
+        fractions = np.empty((len_dataset, n_atoms))
+
+        assert isinstance(self.model, SubCrab)
+        self.model.eval()
+
+        with torch.no_grad():
+            for i, batch_df in enumerate(loader):
+                # extract data
+                X, y, formula, extra_features = batch_df
+                src, frac = X.squeeze(-1).chunk(2, dim=1)
+
+                # send to device
+                src = src.to(self.compute_device, dtype=torch.long, non_blocking=True)
+                frac = frac.to(
+                    self.compute_device, dtype=self.data_type_torch, non_blocking=True
+                )
+                y = y.to(
+                    self.compute_device, dtype=self.data_type_torch, non_blocking=True
+                )
+                extra_features = extra_features.to(
+                    self.compute_device, dtype=self.data_type_torch, non_blocking=True
+                )
+
+                # predict
+                output = self.model.forward(src, frac, extra_features=extra_features)
+                prediction, uncertainty = output.chunk(2, dim=-1)
+                uncertainty = torch.exp(uncertainty) * self.scaler.std
+                prediction = self.scaler.unscale(prediction)
+                if self.classification:
+                    prediction = torch.sigmoid(prediction)
+
+                assert self.batch_size is not None
+                data_loc = slice(i * self.batch_size, i * self.batch_size + len(y), 1)
+
+                atoms[data_loc, :] = src.cpu().numpy()
+                fractions[data_loc, :] = frac.cpu().numpy()
+                act[data_loc] = y.view(-1).cpu().numpy()
+                pred[data_loc] = prediction.view(-1).cpu().detach().numpy()
+                uncert[data_loc] = uncertainty.view(-1).cpu().detach().numpy()
+                formulae[data_loc] = formula
+
+        if return_uncertainty and return_true:
+            return pred, uncert, act
+        elif return_uncertainty and not return_true:
+            return pred, uncert
+        elif not return_uncertainty and return_true:
+            return pred, act
+        else:
+            return pred
+
+
+    def load_data(
+        self,
+        data: Union[str, pd.DataFrame],
+        extra_features: pd.DataFrame = None,
+        batch_size: int = 2**9,
+        train: bool = False,
+    ):
+        """Load data using PyTorch Dataloader.
+
+        Parameters
+        ----------
+        data : Union[str, pd.DataFrame]
+            The data to load, which can be the folder in which the ``.csv`` file resides
+            or a pandas DataFrame.
+        extra_features : pd.DataFrame, optional
+            DataFrame containing the extra features that will be used for training (e.g.
+            state variables) that were extracted based on the column names in `CrabNet().extend_features`, by default None
+        batch_size : int, optional
+            The batch size to use during training. By default 2 ** 9
+        train : bool, optional
+            Whether this is the training data, by default False
+        """
+        if self.batch_size is None:
+            self.batch_size = batch_size
+        inference = not train
+        data_loaders = EDM_CsvLoader(
+            data=data,
+            extra_features=extra_features,
+            batch_size=self.batch_size,
+            n_elements=self.n_elements,
+            inference=inference,
+            verbose=self.verbose,
+            elem_prop=self.elem_prop,
+        )
+        if self.verbose:
+            print(
+                f"loading data with up to {data_loaders.n_elements:0.0f} elements in the formula"
+            )
+
+        # update n_elements after loading dataset
+        self.n_elements = data_loaders.n_elements
+
+        data_loader = data_loaders.get_data_loaders(inference=inference)
+        y = data_loader.dataset.data[1]
+        if train:
+            self.train_len = len(y)
+            if self.classification:
+                self.scaler: Union[Scaler, DummyScaler] = DummyScaler(y)
+            else:
+                self.scaler = Scaler(y)
+            self.train_loader = data_loader
+        self.data_loader = data_loader
+
+    def _train(self):
+        """Train the SubCrab PyTorch model using backpropagation."""
+        minima = []
+        for data in self.train_loader:
+            # separate into src and frac
+            X, y, _, extra_features = data
+            y = self.scaler.scale(y)
+            src, frac = X.squeeze(-1).chunk(2, dim=1)
+            frac = self._add_jitter(src, frac)
+
+            # send to PyTorch device
+            src = src.to(self.compute_device, dtype=torch.long, non_blocking=True)
+            frac = frac.to(
+                self.compute_device, dtype=self.data_type_torch, non_blocking=True
+            )
+            y = y.to(self.compute_device, dtype=self.data_type_torch, non_blocking=True)
+            extra_features = extra_features.to(
+                self.compute_device, dtype=self.data_type_torch, non_blocking=True
+            )
+
+            # train
+            output = self.model.forward(src, frac, extra_features=extra_features)
+            prediction, uncertainty = output.chunk(2, dim=-1)
+            loss = self.criterion(prediction.view(-1), uncertainty.view(-1), y.view(-1))
+
+            # backpropagation
+            loss.backward()
+            self.optimizer.step()
+            self.optimizer.zero_grad()
+            if self.stepping:
+                self.lr_scheduler.step()
+
+            # hyperparameter updates
+            swa_check = self.epochs_step * self.swa_start - 1
+            epoch_check = (self.epoch + 1) % (2 * self.epochs_step) == 0
+            learning_time = epoch_check and self.epoch >= swa_check
+            if learning_time:
+                pred_v, true_v = self.predict(loader=self.data_loader, return_true=True)
+                if np.any(np.isnan(pred_v)):
+                    warn(
+                        "NaN values found in `pred_v`. Replacing with DummyRegressor() values (i.e. mean of training targets)."
+                    )
+                    pred_v = np.nan_to_num(pred_v)
+                mae_v = mean_absolute_error(true_v, pred_v)
+                # https://github.com/pytorch/contrib/blob/master/torchcontrib/optim/swa.py
+                # https://pytorch.org/blog/pytorch-1.6-now-includes-stochastic-weight-averaging/
+                self.optimizer.update_swa(mae_v)
+                minima.append(self.optimizer.minimum_found)
+
+        if learning_time and not any(minima):
+            self.optimizer.discard_count += 1
+            if self.verbose:
+                print(f"Epoch {self.epoch} failed to improve.")
+                print(
+                    f"Discarded: {self.optimizer.discard_count}/"
+                    f"{self.discard_n} weight updates"
+                )
+
+    def _add_jitter(self, src, frac, type="normal"):
+        """Add a small jitter to the input fractions.
+
+        This improves model robustness and increases stability.
+
+        Parameters
+        ----------
+        src : torch.tensor
+            Tensor containing integers corresponding to elements in compound
+        frac : torch.tensor
+            Tensor containing the fractions of each element in compound
+        type : str, optional
+            How to add the jitter. Possible options are "normal" and "uniform". By
+            default, "normal"
+
+        Returns
+        -------
+        frac : torch.tensor
+            Tensor containing the fractions of each element in compound with added jitter.
+        """
+        if type == "normal":
+            frac = frac * (1 + (torch.randn_like(frac)) * self.fudge)  # normal
+        elif type == "uniform":
+            frac = frac * (1 + (torch.rand_like(frac) - 0.5) * self.fudge)  # uniform
+        else:
+            raise NotImplementedError(f"{type} not supported as jitter type.")
+        frac = torch.clamp(frac, 0, 1)
+        frac[src == 0] = 0
+        frac = frac / frac.sum(dim=1).unsqueeze(1).repeat(1, frac.shape[-1])
+        return frac
 
     def _get_epochs_checkin_stepsize(
         self, epochs: Optional[int], checkin: Optional[int]
@@ -951,116 +1063,6 @@ class CrabNet(nn.Module):
             assert isinstance(train_data, pd.DataFrame)
             data_size = train_data.shape[0]
         return train_data, val_data, data_size, extra_train_data, extra_val_data
-
-    def predict(
-        self,
-        test_df: pd.DataFrame = None,
-        loader=None,
-        return_uncertainty=False,
-        return_true=False,
-    ):
-        """Predict on new data using a fitted CrabNet model.
-
-        Parameters
-        ----------
-        test_df : pd.DataFrame, optional
-            _description_, by default None
-        loader : torch.Dataloader, optional
-            The Dataloader corresponding to the test data, by default None
-        return_uncertainty : bool, optional
-            Whether to return standard deviation uncertainties. If `return_true`, then
-            `return_uncertainty` takes precendence and is returned as the second output. By default False
-        return_true : bool, optional
-            Whether to return the true values (used for comparison with the predicted
-            values). If `return_uncertainty` is also specified, then the uncertainties
-            appear before the true values (i.e. pred, std, true), by default False
-
-        Returns
-        -------
-        pred : np.array
-            Predicted values. Always returned.
-        uncert : np.array
-            Standard deviation uncertainty. Returned if `return_uncertainty`. Precedes
-            `act` if `act` is also returned.
-        act : np.array
-            True values. Returned if `return_true`. `uncert` precedes `act` if both
-            `uncert` and `act` are returned.
-
-        Raises
-        ------
-        SyntaxError
-            "Specify either data *or* loader, not neither."
-        SyntaxError
-            "Specify either data *or* loader, not both."
-        """
-        if test_df is None and loader is None:
-            raise SyntaxError("Specify either data *or* loader, not neither.")
-        elif test_df is not None and loader is None:
-            if self.extend_features is not None:
-                extra_features = test_df[self.extend_features]
-            else:
-                extra_features = None
-            self.load_data(test_df, extra_features=extra_features)
-            loader = self.data_loader
-        elif test_df is not None and loader is not None:
-            raise SyntaxError("Specify either data *or* loader, not both.")
-
-        len_dataset = len(loader.dataset)
-        n_atoms = int(len(loader.dataset[0][0]) / 2)
-        act = np.zeros(len_dataset)
-        pred = np.zeros(len_dataset)
-        uncert = np.zeros(len_dataset)
-        formulae = np.empty(len_dataset, dtype=list)
-        atoms = np.empty((len_dataset, n_atoms))
-        fractions = np.empty((len_dataset, n_atoms))
-
-        assert isinstance(self.model, SubCrab)
-        self.model.eval()
-
-        with torch.no_grad():
-            for i, test_df in enumerate(loader):
-                # extract data
-                X, y, formula, extra_features = test_df
-                src, frac = X.squeeze(-1).chunk(2, dim=1)
-
-                # send to device
-                src = src.to(self.compute_device, dtype=torch.long, non_blocking=True)
-                frac = frac.to(
-                    self.compute_device, dtype=self.data_type_torch, non_blocking=True
-                )
-                y = y.to(
-                    self.compute_device, dtype=self.data_type_torch, non_blocking=True
-                )
-                extra_features = extra_features.to(
-                    self.compute_device, dtype=self.data_type_torch, non_blocking=True
-                )
-
-                # predict
-                output = self.model.forward(src, frac, extra_features=extra_features)
-                prediction, uncertainty = output.chunk(2, dim=-1)
-                uncertainty = torch.exp(uncertainty) * self.scaler.std
-                prediction = self.scaler.unscale(prediction)
-                if self.classification:
-                    prediction = torch.sigmoid(prediction)
-
-                assert self.batch_size is not None
-                data_loc = slice(i * self.batch_size, i * self.batch_size + len(y), 1)
-
-                atoms[data_loc, :] = src.cpu().numpy()
-                fractions[data_loc, :] = frac.cpu().numpy()
-                act[data_loc] = y.view(-1).cpu().numpy()
-                pred[data_loc] = prediction.view(-1).cpu().detach().numpy()
-                uncert[data_loc] = uncertainty.view(-1).cpu().detach().numpy()
-                formulae[data_loc] = formula
-
-        if return_uncertainty and return_true:
-            return pred, uncert, act
-        elif return_uncertainty and not return_true:
-            return pred, uncert
-        elif not return_uncertainty and return_true:
-            return pred, act
-        else:
-            return pred
 
     def save_network(self, model_name: str = None):
         """Save network weights to a ``.pth`` file.
