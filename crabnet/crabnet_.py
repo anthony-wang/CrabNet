@@ -183,7 +183,7 @@ class CrabNet(nn.Module):
         alpha : float, optional
             float, by default 0.5
         k : int, optional
-            [description], by default 6
+            Number of ``Lookahead`` steps, by default 6
         base_lr : float, optional
             Base learning rate, by default 1e-4
         max_lr : float, optional
