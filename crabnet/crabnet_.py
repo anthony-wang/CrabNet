@@ -171,17 +171,17 @@ class CrabNet(nn.Module):
         lr : float, optional
             Learning rate, by default 1e-3
         betas : tuple, optional
-            [description], by default (0.9, 0.999)
+            Coefficients on gradient and squared gradient during ``Lamb`` optimization, by default (0.9, 0.999)
         eps : float, optional
-            [description], by default 1e-6
+            Value added to the denominator during ``Lamb`` optimization, by default 1e-6
         weight_decay : float, optional
-            [description], by default 0
+            L2 penalty in ``Lamb``, by default 0
         adam : bool, optional
-            Whether to constrain the Lamb model to be the Adam model, by default False
+            Whether to constrain the ``Lamb`` model to be the Adam model, by default False
         min_trust : float, optional
             [description], by default None
         alpha : float, optional
-            float, by default 0.5
+            ``Lookahead`` "slow update" rate, by default 0.5
         k : int, optional
             Number of ``Lookahead`` steps, by default 6
         base_lr : float, optional
