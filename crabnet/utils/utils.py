@@ -651,7 +651,6 @@ class Lamb(Optimizer):
         defaults = dict(lr=lr, betas=betas, eps=eps, weight_decay=weight_decay)
         self.adam = adam
         self.min_trust = min_trust
-        # REVIEW: what is params and what does it do?
         super(Lamb, self).__init__(params, defaults)
 
     def step(self, closure=None):
