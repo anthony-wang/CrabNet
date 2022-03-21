@@ -42,7 +42,7 @@ jobs:
     - name: Install dependencies
       run: |
         conda install git conda-build conda-verify anaconda-client pytest
-        conda install  -c conda-forge flit grayskull
+        conda install  -c conda-forge flit grayskull conda-souschef
         
     - name: Miniconda build
       run : |
