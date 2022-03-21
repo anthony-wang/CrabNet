@@ -12,7 +12,7 @@ os.system(f"grayskull pypi {name}=={version}")
 
 Path("scratch").mkdir(exist_ok=True)
 
-fpath = join(crabnet.__name__, "meta.yaml")
+fpath = join(name, "meta.yaml")
 fpath2 = join("scratch", "meta.yaml")
 my_recipe = Recipe(load_file=fpath)
 my_recipe["requirements"]["host"].append("flit")
