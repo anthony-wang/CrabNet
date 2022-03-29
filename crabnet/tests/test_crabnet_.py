@@ -68,7 +68,7 @@ def test_matbench_expt_gap():
 
             # adjust parameters to have it run quickly on CPU
             crab = CrabNet(
-                epochs=40,
+                epochs=80,
                 d_model=64,
                 batch_size=256,
                 heads=2,
