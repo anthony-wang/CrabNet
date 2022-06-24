@@ -764,17 +764,17 @@ class CrabNet(nn.Module):
                 "NaN values found in `pred_t`. Replacing with mean of training targets."
             )
             pred_t = np.nan_to_num(pred_t, np.mean(true_t))
-        
+
         mae_t = mean_absolute_error(true_t, pred_t)
         self.loss_curve["train"].append(mae_t)
         pred_v, true_v = self.predict(loader=self.data_loader, return_true=True)
-        
+
         if np.any(np.isnan(pred_v)):
             warn(
                 "NaN values found in `pred_v`. Replacing with mean of validation targets."
             )
             pred_v = np.nan_to_num(pred_v, np.mean(true_v))
-            
+
         mae_v = mean_absolute_error(true_v, pred_v)
         self.loss_curve["val"].append(mae_v)
         epoch_str = f"Epoch: {epoch}/{epochs} ---"
