@@ -41,8 +41,7 @@ jobs:
     
     - name: Install dependencies
       run: |
-        conda install git conda-build conda-verify anaconda-client pytest
-        conda install  -c conda-forge flit grayskull conda-souschef
+        conda install git conda-build conda-verify anaconda-client pytest conda-forge::flit conda-forge::grayskull conda-forge::conda-souschef
         
     - name: Miniconda build
       run : |
