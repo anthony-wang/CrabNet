@@ -65,8 +65,7 @@ jobs:
         activate-environment: crabnet
     - name: Install dependencies
       run: |
-        conda install git conda-build conda-verify anaconda-client pytest
-        conda install  -c conda-forge grayskull flit coveralls conda-souschef
+        conda install git conda-build conda-verify anaconda-client pytest conda-forge::grayskull conda-forge::flit conda-forge::coveralls conda-forge::conda-souschef
     - name: Build and Publish
       env:
         ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
