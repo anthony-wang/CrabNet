@@ -638,9 +638,14 @@ class CrabNet(nn.Module):
                 pred_v, true_v = self.predict(loader=self.data_loader, return_true=True)
                 if np.any(np.isnan(pred_v)):
                     warn(
-                        "NaN values found in `pred_v`. Replacing with DummyRegressor() values (i.e. mean of training targets)."
+                        "NaN values found in `pred_v`. Replacing with DummyRegressor() values (i.e. mean of training targets)"
                     )
-                    pred_v = np.nan_to_num(pred_v)
+                    avg = np.mean(true_v)
+                    if np.isnan(avg):
+                        raise ValueError(
+                            "Found NaN values in training data. Remove or replace via `np.nan_to_num` before running."
+                        )
+                    pred_v = np.nan_to_num(pred_v, nan=avg)
                 mae_v = mean_absolute_error(true_v, pred_v)
                 # https://github.com/pytorch/contrib/blob/master/torchcontrib/optim/swa.py
                 # https://pytorch.org/blog/pytorch-1.6-now-includes-stochastic-weight-averaging/
@@ -761,9 +766,10 @@ class CrabNet(nn.Module):
 
         if np.any(np.isnan(pred_t)):
             warn(
-                "NaN values found in `pred_t`. Replacing with mean of training targets."
+                "NaN values found in `pred_t`. Replacing with DummyRegressor() values (i.e. mean of training targets)."
             )
-            pred_t = np.nan_to_num(pred_t, np.mean(true_t))
+            avg = np.mean(true_t)
+            pred_t = np.nan_to_num(pred_t, nan=avg)
 
         mae_t = mean_absolute_error(true_t, pred_t)
         self.loss_curve["train"].append(mae_t)
@@ -771,9 +777,10 @@ class CrabNet(nn.Module):
 
         if np.any(np.isnan(pred_v)):
             warn(
-                "NaN values found in `pred_v`. Replacing with mean of validation targets."
+                "NaN values found in `pred_v`. Replacing with DummyRegressor() values (i.e. mean of training targets) using `np.nanmean`."
             )
-            pred_v = np.nan_to_num(pred_v, np.mean(true_v))
+            avg = np.nanmean(true_v)
+            pred_v = np.nan_to_num(pred_v, nan=avg)
 
         mae_v = mean_absolute_error(true_v, pred_v)
         self.loss_curve["val"].append(mae_v)
