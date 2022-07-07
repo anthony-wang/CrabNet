@@ -25,7 +25,7 @@ except Exception as e:
     warn("couldn't delete build section (probably because it didn't exist)")
     pass
 my_recipe["requirements"]["run"].append("pytorch >=1.9.0")
-my_recipe["requirements"]["run"].append("cudatoolkit <11.4")
+my_recipe["requirements"]["run"].append("cudatoolkit <=11.6")
 my_recipe.save(fpath)
 my_recipe.save(fpath2)
 
