@@ -2,7 +2,7 @@
 
 Use these steps to explore model interpretability methods with `CrabNet` and to reproduce the results presented in the publication:
 
-A. Y.-T. Wang, M. S. Mahmoud, M. Czasny, A. Gurlo, CrabNet for Explainable Deep Learning in Materials Science: Bridging the Gap Between Academia and Industry, *Integr. Mater. Manuf. Innov.*, **2022**, *11 (1)*: 41-56. DOI: [10.1007/s40192-021-00247-y](https://doi.org/10.1038/s41524-021-00545-1).
+A. Y.-T. Wang, M. S. Mahmoud, M. Czasny, A. Gurlo, CrabNet for Explainable Deep Learning in Materials Science: Bridging the Gap Between Academia and Industry, *Integr. Mater. Manuf. Innov.*, **2022**, *11 (1)*: 41-56. DOI: [10.1007/s40192-021-00247-y](https://doi.org/10.1007/s40192-021-00247-y).
 
 
 
