@@ -17,8 +17,8 @@ Additionally, it demonstrates several model interpretability techniques that are
 
 This repository contains the code accompanying two `CrabNet` publications. Please consider citing them if you want to use `CrabNet` or the techniques discussed within the works:
 
-1. **The "CrabNet publication":** A. Y.-T. Wang, S. K. Kauwe, R. J. Murdock, T. D. Sparks, Compositionally restricted attention-based network for materials property predictions, *npj Comput. Mater.*, **2021**, *7: 77*. DOI: [10.1007/s40192-021-00247-y](https://doi.org/10.1038/s41524-021-00545-1).
-1. **The "ExplainableGap publication":** A. Y.-T. Wang, M. S. Mahmoud, M. Czasny, A. Gurlo, CrabNet for Explainable Deep Learning in Materials Science: Bridging the Gap Between Academia and Industry, *Integr. Mater. Manuf. Innov.*, **2022**, *11 (1)*: 41-56. DOI: [10.1038/s41524-021-00545-1](https://doi.org/10.1007/s40192-021-00247-y).
+1. **The "CrabNet publication":** A. Y.-T. Wang, S. K. Kauwe, R. J. Murdock, T. D. Sparks, Compositionally restricted attention-based network for materials property predictions, *npj Comput. Mater.*, **2021**, *7: 77*. DOI: [10.1038/s41524-021-00545-1](https://doi.org/10.1038/s41524-021-00545-1).
+1. **The "ExplainableGap publication":** A. Y.-T. Wang, M. S. Mahmoud, M. Czasny, A. Gurlo, CrabNet for Explainable Deep Learning in Materials Science: Bridging the Gap Between Academia and Industry, *Integr. Mater. Manuf. Innov.*, **2022**, *11 (1)*: 41-56. DOI: [10.1007/s40192-021-00247-y](https://doi.org/10.1007/s40192-021-00247-y).
 
 
 The references in bibtex form:
