@@ -2,7 +2,7 @@
 
 Use these steps to install and set up `CrabNet` and to reproduce the results presented in the publication:
 
-A. Y.-T. Wang, S. K. Kauwe, R. J. Murdock, T. D. Sparks, Compositionally restricted attention-based network for materials property predictions, *npj Comput. Mater.*, **2021**, *7*: 77. DOI: [10.1038/s41524-021-00545-1](https://doi.org/10.1007/s40192-021-00247-y).
+A. Y.-T. Wang, S. K. Kauwe, R. J. Murdock, T. D. Sparks, Compositionally restricted attention-based network for materials property predictions, *npj Comput. Mater.*, **2021**, *7*: 77. DOI: [10.1007/s40192-021-00247-y](https://doi.org/10.1038/s41524-021-00545-1).
 
 
 
